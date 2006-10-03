@@ -101,6 +101,7 @@ static RET_VAL _Init( REB2SAC_PROPERTIES *properties ) {
         fclose( file );
     }    
     else {
+        /*        
         if( ( reb2sacHome = getenv( "REB2SAC_HOME" ) ) == NULL ) {
             return ErrorReport( FAILING, "_Init", "environment variable REB2SAC_HOME is not defined" ); 
         }
@@ -112,6 +113,8 @@ static RET_VAL _Init( REB2SAC_PROPERTIES *properties ) {
         if( ( path = CreateString( pathBuf ) ) == NULL ) {
             return ErrorReport( FAILING, "_Init", "could not create string %s", pathBuf ); 
         }
+        */
+        path = NULL;
     }
     properties->_internal1 = (CADDR_T)path;
         
@@ -127,9 +130,16 @@ static RET_VAL _LoadProperties(  REB2SAC_PROPERTIES *properties ) {
     START_FUNCTION("_LoadProperties");
     
     path = GetCharArrayOfString( (STRING*)(properties->_internal1) );
-    if( ( prop = CreateProperties( path ) ) == NULL ) {
-        return ErrorReport( FAILING, "_LoadProperties", "could not load properties from %s", path );
-    } 
+    if( path != NULL ) {
+        if( ( prop = CreateProperties( path ) ) == NULL ) {
+            return ErrorReport( FAILING, "_LoadProperties", "could not load properties from %s", path );
+        } 
+    }
+    else {
+        if( ( prop = CreateEmptyProperties()) == NULL ) {
+            return ErrorReport( FAILING, "_LoadProperties", "could not load empty properties" );
+        } 
+    }
     properties->_internal2 = (CADDR_T)prop;
     
     END_FUNCTION("_LoadProperties", SUCCESS );
@@ -173,7 +183,9 @@ static RET_VAL _Free(  REB2SAC_PROPERTIES *properties ) {
     
     START_FUNCTION("_Free");
     path = (STRING*)(properties->_internal1);
-    FreeString( &path );
+    if( path != NULL ) {  
+        FreeString( &path );
+    }
     prop = (PROPERTIES*)(properties->_internal2);
     if( prop != NULL ) {
         ret = prop->Free( prop );

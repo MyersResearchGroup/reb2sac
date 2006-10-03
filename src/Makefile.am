@@ -5,7 +5,7 @@ bin_PROGRAMS = reb2sac
 INCLUDES= $(all_includes)
 
 # the library search path.
-reb2sac_LDFLAGS = -all-static $(all_libraries)
+reb2sac_LDFLAGS = $(all_libraries)
 
 noinst_HEADERS = abs_phage_lambda2_simulation_run_termination_decider.h\
 	abs_phage_lambda_simulation_run_termination_decider.h\
@@ -139,4 +139,4 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c\
 	type1pili_gillespie_ci.c type_1_pili_markov_analysis_result_reporter.c\
 	uniformly_distributed_random_generator.c unit_manager.c util.c vector.c\
 	xhtml_back_end_processor.c
-reb2sac_LDADD = -lxerces -lgsl -lsbml
+reb2sac_LDADD = -lxerces-c -lgslcblas -lgsl -lsbml
