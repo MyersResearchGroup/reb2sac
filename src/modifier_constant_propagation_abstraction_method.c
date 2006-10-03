@@ -1,0 +1,188 @@
+/***************************************************************************
+ *   Copyright (C) 2004 by Hiroyuki Kuwahara                               *
+ *   kuwahara@cs.utah.edu                                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+#include "common.h"
+#include "linked_list.h"
+#include "abstraction_method_manager.h"
+#include "IR.h"
+#include "species_node.h"
+#include "reaction_node.h"
+#include "kinetic_law.h"
+
+static char * _GetModifierConstantPropagationMethodID( ABSTRACTION_METHOD *method );
+static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *method, IR *ir );      
+static double _GetModifierConcentration( SPECIES *modifier );
+static KINETIC_LAW *_CreateSymbolKineticLaw( IR *ir, SPECIES *modifier, double value );
+static RET_VAL _DoConstantPropagation( ABSTRACTION_METHOD *method, KINETIC_LAW *kineticLaw, SPECIES *modifier, KINETIC_LAW *symKineticLaw );
+
+
+
+ABSTRACTION_METHOD *ModifierConstantPropagationAbstractionMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager ) {
+    static ABSTRACTION_METHOD method;
+    
+    START_FUNCTION("ModifierConstantPropagationAbstractionMethodConstructor");
+
+    if( method.manager == NULL ) {
+        method.manager = manager;
+        method.GetID = _GetModifierConstantPropagationMethodID;
+        method.Apply = _ApplyModifierConstantPropagationMethod;       
+    }
+    
+    TRACE_0( "ModifierConstantPropagationAbstractionMethodConstructor invoked" );
+    
+    END_FUNCTION("ModifierConstantPropagationAbstractionMethodConstructor", SUCCESS );
+    return &method;
+}
+
+
+
+static char * _GetModifierConstantPropagationMethodID( ABSTRACTION_METHOD *method ) {
+    START_FUNCTION("_GetModifierConstantPropagationMethodID");
+    
+    END_FUNCTION("_GetModifierConstantPropagationMethodID", SUCCESS );
+    return "modifier-constant-propagation";
+}
+
+
+
+static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *method, IR *ir ) {
+    RET_VAL ret = SUCCESS;
+    double value = 0.0;
+    SPECIES *species = NULL;
+    REACTION *reaction = NULL;
+    IR_EDGE *edge = NULL;    
+    KINETIC_LAW *kineticLaw = NULL;
+    KINETIC_LAW *symKineticLaw = NULL;
+    LINKED_LIST *speciesList = NULL;
+    LINKED_LIST *edges = NULL;
+#ifdef DEBUG
+    STRING *kineticLawString = NULL;
+#endif        
+    START_FUNCTION("_ApplyModifierConstantPropagationMethod");
+    
+    speciesList = ir->GetListOfSpeciesNodes( ir );
+    
+    ResetCurrentElement( speciesList );    
+    while( ( species = (SPECIES*)GetNextFromLinkedList( speciesList ) ) != NULL ) {
+        if( IsKeepFlagSetInSpeciesNode( species ) ) {
+            continue;
+        }
+        
+        edges = GetReactantEdges( species );
+        if( GetLinkedListSize( edges ) > 0 ) {
+            continue;
+        }
+        edges = GetProductEdges( species );
+        if( GetLinkedListSize( edges ) > 0 ) {
+            continue;
+        }
+        /*
+            now conditions are satisfied, so propagate constant
+        */
+        value = _GetModifierConcentration( species );
+        if( ( symKineticLaw = _CreateSymbolKineticLaw( ir, species, value ) ) == NULL ) {
+            END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+            return ret;
+        } 
+        TRACE_1( "species %s satisfies constant propagation condition", GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
+        edges = GetModifierEdges( species );
+        ResetCurrentElement( edges );
+        while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+            reaction = GetReactionInIREdge( edge );
+            TRACE_1( "changing kinetic law of reaction %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
+            kineticLaw = GetKineticLawInReactionNode( reaction );
+#ifdef DEBUG
+            kineticLawString = ToStringKineticLaw( kineticLaw );
+            printf( "kinetic law before constant propagation: %s%s", GetCharArrayOfString( kineticLawString ), NEW_LINE );
+            FreeString( &kineticLawString );
+#endif             
+            if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+                END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+                return ret;
+            }
+#ifdef DEBUG
+            kineticLawString = ToStringKineticLaw( kineticLaw );
+            printf( "kinetic law after constant propagation: %s%s", GetCharArrayOfString( kineticLawString ), NEW_LINE );
+            FreeString( &kineticLawString );
+#endif             
+        }
+        FreeKineticLaw( &symKineticLaw );
+        if( IS_FAILED( ( ret = ir->RemoveSpecies( ir, species ) ) ) ) {
+            END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+            return ret;
+        }
+    }
+         
+    END_FUNCTION("_ApplyModifierConstantPropagationMethod", SUCCESS );
+    return ret;
+}      
+
+
+
+static double _GetModifierConcentration( SPECIES *modifier ) {
+    double concentration = 0.0;
+    
+    START_FUNCTION("_GetModifierConcentration");
+    
+    concentration = GetInitialConcentrationInSpeciesNode( modifier );
+    END_FUNCTION("_GetModifierConcentration", SUCCESS );
+    return concentration;
+}
+
+static KINETIC_LAW *_CreateSymbolKineticLaw( IR *ir, SPECIES *modifier, double value ) {
+    char *proposedID =NULL;
+    REB2SAC_SYMBOL *sym = NULL;
+    REB2SAC_SYMTAB *symtab = NULL;
+    KINETIC_LAW *kineticLaw = NULL;
+    
+    START_FUNCTION("_CreateSymbolKineticLaw");
+    
+    proposedID = GetCharArrayOfString( GetSpeciesNodeName( modifier ) );
+    symtab = ir->GetGlobalSymtab( ir );
+    if( ( sym = symtab->AddRealValueSymbol( symtab, proposedID, value, TRUE ) ) == NULL ) {
+        END_FUNCTION("_CreateSymbolKineticLaw", FAILING );    
+        return NULL;
+    }
+    
+    if( ( kineticLaw = CreateSymbolKineticLaw( sym ) ) == NULL ) {
+        END_FUNCTION("_CreateSymbolKineticLaw", FAILING );    
+        return NULL;
+    }
+    
+    END_FUNCTION("_CreateSymbolKineticLaw", SUCCESS );    
+    return kineticLaw;
+}
+
+
+
+static RET_VAL _DoConstantPropagation( ABSTRACTION_METHOD *method, KINETIC_LAW *kineticLaw, SPECIES *modifier, KINETIC_LAW *symKineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    KINETIC_LAW_VISITOR *visitor = NULL;
+    
+    START_FUNCTION("_DoConstantPropagation");
+    
+    if( IS_FAILED( ( ret = ReplaceSpeciesWithKineticLawInKineticLaw( kineticLaw, modifier, symKineticLaw ) ) ) ) {
+        END_FUNCTION("_DoConstantPropagation", ret );
+        return ret;
+    }
+    END_FUNCTION("_DoConstantPropagation", SUCCESS );
+    return ret;
+}
+
+
