@@ -46,6 +46,7 @@ typedef struct {
     double rate;
     double rateUpdatedTime;
     KINETIC_LAW *waitingTime;
+    double count;
 } REACTION;
 
 RET_VAL InitReactionNode( REACTION *reaction, char *name );
@@ -83,6 +84,9 @@ RET_VAL SetReactionRate(REACTION *reaction, double rate );
 
 double GetReactionRateUpdatedTime(REACTION *reaction );
 RET_VAL SetReactionRateUpdatedTime(REACTION *reaction, double time );
+
+double GetReactionFireCount( REACTION *reaction );
+RET_VAL IncrementReactionFireCount( REACTION *reaction );
 
 END_C_NAMESPACE
 

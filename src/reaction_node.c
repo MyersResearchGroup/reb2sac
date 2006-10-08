@@ -41,6 +41,7 @@ RET_VAL InitReactionNode( REACTION *reaction, char *name ) {
     reaction->Clone = _Clone;
     reaction->GetType = _GetType;
     reaction->ReleaseResource = _ReleaseResource;
+    reaction->count = 0;
     
     END_FUNCTION("InitReactionNode", SUCCESS );
     return ret;    
@@ -276,6 +277,28 @@ double GetReactionRateUpdatedTime(REACTION *reaction ) {
     return reaction->rateUpdatedTime;
 }
 
+
+double GetReactionFireCount( REACTION *reaction ) {
+    START_FUNCTION("GetReactionFireCount");
+    if( reaction == NULL ) {
+        END_FUNCTION("GetReactionFireCount", FAILING );
+        return 0.0;
+    }
+    END_FUNCTION("GetReactionFireCount", SUCCESS );
+    return reaction->count;
+}
+
+
+RET_VAL IncrementReactionFireCount( REACTION *reaction ) {
+    RET_VAL ret = SUCCESS;
+    START_FUNCTION("IncrementReactionFireCount");
+    if( reaction == NULL ) {
+        return ErrorReport( FAILING, "IncrementReactionFireCount", "input reaction node is NULL" );
+    }
+    reaction->count = reaction->count + 1;
+    END_FUNCTION("IncrementReactionFireCount", SUCCESS );
+    return ret;
+}
 
 
 
