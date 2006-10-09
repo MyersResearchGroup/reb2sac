@@ -29,105 +29,83 @@
 BEGIN_C_NAMESPACE
 
 
+#define TYPE_SAD_AST_TERM_LIST ((int)0x0001)
+#define TYPE_SAD_AST_TERM ((int)0x0002)
+#define TYPE_SAD_AST_EXP ((int)0x1000)
+#define TYPE_SAD_AST_BINARY_EXP ((int)0x1010)
+#define TYPE_SAD_AST_UNARY_EXP ((int)0x1020)
+#define TYPE_SAD_AST_FUNC_EXP ((int)0x1030)
+#define TYPE_SAD_AST_BINARY_LOGICAL_EXP ((int)0x1040)
+#define TYPE_SAD_AST_UNARY_LOGICAL_EXP ((int)0x1050)
+#define TYPE_SAD_AST_COMP_EXP ((int)0x1060)   
+#define TYPE_SAD_AST_BINARY_NUM_EXP ((int)0x1070)   
+#define TYPE_SAD_AST_UNARY_NUM_EXP ((int)0x1080)   
+#define TYPE_SAD_AST_SPECIES_CON ((int)0x1090)
+#define TYPE_SAD_AST_SPECIES_CNT ((int)0x10a0)
+#define TYPE_SAD_AST_REACTION_CNT ((int)0x10b0)
+#define TYPE_SAD_AST_CONSTANT ((int)0x10c0)
+#define TYPE_SAD_AST_TIME_VAR ((int)0x10d0)
+
 
 struct _SAD_AST_VISITOR;
 typedef struct _SAD_AST_VISITOR SAD_AST_VISITOR;
 
+
 struct _SAD_AST;
 typedef struct _SAD_AST SAD_AST;
 
-#define TYPE_SAD_AST_TERM_LIST ((int)0x0001)
 struct _SAD_AST_TERM_LIST;
 typedef struct _SAD_AST_TERM_LIST SAD_AST_TERM_LIST;
 
-#define TYPE_SAD_AST_TERM ((int)0x0002)
+
 struct _SAD_AST_TERM;
 typedef struct _SAD_AST_TERM SAD_AST_TERM;
 
-#define TYPE_SAD_AST_EXP ((int)0x1000)
+
 struct _SAD_AST_EXP;
 typedef struct _SAD_AST_EXP SAD_AST_EXP;
 
-#define TYPE_SAD_AST_BINARY_EXP ((int)0x1010)
 struct _SAD_AST_BINARY_EXP;
 typedef struct _SAD_AST_BINARY_EXP SAD_AST_BINARY_EXP;
 
-#define TYPE_SAD_AST_UNARY_EXP ((int)0x1020)
 struct _SAD_AST_UNARY_EXP;
 typedef struct _SAD_AST_UNARY_EXP SAD_AST_UNARY_EXP;
 
-#define TYPE_SAD_AST_FUNC_EXP ((int)0x1030)
 struct _SAD_AST_FUNC_EXP;
 typedef struct _SAD_AST_FUNC_EXP SAD_AST_FUNC_EXP;
 
+struct _SAD_AST_SPECIES;
+typedef struct _SAD_AST_SPECIES SAD_AST_SPECIES;
 
-#define TYPE_SAD_AST_BINARY_LOGICAL_EXP ((int)0x1040)
-struct _SAD_AST_BINARY_LOGICAL_EXP;
-typedef struct _SAD_AST_BINARY_LOGICAL_EXP SAD_AST_BINARY_LOGICAL_EXP;
+struct _SAD_AST_REACTION;
+typedef struct _SAD_AST_REACTION SAD_AST_REACTION;
 
-#define TYPE_SAD_AST_UNARY_LOGICAL_EXP ((int)0x1050)
-struct _SAD_AST_UNARY_LOGICAL_EXP;
-typedef struct _SAD_AST_UNARY_LOGICAL_EXP SAD_AST_UNARY_LOGICAL_EXP;
-
-#define TYPE_SAD_AST_COMP_EXP ((int)0x1060)   
-struct _SAD_AST_COMP_EXP;
-typedef struct _SAD_AST_COMP_EXP SAD_AST_COMP_EXP;
-
-#define TYPE_SAD_AST_BINARY_NUM_EXP ((int)0x1070)   
-struct _SAD_AST_BINARY_NUM_EXP;
-typedef struct _SAD_AST_BINARY_NUM_EXP SAD_AST_BINARY_NUM_EXP;
-
-#define TYPE_SAD_AST_UNARY_NUM_EXP ((int)0x1080)   
-struct _SAD_AST_UNARY_NUM_EXP;
-typedef struct _SAD_AST_UNARY_NUM_EXP SAD_AST_UNARY_NUM_EXP;
-
-#define TYPE_SAD_AST_SPECIES_CON ((int)0x1090)
-struct _SAD_AST_SPECIES_CON;
-typedef struct _SAD_AST_SPECIES_CON SAD_AST_SPECIES_CON;
-
-#define TYPE_SAD_AST_SPECIES_CNT ((int)0x10a0)
-struct _SAD_AST_SPECIES_CNT;
-typedef struct _SAD_AST_SPECIES_CNT SAD_AST_SPECIES_CNT;
-
-#define TYPE_SAD_AST_REACTION_CNT ((int)0x10b0)
-struct _SAD_AST_REACTION_CNT;
-typedef struct _SAD_AST_REACTION_CNT SAD_AST_REACTION_CNT;
-
-#define TYPE_SAD_AST_CONSTANT ((int)0x10c0)
 struct _SAD_AST_CONSTANT;
 typedef struct _SAD_AST_CONSTANT SAD_AST_CONSTANT;
 
-#define TYPE_SAD_AST_TIME_VAR ((int)0x10d0)
 struct _SAD_AST_TIME_VAR;
 typedef struct _SAD_AST_TIME_VAR SAD_AST_TIME_VAR;
 
 
-
-
 struct _SAD_AST {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
 };
 
 
 struct _SAD_AST_TERM_LIST {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     
     LINKED_LIST *termList;
+    double time;
+    RET_VAL (*AddTerm)( SAD_AST_TERM *term );
+    RET_VAL (*SetTime)( SAD_AST_TERM_LIST *termList, double time );
+    double* (*GetTimePointer)( SAD_AST_TERM_LIST *termList );
 };
 
 struct _SAD_AST_TERM {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     
     char *id;
@@ -137,23 +115,17 @@ struct _SAD_AST_TERM {
 
 struct _SAD_AST_EXP {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     
-    double value;
+    double result;
 };
-
 
 struct _SAD_AST_BINARY_EXP {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );        
-
-    double value;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+    
     int type;
     SAD_AST_EXP *left;    
     SAD_AST_EXP *right;    
@@ -162,57 +134,80 @@ struct _SAD_AST_BINARY_EXP {
 
 struct _SAD_AST_UNARY_EXP {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );        
-
-    double value;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+    
     int type;
     SAD_AST_EXP *exp;    
 };
 
-struct _SAD_AST_UNARY_EXP {
-    int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );        
 
-    double value;
-    LINKED_LIST *argExps;
-    double (*func)( LINKED_LIST *argList );
+struct _SAD_AST_FUNC_EXP {
+    int astType;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+    
+    char *name;
+    double (*func)( LINKED_LIST *valuelist );
+    LINKED_LIST *expList;    
 };
 
 
-struct _SAD_AST_BINARY_LOGICAL_EXP {
+struct _SAD_AST_SPECIES {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );        
-
-    double value;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+    
     int type;
-    SAD_AST_EXP *left;    
-    SAD_AST_EXP *right;    
+    SPECIES *species;    
 };
 
 
-struct _SAD_AST_UNARY_LOGICAL_EXP {
+struct _SAD_AST_REACTION {
     int astType;
-    RET_VAL (*AcceptPostOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptPreOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*AcceptInOrder)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
-    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );        
-
-    double value;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+    
     int type;
-    SAD_AST_EXP *exp;    
+    REACTION *reaction;    
 };
 
-struct _SAD_AST_COMP_EXP;
 
+struct _SAD_AST_CONSTANT {
+    int astType;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+};
+
+
+struct _SAD_AST_TIME_VAR {
+    int astType;
+    RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
+    
+    double result;
+    
+    double *time;
+};
+
+SAD_AST_TERM_LIST *GetSadAstTermListInstance( );
+
+SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition );
+SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList );
+SAD_AST_BINARY_LOGICAL_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
+SAD_AST_UNARY_LOGICAL_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *exp );
+SAD_AST_COMP_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
+SAD_AST_BINARY_NUM_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
+SAD_AST_UNARY_NUM_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *exp );
+SAD_AST_SPECIES_CON *CreateSadAstSpeciesCon( SPECIES *species );
+SAD_AST_SPECIES_CNT *CreateSadAstSpeciesCnt( SPECIES *species );
+SAD_AST_REACTION_CNT *CreateSadAstReactionCnt( REACTION *reaction );
+SAD_AST_CONSTANT *CreateSadAstConstant( double value );
+SAD_AST_TIME_VAR *CreateSadAstTimeVar( );
 
 
 END_C_NAMESPACE
