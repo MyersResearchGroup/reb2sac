@@ -20,54 +20,81 @@
 #include "sad_ast.h"
 
 
+static SAD_AST_TERM_LIST _instance = {
+    
+};
 
 
 SAD_AST_TERM_LIST *GetSadAstTermListInstance( ) {
-    static SAD_AST_TERM_LIST instance = {
-    };
+    SAD_AST_TERM_LIST *instance = &_instance;
     
-    if( instance.termList == NULL ) {
+    if( _instance.termList == NULL ) {
     
-        if( ( instance.termList = CreateLinkedList() ) == NULL ) {
+        if( ( _instance.termList = CreateLinkedList() ) == NULL ) {
             return NULL;
         }
     }
 
-    return &instance;
+    return instance;
+}
+
+RET_VAL FreeSadAstTermListInstance( ) {
 }
 
 SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition ) {
+    return NULL;
 }
 
 SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList ) {
+    return NULL;
 }
 
-SAD_AST_BINARY_LOGICAL_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right ) {
+SAD_AST_BINARY_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right ) {
+    return NULL;
 }
 
-SAD_AST_UNARY_LOGICAL_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *exp ) {
+SAD_AST_UNARY_EXP *CreateSadAstUnaryLogicalExp( int type, SAD_AST_EXP *exp ) {
+    return NULL;
 }
 
-SAD_AST_COMP_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right ) {
+SAD_AST_BINARY_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right ) {
+    return NULL;
 }
 
-SAD_AST_BINARY_NUM_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right ) {
+SAD_AST_BINARY_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right ) {
+    return NULL;
 }
 
-SAD_AST_UNARY_NUM_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *exp ) {
+SAD_AST_UNARY_EXP *CreateSadAstUnaryNumExp( int type, SAD_AST_EXP *exp ) {
+    return NULL;
 }
 
-SAD_AST_SPECIES_CON *CreateSadAstSpeciesCon( SPECIES *species ) {
+SAD_AST_SPECIES *CreateSadAstSpeciesCon( SPECIES *species ) {
+    return NULL;
 }
 
-SAD_AST_SPECIES_CNT *CreateSadAstSpeciesCnt( SPECIES *species ) {
+SAD_AST_SPECIES *CreateSadAstSpeciesCnt( SPECIES *species ) {
+    return NULL;
 }
 
-SAD_AST_REACTION_CNT *CreateSadAstReactionCnt( REACTION *reaction ) {
+SAD_AST_REACTION *CreateSadAstReactionCnt( REACTION *reaction ) {
+    return NULL;
 }
 
 SAD_AST_CONSTANT *CreateSadAstConstant( double value ) {
+    return NULL;
 }
 
 SAD_AST_TIME_VAR *CreateSadAstTimeVar( ) {
+    return NULL;
 }
+
+double EvaluateSadAstExp( SAD_AST_EXP *exp ) {
+    return 0.0;
+}
+
+RET_VAL PrettyPrintSadAst( SAD_AST *exp ) {
+
+    return SUCCESS;
+}
+

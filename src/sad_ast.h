@@ -25,6 +25,8 @@
 #include "linked_list.h"
 #include "species_node.h"
 #include "reaction_node.h"
+#include "sad_ast_func_registry.h"
+
 
 BEGIN_C_NAMESPACE
 
@@ -50,9 +52,10 @@ BEGIN_C_NAMESPACE
 struct _SAD_AST_VISITOR;
 typedef struct _SAD_AST_VISITOR SAD_AST_VISITOR;
 
-
 struct _SAD_AST;
 typedef struct _SAD_AST SAD_AST;
+
+
 
 struct _SAD_AST_TERM_LIST;
 typedef struct _SAD_AST_TERM_LIST SAD_AST_TERM_LIST;
@@ -85,6 +88,22 @@ typedef struct _SAD_AST_CONSTANT SAD_AST_CONSTANT;
 
 struct _SAD_AST_TIME_VAR;
 typedef struct _SAD_AST_TIME_VAR SAD_AST_TIME_VAR;
+
+
+struct _SAD_AST_VISITOR {
+    CADDR_T _internal1;
+    CADDR_T _internal2;
+    CADDR_T _internal3;
+    RET_VAL (*VisitTermList)( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast );
+    RET_VAL (*VisitTerm)( SAD_AST_VISITOR *visitor, SAD_AST_TERM *ast );
+    RET_VAL (*VisitBinaryExp)( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast );
+    RET_VAL (*VisitUnaryExp)( SAD_AST_VISITOR *visitor, SAD_AST_UNARY_EXP *ast );
+    RET_VAL (*VisitFuncExp)( SAD_AST_VISITOR *visitor, SAD_AST_FUNC_EXP *ast );
+    RET_VAL (*VisitSpecies)( SAD_AST_VISITOR *visitor, SAD_AST_SPECIES *ast );
+    RET_VAL (*VisitReaction)( SAD_AST_VISITOR *visitor, SAD_AST_REACTION *ast );
+    RET_VAL (*VisitConstant)( SAD_AST_VISITOR *visitor, SAD_AST_CONSTANT *ast );
+    RET_VAL (*VisitTimeVar)( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast );
+};
 
 
 struct _SAD_AST {
@@ -149,9 +168,9 @@ struct _SAD_AST_FUNC_EXP {
     
     double result;
     
-    char *name;
-    double (*func)( LINKED_LIST *valuelist );
-    LINKED_LIST *expList;    
+    double **values;
+    SAD_AST_FUNC_REGISTRY_ENTRY *entry;    
+    SAD_AST_EXP **argExps;    
 };
 
 
@@ -195,22 +214,28 @@ struct _SAD_AST_TIME_VAR {
 };
 
 SAD_AST_TERM_LIST *GetSadAstTermListInstance( );
+RET_VAL FreeSadAstTermListInstance( );
 
 SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition );
 SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList );
-SAD_AST_BINARY_LOGICAL_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
-SAD_AST_UNARY_LOGICAL_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *exp );
-SAD_AST_COMP_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
-SAD_AST_BINARY_NUM_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
-SAD_AST_UNARY_NUM_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *exp );
-SAD_AST_SPECIES_CON *CreateSadAstSpeciesCon( SPECIES *species );
-SAD_AST_SPECIES_CNT *CreateSadAstSpeciesCnt( SPECIES *species );
-SAD_AST_REACTION_CNT *CreateSadAstReactionCnt( REACTION *reaction );
+SAD_AST_BINARY_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
+SAD_AST_UNARY_EXP *CreateSadAstUnaryLogicalExp( int type, SAD_AST_EXP *exp );
+SAD_AST_BINARY_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
+SAD_AST_BINARY_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
+SAD_AST_UNARY_EXP *CreateSadAstUnaryNumExp( int type, SAD_AST_EXP *exp );
+SAD_AST_SPECIES *CreateSadAstSpeciesCon( SPECIES *species );
+SAD_AST_SPECIES *CreateSadAstSpeciesCnt( SPECIES *species );
+SAD_AST_REACTION *CreateSadAstReactionCnt( REACTION *reaction );
 SAD_AST_CONSTANT *CreateSadAstConstant( double value );
 SAD_AST_TIME_VAR *CreateSadAstTimeVar( );
 
+
+double EvaluateSadAstExp( SAD_AST_EXP *exp );
+RET_VAL PrettyPrintSadAst( SAD_AST *exp );
 
 END_C_NAMESPACE
 
 
 #endif
+        
+        
