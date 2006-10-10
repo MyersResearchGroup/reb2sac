@@ -104,7 +104,7 @@
 
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 4 "analysis_def_parser.y"
+#line 7 "analysis_def_parser.y"
 typedef union YYSTYPE {
     char *string;	
     double value;

@@ -1,4 +1,7 @@
 %{
+#include "sad_ast.h"
+
+static SAD_AST_ENV *_astEnv;
 %}
 
 %union	{
@@ -36,7 +39,9 @@
 
 %%
 
-program : 
+program : { 
+    _astEnv = GetSadAstEnv();
+}
       opt_term_list
 ;            
 
@@ -90,11 +95,17 @@ num_exp :
     | SAD_LOG SAD_LPAREN num_exp SAD_RPAREN            
     | SAD_CONSTANT 
     | SAD_TIME_VAR 
-    | SAD_SPECIES
-    | SAD_REACTION    
     | SAD_CON_OP SAD_SPECIES
     | SAD_NUM_OP SAD_SPECIES
-    | SAD_NUM_OP SAD_REACTION
+    | SAD_NUM_OP SAD_REACTION { 
+        SAD_AST_REACTION *ast = NULL;
+        REACTION *reaction = NULL;
+        
+        ast = CreateSadAstReactionCnt( reaction );
+        if( ast == NULL ) {
+            YYERROR;
+        } 
+    }
 ;        
         
     

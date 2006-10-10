@@ -49,6 +49,45 @@ BEGIN_C_NAMESPACE
 #define TYPE_SAD_AST_TIME_VAR ((int)0x10d0)
 
 
+#define EXP_TYPE_SAD_AST_MASK ((int)0x1000)    
+
+#define COMP_EXP_TYPE_SAD_AST_MASK ((int)0x0100)    
+#define COMP_EXP_TYPE_SAD_AST_EQ ((int)0x1101)    
+#define COMP_EXP_TYPE_SAD_AST_LE ((int)0x1102)    
+#define COMP_EXP_TYPE_SAD_AST_LT ((int)0x1103)    
+#define COMP_EXP_TYPE_SAD_AST_GE ((int)0x1104)    
+#define COMP_EXP_TYPE_SAD_AST_GT ((int)0x1105)    
+
+#define NUM_EXP_TYPE_SAD_AST_MASK ((int)0x0200)    
+#define NUM_EXP_TYPE_SAD_AST_PLUS ((int)0x1201)    
+#define NUM_EXP_TYPE_SAD_AST_MINUS ((int)0x1202)    
+#define NUM_EXP_TYPE_SAD_AST_TIME ((int)0x1203)    
+#define NUM_EXP_TYPE_SAD_AST_DIV ((int)0x1204)    
+#define NUM_EXP_TYPE_SAD_AST_UMINUS ((int)0x1205)    
+
+#define LOGICAL_EXP_TYPE_SAD_AST_MASK ((int)0x0400)    
+#define LOGICAL_EXP_TYPE_SAD_AST_AND ((int)0x1401)    
+#define LOGICAL_EXP_TYPE_SAD_AST_OR ((int)0x1402)    
+#define LOGICAL_EXP_TYPE_SAD_AST_NOT ((int)0x1403)    
+
+/*
+#define SPECIES_EXP_TYPE_SAD_AST_MASK ((int)0x0800)    
+#define SPECIES_EXP_TYPE_SAD_AST_CNT ((int)0x1801)    
+#define SPECIES_EXP_TYPE_SAD_AST_CON ((int)0x1802)    
+
+#define REACTION_EXP_TYPE_SAD_AST_MASK ((int)0x0810)    
+#define REACTION_EXP_TYPE_SAD_AST_CNT ((int)0x1811)    
+*/
+
+#define IS_EXP_TYPE_SAD_AST(t) ((t & EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
+#define IS_COMP_EXP_TYPE_SAD_AST(t) ((t & COMP_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
+#define IS_NUM_EXP_TYPE_SAD_AST(t) ((t & NUM_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
+#define IS_LOGICAL_EXP_TYPE_SAD_AST(t) ((t & LOGICAL_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
+/*
+#define IS_SPECIES_EXP_TYPE_SAD_AST(t) ((t & SPECIES_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
+#define IS_REACTION_EXP_TYPE_SAD_AST(t) ((t & REACTION_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
+*/
+
 struct _SAD_AST_VISITOR;
 typedef struct _SAD_AST_VISITOR SAD_AST_VISITOR;
 
@@ -90,20 +129,14 @@ struct _SAD_AST_TIME_VAR;
 typedef struct _SAD_AST_TIME_VAR SAD_AST_TIME_VAR;
 
 
-struct _SAD_AST_VISITOR {
-    CADDR_T _internal1;
-    CADDR_T _internal2;
-    CADDR_T _internal3;
-    RET_VAL (*VisitTermList)( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast );
-    RET_VAL (*VisitTerm)( SAD_AST_VISITOR *visitor, SAD_AST_TERM *ast );
-    RET_VAL (*VisitBinaryExp)( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast );
-    RET_VAL (*VisitUnaryExp)( SAD_AST_VISITOR *visitor, SAD_AST_UNARY_EXP *ast );
-    RET_VAL (*VisitFuncExp)( SAD_AST_VISITOR *visitor, SAD_AST_FUNC_EXP *ast );
-    RET_VAL (*VisitSpecies)( SAD_AST_VISITOR *visitor, SAD_AST_SPECIES *ast );
-    RET_VAL (*VisitReaction)( SAD_AST_VISITOR *visitor, SAD_AST_REACTION *ast );
-    RET_VAL (*VisitConstant)( SAD_AST_VISITOR *visitor, SAD_AST_CONSTANT *ast );
-    RET_VAL (*VisitTimeVar)( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast );
-};
+typedef struct {
+    double time;
+    SPECIES **speciesArray;
+    int speciesSize;
+    REACTION **reactionArray; 
+    int reactionSize;
+    SAD_AST_TERM_LIST *termList;
+} SAD_AST_ENV;
 
 
 struct _SAD_AST {
@@ -117,11 +150,6 @@ struct _SAD_AST_TERM_LIST {
     RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     
     LINKED_LIST *termList;
-    double time;
-    SPECIES **speciesArray;
-    int speciesSize;
-    REACTION **reactionArray; 
-    int reactionSize;
 };
 
 struct _SAD_AST_TERM {
@@ -181,7 +209,6 @@ struct _SAD_AST_SPECIES {
     
     double result;
     
-    int type;
     SPECIES *species;    
 };
 
@@ -192,7 +219,6 @@ struct _SAD_AST_REACTION {
     
     double result;
     
-    int type;
     REACTION *reaction;    
 };
 
@@ -211,19 +237,20 @@ struct _SAD_AST_TIME_VAR {
     
     double result;
     
-    double *time;
+    double *pTime;
 };
 
-SAD_AST_TERM_LIST *GetSadAstTermListInstance( );
-RET_VAL FreeSadAstTermListInstance( );
+SAD_AST_ENV *GetSadAstEnv( );
+RET_VAL FreeSadAstEnv( );
 
+SAD_AST_TERM_LIST *CreateSadAstTermList( );
 SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition );
 SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList );
 SAD_AST_BINARY_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
-SAD_AST_UNARY_EXP *CreateSadAstUnaryLogicalExp( int type, SAD_AST_EXP *exp );
 SAD_AST_BINARY_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
 SAD_AST_BINARY_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
 SAD_AST_UNARY_EXP *CreateSadAstUnaryNumExp( int type, SAD_AST_EXP *exp );
+SAD_AST_UNARY_EXP *CreateSadAstUnaryLogicalExp( int type, SAD_AST_EXP *exp );
 SAD_AST_SPECIES *CreateSadAstSpeciesCon( SPECIES *species );
 SAD_AST_SPECIES *CreateSadAstSpeciesCnt( SPECIES *species );
 SAD_AST_REACTION *CreateSadAstReactionCnt( REACTION *reaction );
@@ -231,8 +258,25 @@ SAD_AST_CONSTANT *CreateSadAstConstant( double value );
 SAD_AST_TIME_VAR *CreateSadAstTimeVar( );
 
 
-double EvaluateSadAstExp( SAD_AST_EXP *exp );
-RET_VAL PrettyPrintSadAst( SAD_AST *exp );
+struct _SAD_AST_VISITOR {
+    CADDR_T _internal1;
+    CADDR_T _internal2;
+    CADDR_T _internal3;
+    RET_VAL (*VisitTermList)( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast );
+    RET_VAL (*VisitTerm)( SAD_AST_VISITOR *visitor, SAD_AST_TERM *ast );
+    RET_VAL (*VisitCompExp)( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast );
+    RET_VAL (*VisitBinaryNumExp)( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast );
+    RET_VAL (*VisitBinaryLogicalExp)( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast );
+    RET_VAL (*VisitUnaryNumExp)( SAD_AST_VISITOR *visitor, SAD_AST_UNARY_EXP *ast );
+    RET_VAL (*VisitUnaryLogicalExp)( SAD_AST_VISITOR *visitor, SAD_AST_UNARY_EXP *ast );
+    RET_VAL (*VisitFuncExp)( SAD_AST_VISITOR *visitor, SAD_AST_FUNC_EXP *ast );
+    RET_VAL (*VisitSpeciesCon)( SAD_AST_VISITOR *visitor, SAD_AST_SPECIES *ast );
+    RET_VAL (*VisitSpeciesCnt)( SAD_AST_VISITOR *visitor, SAD_AST_SPECIES *ast );
+    RET_VAL (*VisitReactionCnt)( SAD_AST_VISITOR *visitor, SAD_AST_REACTION *ast );
+    RET_VAL (*VisitConstant)( SAD_AST_VISITOR *visitor, SAD_AST_CONSTANT *ast );
+    RET_VAL (*VisitTimeVar)( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast );
+};
+
 
 END_C_NAMESPACE
 
