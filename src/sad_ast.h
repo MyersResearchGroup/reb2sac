@@ -118,9 +118,10 @@ struct _SAD_AST_TERM_LIST {
     
     LINKED_LIST *termList;
     double time;
-    RET_VAL (*AddTerm)( SAD_AST_TERM *term );
-    RET_VAL (*SetTime)( SAD_AST_TERM_LIST *termList, double time );
-    double* (*GetTimePointer)( SAD_AST_TERM_LIST *termList );
+    SPECIES **speciesArray;
+    int speciesSize;
+    REACTION **reactionArray; 
+    int reactionSize;
 };
 
 struct _SAD_AST_TERM {
