@@ -181,7 +181,8 @@ am_reb2sac_OBJECTS =  \
 	xhtml_back_end_processor.$(OBJEXT) \
 	analysis_def_parser.tab.$(OBJEXT) lex.yy.$(OBJEXT) \
 	sad_ast.$(OBJEXT) sad_ast_func_registry.$(OBJEXT) \
-	sad_ast_pretty_printer.$(OBJEXT)
+	sad_ast_pretty_printer.$(OBJEXT) \
+	sad_ast_exp_evaluator.$(OBJEXT)
 reb2sac_OBJECTS = $(am_reb2sac_OBJECTS)
 reb2sac_DEPENDENCIES =
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -303,6 +304,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/rnap_operator_binding_abstraction_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sac_phage_lambda_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sad_ast.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/sad_ast_exp_evaluator.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sad_ast_func_registry.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sad_ast_pretty_printer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sbml_back_end_processor.Po \
@@ -469,7 +471,8 @@ noinst_HEADERS = \
 				species_node.h ssa_with_user_update.h strconv.h	symtab.h tsd_simulation_printer.h \
 				ts_species_level_updater.h	type_1_pili1_simulation_run_termination_decider.h	type_1_pili2_simulation_run_termination_decider.h	type1pili_gillespie_ci.h type_1_pili_markov_analysis_result_reporter.h	type.h \
 				uniformly_distributed_random_generator.h unit_manager.h util.h	vector.h xhtml_back_end_processor.h \
-				analysis_def_parser.tab.h sad_ast.h sad_ast_func_registry.h sad_ast_pretty_printer.h
+				analysis_def_parser.tab.h sad_ast.h sad_ast_func_registry.h sad_ast_pretty_printer.h \
+	sad_ast_exp_evaluator.h
 
 reb2sac_SOURCES = \
 	absolute_activation_inhibition_generation_method.c	absolute_inhibition_generation_method.c	abs_phage_lambda2_simulation_run_termination_decider.c	abs_phage_lambda_simulation_run_termination_decider.c	abstraction_engine.c abstraction_method_manager.c \
@@ -502,7 +505,8 @@ reb2sac_SOURCES = \
 				stoichiometry_amplifier.c	stop_flag_generation_method.c strconv.c symtab.c	tsd_simulation_printer.c \
 				ts_species_level_updater.c	type_1_pili1_simulation_run_termination_decider.c	type_1_pili2_simulation_run_termination_decider.c	type1pili_gillespie_ci.c \
 				type_1_pili_markov_analysis_result_reporter.c	uniformly_distributed_random_generator.c unit_manager.c util.c vector.c	xhtml_back_end_processor.c \
-				analysis_def_parser.tab.c lex.yy.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c
+				analysis_def_parser.tab.c lex.yy.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c \
+	sad_ast_exp_evaluator.c
 
 reb2sac_LDADD = -lxerces-c -lgslcblas -lgsl -lsbml
 all: all-am
@@ -693,6 +697,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rnap_operator_binding_abstraction_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sac_phage_lambda_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sad_ast.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sad_ast_exp_evaluator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sad_ast_func_registry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sad_ast_pretty_printer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sbml_back_end_processor.Po@am__quote@

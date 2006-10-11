@@ -17,18 +17,18 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#if !defined(HAVE_SAD_AST_PRETTY_PRINTER)
-#define HAVE_SAD_AST_PRETTY_PRINTER
+#if !defined(HAVE_SAD_AST_EXP_EVALUATOR)
+#define HAVE_SAD_AST_EXP_EVALUATOR
 
 #include "sad_ast.h"
 
 BEGIN_C_NAMESPACE
 
-RET_VAL PrettyPrintSadAst( FILE *file, SAD_AST *ast );
+double EvaluateSadAstExp( SAD_AST_EXP *ast );
 
 
 END_C_NAMESPACE
 
 
 #endif
-        
+ 

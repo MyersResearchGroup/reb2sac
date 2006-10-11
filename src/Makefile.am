@@ -31,7 +31,8 @@ noinst_HEADERS = \
 				species_node.h ssa_with_user_update.h strconv.h	symtab.h tsd_simulation_printer.h \
 				ts_species_level_updater.h	type_1_pili1_simulation_run_termination_decider.h	type_1_pili2_simulation_run_termination_decider.h	type1pili_gillespie_ci.h type_1_pili_markov_analysis_result_reporter.h	type.h \
 				uniformly_distributed_random_generator.h unit_manager.h util.h	vector.h xhtml_back_end_processor.h \
-				analysis_def_parser.tab.h sad_ast.h sad_ast_func_registry.h sad_ast_pretty_printer.h
+				analysis_def_parser.tab.h sad_ast.h sad_ast_func_registry.h sad_ast_pretty_printer.h \
+	sad_ast_exp_evaluator.h
 reb2sac_SOURCES = \
 	absolute_activation_inhibition_generation_method.c	absolute_inhibition_generation_method.c	abs_phage_lambda2_simulation_run_termination_decider.c	abs_phage_lambda_simulation_run_termination_decider.c	abstraction_engine.c abstraction_method_manager.c \
 				abstraction_reporter.c	back_end_processor.c birth_death_generation_method2.c	birth_death_generation_method3.c \
@@ -63,7 +64,8 @@ reb2sac_SOURCES = \
 				stoichiometry_amplifier.c	stop_flag_generation_method.c strconv.c symtab.c	tsd_simulation_printer.c \
 				ts_species_level_updater.c	type_1_pili1_simulation_run_termination_decider.c	type_1_pili2_simulation_run_termination_decider.c	type1pili_gillespie_ci.c \
 				type_1_pili_markov_analysis_result_reporter.c	uniformly_distributed_random_generator.c unit_manager.c util.c vector.c	xhtml_back_end_processor.c \
-				analysis_def_parser.tab.c lex.yy.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c
+				analysis_def_parser.tab.c lex.yy.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c \
+	sad_ast_exp_evaluator.c
 reb2sac_LDADD = -lxerces-c -lgslcblas -lgsl -lsbml
 
 #manually inserted

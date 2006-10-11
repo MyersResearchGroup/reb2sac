@@ -17,7 +17,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#include "sad_ast_pretty_printer.h"
+#include "sad_ast_exp_evaluator.h"
 
 static RET_VAL _VisitTermList( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast );
 static RET_VAL _VisitTerm( SAD_AST_VISITOR *visitor, SAD_AST_TERM *ast );
@@ -35,11 +35,10 @@ static RET_VAL _VisitTimeVar( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast );
 
 
 
-RET_VAL PrettyPrintSadAst( FILE *file, SAD_AST *ast ) {
+double EvaluateSadAstExp( SAD_AST_EXP *ast ) {
     static SAD_AST_VISITOR visitor;
     
     if( visitor.VisitTermList == NULL ) {
-        visitor._internal1 = (CADDR_T)file;
         visitor.VisitTermList = _VisitTermList;
         visitor.VisitTerm = _VisitTerm;
         visitor.VisitCompExp = _VisitCompExp;
@@ -56,136 +55,105 @@ RET_VAL PrettyPrintSadAst( FILE *file, SAD_AST *ast ) {
         visitor.VisitTimeVar = _VisitTimeVar;
     }
     
-    ast->Accept( ast, &visitor );
+    if( IS_FAILED( ( ast->Accept( (SAD_AST*)ast, &visitor ) ) ) ) {
+        return 0.0 / 0.0;
+    }
     
-    return SUCCESS;
+    return ast->result;
 }
 
 
 
 
 static RET_VAL _VisitTermList( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast ) {
-    SAD_AST_TERM *term = NULL;
-    LINKED_LIST *list = ast->terms;
-    
-    ResetCurrentElement( list );
-    while( ( term = (SAD_AST_TERM*)GetCurrentFromLinkedList( list ) ) != NULL ) {
-        term->Accept( (SAD_AST*)term, visitor );
-    }
-        
-    return SUCCESS;    
-    
+    return FAILING;        
 }
 
 
 static RET_VAL _VisitTerm( SAD_AST_VISITOR *visitor, SAD_AST_TERM *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    SAD_AST_EXP *condition = ast->condition;
-    
-    fprintf( file, NEW_LINE );
-    fprintf( file, "term %s {" NEW_LINE, ast->id );
-    fprintf( file, "\tdesc \"%s\";" NEW_LINE, ast->desc );
-    fprintf( file, "\tcond ");
-    condition->Accept( (SAD_AST*)condition, visitor );
-    fprintf( file, ";" NEW_LINE );
-    fprintf( file, "}" NEW_LINE );
-    fprintf( file, NEW_LINE );
-    
-    return SUCCESS;
+    return FAILING;        
 }
 
 
 static RET_VAL _VisitCompExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    char *op = NULL;
     SAD_AST_EXP *left = ast->left;
     SAD_AST_EXP *right = ast->right;
     
     left->Accept( (SAD_AST*)left, visitor );
+    right->Accept( (SAD_AST*)right, visitor );
     
     switch( ast->type ) {
         case COMP_EXP_TYPE_SAD_AST_EQ:
-            op = "=";
-        break;    
+            ast->result = ( IS_REAL_EQUAL( left->result, right->result ) ? 1.0 : 0.0 );
+            break;    
         case COMP_EXP_TYPE_SAD_AST_LE:    
-            op = "<=";
-        break;    
+            ast->result = ( ( left->result <= right->result ) ? 1.0 : 0.0 );
+            break;    
         case COMP_EXP_TYPE_SAD_AST_LT:    
-            op = "<";
-        break;    
+            ast->result = ( ( left->result < right->result ) ? 1.0 : 0.0 );
+            break;    
         case COMP_EXP_TYPE_SAD_AST_GE:    
-            op = ">=";
-        break;    
+            ast->result = ( ( left->result >= right->result ) ? 1.0 : 0.0 );
+            break;    
         case COMP_EXP_TYPE_SAD_AST_GT:        
-            op = ">";
-        break;
+            ast->result = ( ( left->result > right->result ) ? 1.0 : 0.0 );
+            break;
         default:        
-            op = "?";
-        break;
+            ast->result = 0.0 / 0.0;
+            break;
     }
-    fprintf( file, " %s ", op );
-    
-    right->Accept( (SAD_AST*)right, visitor );
     
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitBinaryNumExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    char *op = NULL;
     SAD_AST_EXP *left = ast->left;
     SAD_AST_EXP *right = ast->right;
     
     left->Accept( (SAD_AST*)left, visitor );
+    right->Accept( (SAD_AST*)right, visitor );
     
     switch( ast->type ) {
         case NUM_EXP_TYPE_SAD_AST_PLUS:
-            op = "+";
+            ast->result = left->result + right->result;
             break;    
         case NUM_EXP_TYPE_SAD_AST_MINUS:    
-            op = "-";
+            ast->result = left->result - right->result;
             break;    
         case NUM_EXP_TYPE_SAD_AST_TIMES:    
-            op = "*";
+            ast->result = left->result * right->result;
             break;    
         case NUM_EXP_TYPE_SAD_AST_DIV:    
-            op = "/";
+            ast->result = left->result / right->result;
             break;    
         default:        
-            op = "?";
+            ast->result = 0.0 / 0.0;
             break;
     }
-    fprintf( file, " %s ", op );
-    
-    right->Accept( (SAD_AST*)right, visitor );
-    
+        
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitBinaryLogicalExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    char *op = NULL;
     SAD_AST_EXP *left = ast->left;
     SAD_AST_EXP *right = ast->right;
     
     left->Accept( (SAD_AST*)left, visitor );
+    right->Accept( (SAD_AST*)right, visitor );
     
     switch( ast->type ) {
         case LOGICAL_EXP_TYPE_SAD_AST_AND:
-            op = "&&";
+            ast->result = ( (left->result * right->result > 0.5) ? 1.0 : 0.0 );
             break;    
         case LOGICAL_EXP_TYPE_SAD_AST_OR:    
-            op = "||";
+            ast->result = ( (left->result + right->result > 0.5) ? 1.0 : 0.0 );
             break;    
         default:        
-            op = "?";
+            ast->result = 0.0 / 0.0;
             break;
     }
-    fprintf( file, " %s ", op );
-    
-    right->Accept( (SAD_AST*)right, visitor );
     
     return SUCCESS;
 }
@@ -196,108 +164,91 @@ static RET_VAL _VisitUnaryNumExp( SAD_AST_VISITOR *visitor, SAD_AST_UNARY_EXP *a
     char *op = NULL;
     SAD_AST_EXP *exp = ast->exp;
     
+    exp->Accept( (SAD_AST*)exp, visitor );    
     switch( ast->type ) {
         case NUM_EXP_TYPE_SAD_AST_UMINUS:
-            op = "-";
+            ast->result = -(exp->result);
             break;    
         default:        
-            op = "?";
+            ast->result = 0.0 / 0.0;
             break;
     }
-    fprintf( file, " %s( ", op );
-    
-    exp->Accept( (SAD_AST*)exp, visitor );
-    fprintf( file, " )" );
     
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitUnaryLogicalExp( SAD_AST_VISITOR *visitor, SAD_AST_UNARY_EXP *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    char *op = NULL;
     SAD_AST_EXP *exp = ast->exp;
     
+    exp->Accept( (SAD_AST*)exp, visitor );
     switch( ast->type ) {
         case LOGICAL_EXP_TYPE_SAD_AST_NOT:
-            op = "!";
+            ast->result = ( (exp->result > 0.5) ? 0.0 : 1.0 );
             break;    
         default:        
-            op = "?";
+            ast->result = 0.0 / 0.0;
             break;
     }
-    fprintf( file, " %s( ", op );
-    
-    exp->Accept( (SAD_AST*)exp, visitor );
-    fprintf( file, " )" );
     
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitFuncExp( SAD_AST_VISITOR *visitor, SAD_AST_FUNC_EXP *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
     int i = 0;
     SAD_AST_FUNC_REGISTRY_ENTRY *entry = ast->entry;
+    double **pValues = ast->values;
     int argc = ast->entry->argc;    
     SAD_AST_EXP *exp = NULL;
     SAD_AST_EXP **exps = ast->argExps;
     
-    fprintf( file, " %s( ", entry->funcID );    
     for( i = 0; i < argc; i++ ) {
         exp = exps[i];
         exp->Accept( (SAD_AST*)exp, visitor );
     }
-    fprintf( file, " )" );
+    ast->result = entry->func( pValues );
     
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitSpeciesCon( SAD_AST_VISITOR *visitor, SAD_AST_SPECIES *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
     
-    fprintf( file, "\%$%s", GetCharArrayOfString( GetSpeciesNodeName( ast->species ) ) );    
+    ast->result = GetConcentrationInSpeciesNode( ast->species );    
 
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitSpeciesCnt( SAD_AST_VISITOR *visitor, SAD_AST_SPECIES *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
     
-    fprintf( file, "#$%s", GetCharArrayOfString( GetSpeciesNodeName( ast->species ) ) );    
+    ast->result = GetAmountInSpeciesNode( ast->species );    
 
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitReactionCnt( SAD_AST_VISITOR *visitor, SAD_AST_REACTION *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
     
-    fprintf( file, "#$%s", GetCharArrayOfString( GetReactionNodeName( ast->reaction ) ) );    
+    ast->result = GetReactionFireCount( ast->reaction );    
 
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitConstant( SAD_AST_VISITOR *visitor, SAD_AST_CONSTANT *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    
-    fprintf( file, "%g", ast->result );    
 
     return SUCCESS;
 }
 
 
 static RET_VAL _VisitTimeVar( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast ) {
-    FILE *file = (FILE*)(visitor->_internal1);
-    
-    fprintf( file, "t" );    
 
+    ast->result = *(ast->pTime);
+    
     return SUCCESS;
 }
-
 
 
 
