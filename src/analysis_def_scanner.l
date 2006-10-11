@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include "sad_ast.h"
 #include "analysis_def_parser.tab.h"	
 static int lineNum = 1;
 
@@ -353,7 +354,7 @@ int yywrap() {
 }
         
 void yyerror( char *str ) {
-    fprintf( stderr, "error at line %i: %s in %s\n", lineNum, str, yytext );
+    fprintf( stderr, "error at line %i: %s\n", lineNum, yytext );
 }        
         
 #if LEX_MAIN_TEST                

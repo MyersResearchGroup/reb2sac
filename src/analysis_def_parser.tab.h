@@ -104,13 +104,14 @@
 
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 7 "analysis_def_parser.y"
+#line 48 "analysis_def_parser.y"
 typedef union YYSTYPE {
     char *string;	
     double value;
+    SAD_AST *ast;
 } YYSTYPE;
 /* Line 1275 of yacc.c.  */
-#line 114 "analysis_def_parser.tab.h"
+#line 115 "analysis_def_parser.tab.h"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1

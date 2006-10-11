@@ -444,6 +444,7 @@ char *yytext;
 #line 2 "analysis_def_scanner.l"
 #include <stdio.h>
 #include <stdlib.h>
+#include "sad_ast.h"
 #include "analysis_def_parser.tab.h"	
 static int lineNum = 1;
 
@@ -451,7 +452,7 @@ static int lineNum = 1;
 YYSTYPE yylval;
 #endif
 
-#line 455 "lex.yy.c"
+#line 456 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -602,13 +603,13 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 65 "analysis_def_scanner.l"
+#line 66 "analysis_def_scanner.l"
 
 
         
         
 
-#line 612 "lex.yy.c"
+#line 613 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -693,7 +694,7 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 70 "analysis_def_scanner.l"
+#line 71 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -703,7 +704,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 77 "analysis_def_scanner.l"
+#line 78 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -713,7 +714,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 84 "analysis_def_scanner.l"
+#line 85 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -723,7 +724,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 91 "analysis_def_scanner.l"
+#line 92 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -733,7 +734,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 98 "analysis_def_scanner.l"
+#line 99 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -743,7 +744,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 105 "analysis_def_scanner.l"
+#line 106 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -753,7 +754,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 112 "analysis_def_scanner.l"
+#line 113 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -763,7 +764,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 119 "analysis_def_scanner.l"
+#line 120 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -773,7 +774,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 126 "analysis_def_scanner.l"
+#line 127 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -783,7 +784,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 134 "analysis_def_scanner.l"
+#line 135 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -793,7 +794,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 141 "analysis_def_scanner.l"
+#line 142 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -803,7 +804,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 148 "analysis_def_scanner.l"
+#line 149 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -813,7 +814,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 155 "analysis_def_scanner.l"
+#line 156 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -823,7 +824,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 162 "analysis_def_scanner.l"
+#line 163 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -833,7 +834,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 169 "analysis_def_scanner.l"
+#line 170 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -843,7 +844,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 176 "analysis_def_scanner.l"
+#line 177 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -853,7 +854,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 183 "analysis_def_scanner.l"
+#line 184 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -863,7 +864,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 190 "analysis_def_scanner.l"
+#line 191 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -873,7 +874,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 197 "analysis_def_scanner.l"
+#line 198 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -883,7 +884,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 204 "analysis_def_scanner.l"
+#line 205 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -893,7 +894,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 211 "analysis_def_scanner.l"
+#line 212 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("time var at line %i: %s\n", lineNum, yytext );            
@@ -903,7 +904,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 218 "analysis_def_scanner.l"
+#line 219 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("log at line %i: %s\n", lineNum, yytext );            
@@ -913,7 +914,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 225 "analysis_def_scanner.l"
+#line 226 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("exp at line %i: %s\n", lineNum, yytext );            
@@ -923,7 +924,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 232 "analysis_def_scanner.l"
+#line 233 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("pow at line %i: %s\n", lineNum, yytext );            
@@ -933,7 +934,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 239 "analysis_def_scanner.l"
+#line 240 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("term at line %i: %s\n", lineNum, yytext );            
@@ -943,7 +944,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 246 "analysis_def_scanner.l"
+#line 247 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("desc at line %i: %s\n", lineNum, yytext );            
@@ -953,7 +954,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 253 "analysis_def_scanner.l"
+#line 254 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("cond at line %i: %s\n", lineNum, yytext );            
@@ -963,7 +964,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 261 "analysis_def_scanner.l"
+#line 262 "analysis_def_scanner.l"
 {
     yylval.string = yytext + 1; 
 #if LEX_DEBUG
@@ -974,7 +975,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 269 "analysis_def_scanner.l"
+#line 270 "analysis_def_scanner.l"
 {
     yylval.string = yytext + 1; 
 #if LEX_DEBUG
@@ -985,7 +986,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 277 "analysis_def_scanner.l"
+#line 278 "analysis_def_scanner.l"
 {
     yylval.string = yytext + 1; 
 #if LEX_DEBUG
@@ -996,7 +997,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 285 "analysis_def_scanner.l"
+#line 286 "analysis_def_scanner.l"
 {
     yylval.value = strtod( yytext, NULL ); 
 #if LEX_DEBUG
@@ -1006,16 +1007,16 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 32:
-#line 295 "analysis_def_scanner.l"
-case 33:
 #line 296 "analysis_def_scanner.l"
-case 34:
+case 33:
 #line 297 "analysis_def_scanner.l"
-case 35:
+case 34:
 #line 298 "analysis_def_scanner.l"
+case 35:
+#line 299 "analysis_def_scanner.l"
 case 36:
 YY_RULE_SETUP
-#line 298 "analysis_def_scanner.l"
+#line 299 "analysis_def_scanner.l"
 {
     yylval.value = strtod( yytext, NULL ); 
 #if LEX_DEBUG
@@ -1026,7 +1027,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 306 "analysis_def_scanner.l"
+#line 307 "analysis_def_scanner.l"
 {
     yytext[yyleng - 1] = '\0'; 
     yylval.string = yytext + 1; 
@@ -1041,7 +1042,7 @@ case 38:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 315 "analysis_def_scanner.l"
+#line 316 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("error string at line %i: %s\n", lineNum, yytext );            
@@ -1054,7 +1055,7 @@ case 39:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 322 "analysis_def_scanner.l"
+#line 323 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("error string at line %i: %s\n", lineNum, yytext );            
@@ -1064,7 +1065,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 329 "analysis_def_scanner.l"
+#line 330 "analysis_def_scanner.l"
 ;
 	YY_BREAK
 case 41:
@@ -1072,7 +1073,7 @@ case 41:
 yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 331 "analysis_def_scanner.l"
+#line 332 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
     printf("COMMENT at line %i: %s\n", lineNum, yytext );            
@@ -1081,14 +1082,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 337 "analysis_def_scanner.l"
+#line 338 "analysis_def_scanner.l"
 {
     lineNum++;
 }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 341 "analysis_def_scanner.l"
+#line 342 "analysis_def_scanner.l"
 {
 #if LEX_DEBUG
         printf("error at line %i: %s\n", lineNum, yytext );            
@@ -1098,10 +1099,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 349 "analysis_def_scanner.l"
+#line 350 "analysis_def_scanner.l"
 ECHO;
 	YY_BREAK
-#line 1105 "lex.yy.c"
+#line 1106 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1983,7 +1984,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 349 "analysis_def_scanner.l"
+#line 350 "analysis_def_scanner.l"
 
     
 int yywrap() {
@@ -1991,7 +1992,7 @@ int yywrap() {
 }
         
 void yyerror( char *str ) {
-    fprintf( stderr, "error at line %i: %s in %s\n", lineNum, str, yytext );
+    fprintf( stderr, "error at line %i: %s\n", lineNum, yytext );
 }        
         
 #if LEX_MAIN_TEST                

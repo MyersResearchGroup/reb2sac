@@ -17,6 +17,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+#include <stdarg.h>
 #include "sad_ast.h"
 
 static RET_VAL _VisitTermListToClean( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast );
@@ -88,7 +89,7 @@ SAD_AST_TERM_LIST *CreateSadAstTermList( ) {
     if( ast == NULL ) {
         return NULL;
     }
-    if( ( ast->termList = CreateLinkedList() ) == NULL ) {
+    if( ( ast->terms = CreateLinkedList() ) == NULL ) {
         return NULL;
     }
     ast->astType = TYPE_SAD_AST_TERM_LIST;
@@ -130,11 +131,11 @@ SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition ) {
 /* SAD_AST_FUNC_EXP */
 static RET_VAL _AcceptFuncExp( SAD_AST *ast, SAD_AST_VISITOR *visitor );
 
-SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList ) {
+SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, int argc, ... ) {
     SAD_AST_FUNC_EXP *ast = NULL;
     int i = 0;
-    int argc = 0;
     double **values = NULL;
+    va_list args;
     SAD_AST_EXP *exp = NULL;    
     SAD_AST_EXP **argExps = NULL;    
     SAD_AST_FUNC_REGISTRY_ENTRY *entry = NULL;    
@@ -144,9 +145,9 @@ SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList ) {
     entry = registry->GetEntry( registry, name );
     if( entry == NULL ) {
         return NULL;
-    } 
-    argc = entry->argc;
-    if( argc != GetLinkedListSize( expList ) ) {
+    }
+         
+    if( argc != entry->argc ) {
         return NULL;
     }
     
@@ -160,18 +161,19 @@ SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList ) {
         return NULL;    
     } 
     
+    va_start( args, argc );
+    for( i = 0; i < argc; i++ ) { 
+        exp = va_arg( args, SAD_AST_EXP* );
+        values[i] = &(exp->result);
+        argExps[i] = exp;
+    }
+    va_end(args);
+    
     ast->argExps = argExps;
     ast->values = values;
     ast->entry = entry;
     ast->astType = TYPE_SAD_AST_FUNC_EXP;
     ast->Accept = _AcceptFuncExp;
-    
-    ResetCurrentElement( expList );
-    for( i = 0; i < argc; i++ ) {
-        exp = (SAD_AST_EXP*)GetCurrentFromLinkedList( expList );
-        values[i] = &(exp->result);
-        argExps[i] = exp;
-    }
     
     return ast;
 }
@@ -442,14 +444,14 @@ static RET_VAL _AcceptTimeVar( SAD_AST *ast, SAD_AST_VISITOR *visitor ) {
 /** clean visitor */
 static RET_VAL _VisitTermListToClean( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast ) {
     SAD_AST_TERM *term = NULL;
-    LINKED_LIST *list = ast->termList;
+    LINKED_LIST *list = ast->terms;
     
     ResetCurrentElement( list );
     while( ( term = (SAD_AST_TERM*)GetCurrentFromLinkedList( list ) ) != NULL ) {
         term->Accept( (SAD_AST*)term, visitor );
     }
         
-    DeleteLinkedList( &(ast->termList) );
+    DeleteLinkedList( &(ast->terms) );
     FREE( ast );
         
     return SUCCESS;    
@@ -535,4 +537,19 @@ static RET_VAL _VisitTimeVarToClean( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR 
     return SUCCESS;
 }
 
+
+
+
+void PrintSadAstErrorMessage( char *format, ... ) {
+    va_list args;
+    
+    va_start( args, format );
+	
+    vfprintf( stderr, format, args );
+    fprintf( stderr, NEW_LINE );
+                
+	va_end(args);
+    
+    return;
+}
 

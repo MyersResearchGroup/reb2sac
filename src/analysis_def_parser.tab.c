@@ -133,6 +133,47 @@
 #include "sad_ast.h"
 
 static SAD_AST_ENV *_astEnv;
+static SAD_AST *ast;
+static SPECIES *species;
+static REACTION *reaction;
+        
+       
+
+static SPECIES *FindSpeciesFromID( char *id ) {
+    int i = 0;
+    SAD_AST_ENV *env = GetSadAstEnv();
+    int size = env->speciesSize;
+    SPECIES **speciesArray = env->speciesArray;
+    SPECIES *target = NULL;
+    char *targetID = NULL;
+     
+    for( ; i < size; i++ ) {
+        target = speciesArray[i];
+        targetID = GetCharArrayOfString( GetSpeciesNodeName( target ) );
+        if( strcmp( targetID, id ) == 0 ) {
+            return target;
+        }
+    }
+    return NULL;
+}
+
+static REACTION *FindReactionFromID( char *id ) {
+    int i = 0;
+    SAD_AST_ENV *env = GetSadAstEnv();
+    int size = env->speciesSize;
+    REACTION **reactionArray = env->reactionArray;
+    REACTION *target = NULL;
+    char *targetID = NULL;
+     
+    for( ; i < size; i++ ) {
+        target = reactionArray[i];
+        targetID = GetCharArrayOfString( GetReactionNodeName( target ) );
+        if( strcmp( targetID, id ) == 0 ) {
+            return target;
+        }
+    }
+    return NULL;
+}
 
 
 /* Enabling traces.  */
@@ -149,13 +190,14 @@ static SAD_AST_ENV *_astEnv;
 #endif
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 7 "analysis_def_parser.y"
+#line 48 "analysis_def_parser.y"
 typedef union YYSTYPE {
     char *string;	
     double value;
+    SAD_AST *ast;
 } YYSTYPE;
 /* Line 191 of yacc.c.  */
-#line 159 "analysis_def_parser.tab.c"
+#line 201 "analysis_def_parser.tab.c"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1
@@ -167,7 +209,7 @@ typedef union YYSTYPE {
 
 
 /* Line 214 of yacc.c.  */
-#line 171 "analysis_def_parser.tab.c"
+#line 213 "analysis_def_parser.tab.c"
 
 #if ! defined (yyoverflow) || YYERROR_VERBOSE
 
@@ -356,12 +398,12 @@ static const yysigned_char yyrhs[] =
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
-static const unsigned char yyrline[] =
+static const unsigned short yyrline[] =
 {
-       0,    42,    42,    42,    48,    50,    54,    58,    62,    66,
-      67,    71,    72,    73,    74,    78,    79,    80,    81,    82,
-      83,    87,    88,    89,    90,    91,    92,    93,    94,    95,
-      96,    97,    98,    99,   100
+       0,    84,    84,    84,    90,    92,   102,   113,   119,   125,
+     128,   134,   142,   150,   158,   164,   172,   180,   188,   196,
+     204,   210,   218,   226,   234,   242,   250,   253,   261,   269,
+     277,   285,   293,   306,   319
 };
 #endif
 
@@ -1115,22 +1157,348 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 42 "analysis_def_parser.y"
+#line 84 "analysis_def_parser.y"
     { 
-    _astEnv = GetSadAstEnv();
-;}
+        _astEnv = GetSadAstEnv();
+    ;}
+    break;
+
+  case 5:
+#line 92 "analysis_def_parser.y"
+    {        
+        _astEnv = GetSadAstEnv();
+        if( IS_FAILED( AddElementInLinkedList( yyvsp[0].ast, _astEnv->termList->terms ) ) ) {
+            PrintSadAstErrorMessage( "Error adding term %s in the list", ((SAD_AST_TERM*)yyvsp[0].ast)->id );
+            return 1;
+        }
+    ;}
+    break;
+
+  case 6:
+#line 102 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstTerm( yyvsp[-4].string, yyvsp[-2].string, yyvsp[-1].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating term %s", yyvsp[-4].string );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 7:
+#line 113 "analysis_def_parser.y"
+    {
+        yyval.string = yyvsp[-1].string;     
+    ;}
+    break;
+
+  case 8:
+#line 119 "analysis_def_parser.y"
+    {
+        yyval.ast = yyvsp[-1].ast;     
+    ;}
+    break;
+
+  case 9:
+#line 125 "analysis_def_parser.y"
+    {
+        yyval.ast = yyvsp[0].ast;     
+    ;}
+    break;
+
+  case 10:
+#line 128 "analysis_def_parser.y"
+    {
+        yyval.ast = yyvsp[0].ast;     
+    ;}
+    break;
+
+  case 11:
+#line 134 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstBinaryLogicalExp( LOGICAL_EXP_TYPE_SAD_AST_AND, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating and expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 12:
+#line 142 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstBinaryLogicalExp( LOGICAL_EXP_TYPE_SAD_AST_OR, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating or expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 13:
+#line 150 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstUnaryLogicalExp( LOGICAL_EXP_TYPE_SAD_AST_NOT, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating not expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 14:
+#line 158 "analysis_def_parser.y"
+    {
+        yyval.ast = yyvsp[-1].ast;     
+    ;}
+    break;
+
+  case 15:
+#line 164 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstCompExp( COMP_EXP_TYPE_SAD_AST_LE, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating less than or equal to expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 16:
+#line 172 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstCompExp( COMP_EXP_TYPE_SAD_AST_LT, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating less than expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 17:
+#line 180 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstCompExp( COMP_EXP_TYPE_SAD_AST_GE, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating greater than or equal to expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 18:
+#line 188 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstCompExp( COMP_EXP_TYPE_SAD_AST_GT, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating greater than expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 19:
+#line 196 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstCompExp( COMP_EXP_TYPE_SAD_AST_EQ, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating equal expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 20:
+#line 204 "analysis_def_parser.y"
+    {
+        yyval.ast = yyvsp[-1].ast;     
+    ;}
+    break;
+
+  case 21:
+#line 210 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstBinaryNumExp( NUM_EXP_TYPE_SAD_AST_PLUS, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating plus expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 22:
+#line 218 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstBinaryNumExp( NUM_EXP_TYPE_SAD_AST_MINUS, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating minus expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 23:
+#line 226 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstBinaryNumExp( NUM_EXP_TYPE_SAD_AST_TIMES, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating times expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 24:
+#line 234 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstBinaryNumExp( NUM_EXP_TYPE_SAD_AST_DIV, (SAD_AST_EXP*)yyvsp[-2].ast, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating div expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 25:
+#line 242 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstUnaryNumExp( NUM_EXP_TYPE_SAD_AST_UMINUS, (SAD_AST_EXP*)yyvsp[0].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating unary minus expression" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 26:
+#line 250 "analysis_def_parser.y"
+    {
+        yyval.ast = yyvsp[-1].ast;     
+    ;}
+    break;
+
+  case 27:
+#line 253 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstFuncExp( "exp", 1, (SAD_AST_EXP*)yyvsp[-1].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating exp function" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 28:
+#line 261 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstFuncExp( "pow", 2, (SAD_AST_EXP*)yyvsp[-3].ast, (SAD_AST_EXP*)yyvsp[-1].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating pow function" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 29:
+#line 269 "analysis_def_parser.y"
+    {
+        ast = (SAD_AST*)CreateSadAstFuncExp( "log", 1, (SAD_AST_EXP*)yyvsp[-1].ast );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating log function" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 30:
+#line 277 "analysis_def_parser.y"
+    { 
+        ast = (SAD_AST*)CreateSadAstConstant( yyvsp[0].value );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating time variable" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 31:
+#line 285 "analysis_def_parser.y"
+    { 
+        ast = (SAD_AST*)CreateSadAstTimeVar( );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating time variable" );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 32:
+#line 293 "analysis_def_parser.y"
+    { 
+        species = FindSpeciesFromID( yyvsp[0].string );
+        if( species == NULL ) {
+            PrintSadAstErrorMessage( "%s is not a valid species ID", yyvsp[0].string );
+            yyerror(NULL); return 1;
+        } 
+        ast = (SAD_AST*)CreateSadAstSpeciesCon( species );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating species node for %s", yyvsp[0].string );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
+    break;
+
+  case 33:
+#line 306 "analysis_def_parser.y"
+    { 
+        species = FindSpeciesFromID( yyvsp[0].string );
+        if( species == NULL ) {
+            PrintSadAstErrorMessage( "%s is not a valid species ID", yyvsp[0].string );
+            yyerror(NULL); return 1;
+        } 
+        ast = (SAD_AST*)CreateSadAstSpeciesCnt( species );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating species node for %s", yyvsp[0].string );
+            yyerror(NULL); return 1;
+        } 
+        yyval.ast = ast; 
+    ;}
     break;
 
   case 34:
-#line 100 "analysis_def_parser.y"
+#line 319 "analysis_def_parser.y"
     { 
-        SAD_AST_REACTION *ast = NULL;
-        REACTION *reaction = NULL;
-        
-        ast = CreateSadAstReactionCnt( reaction );
-        if( ast == NULL ) {
-            YYERROR;
+        reaction = FindReactionFromID( yyvsp[0].string );
+        if( reaction == NULL ) {
+            PrintSadAstErrorMessage( "%s is not a valid reaction ID", yyvsp[0].string );
+            yyerror(NULL); return 1;
         } 
+        ast = (SAD_AST*)CreateSadAstReactionCnt( reaction );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating reaction node for %s", yyvsp[0].string );
+            yyerror(NULL); return 1;
+        }
+        yyval.ast = ast; 
     ;}
     break;
 
@@ -1138,7 +1506,7 @@ yyreduce:
     }
 
 /* Line 1000 of yacc.c.  */
-#line 1142 "analysis_def_parser.tab.c"
+#line 1510 "analysis_def_parser.tab.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -1363,5 +1731,5 @@ yyreturn:
 }
 
 
-#line 112 "analysis_def_parser.y"
+#line 335 "analysis_def_parser.y"
 

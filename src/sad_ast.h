@@ -61,7 +61,7 @@ BEGIN_C_NAMESPACE
 #define NUM_EXP_TYPE_SAD_AST_MASK ((int)0x0200)    
 #define NUM_EXP_TYPE_SAD_AST_PLUS ((int)0x1201)    
 #define NUM_EXP_TYPE_SAD_AST_MINUS ((int)0x1202)    
-#define NUM_EXP_TYPE_SAD_AST_TIME ((int)0x1203)    
+#define NUM_EXP_TYPE_SAD_AST_TIMES ((int)0x1203)    
 #define NUM_EXP_TYPE_SAD_AST_DIV ((int)0x1204)    
 #define NUM_EXP_TYPE_SAD_AST_UMINUS ((int)0x1205)    
 
@@ -87,6 +87,7 @@ BEGIN_C_NAMESPACE
 #define IS_SPECIES_EXP_TYPE_SAD_AST(t) ((t & SPECIES_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
 #define IS_REACTION_EXP_TYPE_SAD_AST(t) ((t & REACTION_EXP_TYPE_SAD_AST_MASK) ? TRUE : FALSE)
 */
+
 
 struct _SAD_AST_VISITOR;
 typedef struct _SAD_AST_VISITOR SAD_AST_VISITOR;
@@ -149,7 +150,7 @@ struct _SAD_AST_TERM_LIST {
     int astType;
     RET_VAL (*Accept)( SAD_AST *ast, SAD_AST_VISITOR *visitor );
     
-    LINKED_LIST *termList;
+    LINKED_LIST *terms;
 };
 
 struct _SAD_AST_TERM {
@@ -245,7 +246,7 @@ RET_VAL FreeSadAstEnv( );
 
 SAD_AST_TERM_LIST *CreateSadAstTermList( );
 SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition );
-SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, LINKED_LIST *expList );
+SAD_AST_FUNC_EXP *CreateSadAstFuncExp( char *name, int argc, ... );
 SAD_AST_BINARY_EXP *CreateSadAstBinaryLogicalExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
 SAD_AST_BINARY_EXP *CreateSadAstCompExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
 SAD_AST_BINARY_EXP *CreateSadAstBinaryNumExp( int type, SAD_AST_EXP *left, SAD_AST_EXP *right );
@@ -277,6 +278,8 @@ struct _SAD_AST_VISITOR {
     RET_VAL (*VisitTimeVar)( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast );
 };
 
+
+void PrintSadAstErrorMessage( char *format, ... );
 
 END_C_NAMESPACE
 
