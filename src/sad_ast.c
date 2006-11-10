@@ -31,8 +31,10 @@ static RET_VAL _VisitConstantToClean( SAD_AST_VISITOR *visitor, SAD_AST_CONSTANT
 static RET_VAL _VisitTimeVarToClean( SAD_AST_VISITOR *visitor, SAD_AST_TIME_VAR *ast );
 
 
-SAD_AST_ENV *GetSadAstEnv( );
-RET_VAL FreeSadAstEnv( );
+/*
+    SAD_AST_ENV *GetSadAstEnv( );
+    RET_VAL FreeSadAstEnv( );
+*/
 
 /* SAD_AST_TERM_LIST */
 static SAD_AST_ENV _instance;

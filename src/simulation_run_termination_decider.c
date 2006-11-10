@@ -25,7 +25,10 @@
 #include "abs_phage_lambda2_simulation_run_termination_decider.h"
 #include "sac_phage_lambda_simulation_run_termination_decider.h"
 #include "type_1_pili1_simulation_run_termination_decider.h"
-#include "type_1_pili2_simulation_run_termination_decider.h" 
+#include "type_1_pili2_simulation_run_termination_decider.h"
+
+#include "sad_simulation_run_termination_decider.h"
+
  
  
 DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSimulationRunTerminationDecider( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, REACTION **reactionArray, int reactionSize, double timeLimit ) {
@@ -86,6 +89,13 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSimulationRunTermina
         case 's':
             if( strcmp( valueString, SAC_PHAGE_LAMBDA_SIMULATION_RUN_TERMINATION_DECIDER_ID ) == 0 ) {
                 if( ( decider = CreateSacPhageLambdaSimulationRunTerminationDecider( 
+                      backend, speciesArray, size, reactionArray, reactionSize, timeLimit ) ) == NULL ) {
+                    END_FUNCTION("CreateSimulationRunTerminationDecider", FAILING );
+                    return NULL;
+                }
+            }
+            else if( strcmp( valueString, SAD_SIMULATION_RUN_TERMINATION_DECIDER_ID ) == 0 ) {
+                if( ( decider = CreateSadSimulationRunTerminationDecider( 
                       backend, speciesArray, size, reactionArray, reactionSize, timeLimit ) ) == NULL ) {
                     END_FUNCTION("CreateSimulationRunTerminationDecider", FAILING );
                     return NULL;
