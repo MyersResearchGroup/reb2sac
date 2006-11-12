@@ -160,6 +160,7 @@ struct _SAD_AST_TERM {
     char *id;
     char *desc;
     SAD_AST_EXP *condition;            
+    int count;
 };
 
 struct _SAD_AST_EXP {

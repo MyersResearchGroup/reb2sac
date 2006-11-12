@@ -87,6 +87,7 @@ RET_VAL SetReactionRateUpdatedTime(REACTION *reaction, double time );
 
 double GetReactionFireCount( REACTION *reaction );
 RET_VAL IncrementReactionFireCount( REACTION *reaction );
+RET_VAL ResetReactionFireCount( REACTION *reaction );
 
 END_C_NAMESPACE
 

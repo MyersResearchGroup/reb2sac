@@ -346,6 +346,9 @@ static RET_VAL _InitializeSimulation( TYPE1PILI_GILLESPIE_CI_RECORD *rec, int ru
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, 0.0 ) ) ) ) {
             return ret;
         }
+        if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
+            return ret;
+        }        
     }
     
     return ret;            

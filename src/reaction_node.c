@@ -300,6 +300,17 @@ RET_VAL IncrementReactionFireCount( REACTION *reaction ) {
     return ret;
 }
 
+RET_VAL ResetReactionFireCount( REACTION *reaction ) {
+    RET_VAL ret = SUCCESS;
+    START_FUNCTION("ResetReactionFireCount");
+    if( reaction == NULL ) {
+        return ErrorReport( FAILING, "ResetReactionFireCount", "input reaction node is NULL" );
+    }
+    reaction->count = 0;
+    END_FUNCTION("ResetReactionFireCount", SUCCESS );
+    return ret;
+}
+
 
 
 static char * _GetType( ) {

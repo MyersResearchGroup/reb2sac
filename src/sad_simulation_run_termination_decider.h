@@ -43,6 +43,8 @@ struct _SAD_SIMULATION_RUN_TERMINATION_DECIDER {
     RET_VAL (*Destroy)( SIMULATION_RUN_TERMINATION_DECIDER *decider );
     
     SAD_AST_ENV *env;
+    int timeLimitCount;
+    int totalCount;
 };
 
 

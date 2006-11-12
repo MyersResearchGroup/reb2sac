@@ -4,11 +4,11 @@
 #include "sad_ast.h"
 #include "analysis_def_parser.tab.h"	
 static int lineNum = 1;
+static char *_string = NULL;
 
 #if LEX_MAIN_TEST                
 YYSTYPE yylval;
 #endif
-
 %}
 
 
@@ -260,25 +260,31 @@ ERROR_STRINGX (\"((\\(\\\\)*)|{WHITE_SPACE})*)$
         
 
 {IDENTIFIER} {
-    yylval.string = yytext + 1; 
+    _string = (char*)MALLOC( yyleng + 1 );
+    strcpy( _string, yytext );
+    yylval.string = _string; 
 #if LEX_DEBUG
-        printf("ID at line %i: %s\n", lineNum, yytext );            
+        printf("ID at line %i: %s\n", lineNum, _string );            
 #endif
     return SAD_IDENTIFIER;            
 }
 
 {SPECIES} {
-    yylval.string = yytext + 1; 
+    _string = (char*)MALLOC( yyleng );
+    strcpy( _string, yytext + 1 );
+    yylval.string = _string; 
 #if LEX_DEBUG
-        printf("species at line %i: %s\n", lineNum, yylval.string );            
+        printf("species at line %i: %s\n", lineNum, _string );            
 #endif
     return SAD_SPECIES;            
 }
 
 {REACTION} {
-    yylval.string = yytext + 1; 
+    _string = (char*)MALLOC( yyleng );
+    strcpy( _string, yytext + 1 );
+    yylval.string = _string; 
 #if LEX_DEBUG
-        printf("reaction at line %i: %s\n", lineNum, yylval.string );            
+        printf("reaction at line %i: %s\n", lineNum, _string );            
 #endif
     return SAD_REACTION;            
 }
@@ -306,9 +312,11 @@ ERROR_STRINGX (\"((\\(\\\\)*)|{WHITE_SPACE})*)$
 
 {STRING_LITERAL} {
     yytext[yyleng - 1] = '\0'; 
-    yylval.string = yytext + 1; 
+    _string = (char*)MALLOC( yyleng - 1 );
+    strcpy( _string, yytext + 1 );
+    yylval.string = _string; 
 #if LEX_DEBUG
-        printf("string at line %i: %s\n", lineNum, yylval.string );            
+        printf("string at line %i: %s\n", lineNum, _string );            
 #endif
     return SAD_STRING;            
 }

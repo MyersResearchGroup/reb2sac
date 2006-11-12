@@ -280,6 +280,9 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, 0.0 ) ) ) ) {
             return ret;
         }
+        if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
+            return ret;
+        }        
     }
     
     return ret;            

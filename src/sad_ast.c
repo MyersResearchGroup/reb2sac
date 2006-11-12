@@ -112,19 +112,13 @@ SAD_AST_TERM *CreateSadAstTerm( char *id, char *desc, SAD_AST_EXP *condition ) {
         return NULL;
     }
     
-    if( ( ast->id = (char*)MALLOC( strlen(id) + 1 ) ) == NULL ) {
-        return NULL;
-    }
-    strcpy( ast->id, id );
-    
-    if( ( ast->desc = (char*)MALLOC( strlen(desc) + 1 ) ) == NULL ) {
-        return NULL;
-    }
-    strcpy( ast->desc, desc );
+    ast->id = id;
+    ast->desc = desc;
     
     ast->condition = condition;
     ast->Accept = _AcceptTerm;
     ast->astType = TYPE_SAD_AST_TERM;
+    ast->count = 0;
     
     return ast;
 }

@@ -69,7 +69,7 @@ static RET_VAL _VisitTermList( SAD_AST_VISITOR *visitor, SAD_AST_TERM_LIST *ast 
     LINKED_LIST *list = ast->terms;
     
     ResetCurrentElement( list );
-    while( ( term = (SAD_AST_TERM*)GetCurrentFromLinkedList( list ) ) != NULL ) {
+    while( ( term = (SAD_AST_TERM*)GetNextFromLinkedList( list ) ) != NULL ) {
         term->Accept( (SAD_AST*)term, visitor );
     }
         
@@ -101,6 +101,7 @@ static RET_VAL _VisitCompExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast 
     SAD_AST_EXP *left = ast->left;
     SAD_AST_EXP *right = ast->right;
     
+    fprintf( file, "( ");
     left->Accept( (SAD_AST*)left, visitor );
     
     switch( ast->type ) {
@@ -126,6 +127,7 @@ static RET_VAL _VisitCompExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP *ast 
     fprintf( file, " %s ", op );
     
     right->Accept( (SAD_AST*)right, visitor );
+    fprintf( file, " )");
     
     return SUCCESS;
 }
@@ -137,6 +139,7 @@ static RET_VAL _VisitBinaryNumExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP 
     SAD_AST_EXP *left = ast->left;
     SAD_AST_EXP *right = ast->right;
     
+    fprintf( file, "( ");
     left->Accept( (SAD_AST*)left, visitor );
     
     switch( ast->type ) {
@@ -159,6 +162,7 @@ static RET_VAL _VisitBinaryNumExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_EXP 
     fprintf( file, " %s ", op );
     
     right->Accept( (SAD_AST*)right, visitor );
+    fprintf( file, " )");
     
     return SUCCESS;
 }
@@ -170,6 +174,7 @@ static RET_VAL _VisitBinaryLogicalExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_
     SAD_AST_EXP *left = ast->left;
     SAD_AST_EXP *right = ast->right;
     
+    fprintf( file, "( ");
     left->Accept( (SAD_AST*)left, visitor );
     
     switch( ast->type ) {
@@ -186,6 +191,7 @@ static RET_VAL _VisitBinaryLogicalExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_
     fprintf( file, " %s ", op );
     
     right->Accept( (SAD_AST*)right, visitor );
+    fprintf( file, " )");
     
     return SUCCESS;
 }

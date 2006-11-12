@@ -62,6 +62,23 @@ double EvaluateSadAstExp( SAD_AST_EXP *ast ) {
     return ast->result;
 }
 
+BOOL EvaluateSadAstBoolExp( SAD_AST_EXP *ast ) {
+    double value = 0.0;
+            
+    value = EvaluateSadAstExp( ast );
+    
+    if( value == 1.0 ) {
+        return TRUE;
+    }
+    else if( value == 0.0 ) {
+        return FALSE;
+    }
+    else {
+        TRACE_0("error in evaluationg sad ast" );
+        return FALSE;
+    }
+}
+
 
 
 
@@ -141,14 +158,25 @@ static RET_VAL _VisitBinaryLogicalExp( SAD_AST_VISITOR *visitor, SAD_AST_BINARY_
     SAD_AST_EXP *right = ast->right;
     
     left->Accept( (SAD_AST*)left, visitor );
-    right->Accept( (SAD_AST*)right, visitor );
     
     switch( ast->type ) {
         case LOGICAL_EXP_TYPE_SAD_AST_AND:
-            ast->result = ( (left->result * right->result > 0.5) ? 1.0 : 0.0 );
+            if( left->result == 0.0 ) {
+                ast->result = 0.0;
+            }
+            else {
+                right->Accept( (SAD_AST*)right, visitor );
+                ast->result = ( (right->result == 1.0) ? 1.0 : 0.0 );
+            }
             break;    
         case LOGICAL_EXP_TYPE_SAD_AST_OR:    
-            ast->result = ( (left->result + right->result > 0.5) ? 1.0 : 0.0 );
+            if( left->result == 1.0 ) {
+                ast->result = 1.0;
+            }
+            else {
+                right->Accept( (SAD_AST*)right, visitor );
+                ast->result = ( (right->result == 1.0) ? 1.0 : 0.0 );
+            }
             break;    
         default:        
             ast->result = 0.0 / 0.0;

@@ -26,6 +26,7 @@ BEGIN_C_NAMESPACE
 
 double EvaluateSadAstExp( SAD_AST_EXP *ast );
 
+BOOL EvaluateSadAstBoolExp( SAD_AST_EXP *ast );
 
 END_C_NAMESPACE
 

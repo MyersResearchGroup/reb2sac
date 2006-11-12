@@ -19,12 +19,17 @@
  ***************************************************************************/
 #include "sad_simulation_run_termination_decider.h"
 #include "sad_ast_creator.h"
+#include "sad_ast_exp_evaluator.h"
 #include "sad_ast_pretty_printer.h"
+
 
 static BOOL _IsTerminationConditionMet( SAD_SIMULATION_RUN_TERMINATION_DECIDER *decider, REACTION *reaction, double time );
 static RET_VAL _Destroy( SAD_SIMULATION_RUN_TERMINATION_DECIDER *decider );
 static RET_VAL _Report( SAD_SIMULATION_RUN_TERMINATION_DECIDER *decider, FILE *file );
 static FILE *_CreateSadFile( REB2SAC_PROPERTIES *properties );    
+static BOOL _EvaluateTermConditions( SAD_AST_TERM_LIST *ast );
+
+
 
 DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSadSimulationRunTerminationDecider( 
         BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, 
@@ -67,11 +72,13 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSadSimulationRunTerm
         }
     } 
     decider->env = env;
+    decider->timeLimitCount = 0;
+    decider->totalCount = 0;
          
-    /* testing */
+    /* testing 
     PrettyPrintSadAst( stdout, (SAD_AST*)(env->termList) );    
     exit(0);
-    /* testing */
+     testing */
     
     
     END_FUNCTION("CreateSadSimulationRunTerminationDecider", SUCCESS );
@@ -82,27 +89,45 @@ static BOOL _IsTerminationConditionMet( SAD_SIMULATION_RUN_TERMINATION_DECIDER *
     int i = 0;
     int size = 0;
     double quantity = 0;
-    SPECIES **speciesArray = NULL;
+    SAD_AST_ENV *env = decider->env;
             
+    env->time = time;
+    if( reaction != NULL ) {
+        IncrementReactionFireCount( reaction ); 
+    }
+    
     if( time >= decider->timeLimit ) {
-        return TRUE;
+        (decider->timeLimitCount)++;
     }
-    
-    speciesArray = decider->speciesArray;
-    
-    
-    for( i = 0; i < size; i++ ) {
+    else if( !_EvaluateTermConditions( env->termList ) ) {
+        return FALSE;        
     }
-    return FALSE;        
+            
+    (decider->totalCount)++;        
+    return TRUE;
 }
 
 static RET_VAL _Report( SAD_SIMULATION_RUN_TERMINATION_DECIDER *decider, FILE *file ) {
     RET_VAL ret = SUCCESS;
-    int i = 0;
-    int terminationCount = 0;
-    SPECIES *species = NULL;
-    SPECIES **speciesArray = decider->speciesArray;
+    SAD_AST_ENV *env = decider->env;
+    LINKED_LIST *terms = NULL;
+    SAD_AST_TERM *term = NULL;
+     
+    terms = env->termList->terms;
+    fprintf( file, "#total time-limit");
     
+    ResetCurrentElement( terms );    
+    while( ( term = (SAD_AST_TERM*)GetNextFromLinkedList( terms ) ) != NULL ) {
+        fprintf( file, " %s", term->id );    
+    }
+    fprintf( file, NEW_LINE );
+    
+    fprintf( file, "%i %i", decider->totalCount, decider->timeLimitCount );
+    ResetCurrentElement( terms );    
+    while( ( term = (SAD_AST_TERM*)GetNextFromLinkedList( terms ) ) != NULL ) {
+        fprintf( file, " %i", term->count );    
+    }
+    fprintf( file, NEW_LINE );
         
     return ret;
 }
@@ -116,6 +141,7 @@ static RET_VAL _Destroy( SAD_SIMULATION_RUN_TERMINATION_DECIDER *decider ) {
 }
 
  
+ 
 static FILE *_CreateSadFile( REB2SAC_PROPERTIES *properties ) {
     FILE *file;
     char *valueString;
@@ -126,5 +152,24 @@ static FILE *_CreateSadFile( REB2SAC_PROPERTIES *properties ) {
     file = fopen( valueString, "r" );
     return file;
 }
+
+static BOOL _EvaluateTermConditions( SAD_AST_TERM_LIST *ast ) {
+    BOOL condition = FALSE;
+    SAD_AST_TERM *term = NULL;    
+    LINKED_LIST *list = ast->terms;
+    
+    ResetCurrentElement( list );
+    while( ( term = (SAD_AST_TERM*)GetNextFromLinkedList( list ) ) != NULL ) {
+        if( EvaluateSadAstBoolExp( (SAD_AST_EXP*)(term->condition) ) ) {
+            (term->count)++;
+            condition = TRUE;
+        } 
+    }
+        
+    return condition;        
+}
+
+ 
+ 
  
  

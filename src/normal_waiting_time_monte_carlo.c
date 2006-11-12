@@ -283,6 +283,9 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, 0.0 ) ) ) ) {
             return ret;
         }
+        if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
+            return ret;
+        }        
     }
     
     return ret;            

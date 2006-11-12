@@ -7,6 +7,7 @@ static SPECIES *species;
 static REACTION *reaction;
         
        
+       
 
 static SPECIES *FindSpeciesFromID( char *id ) {
     int i = 0;
@@ -83,6 +84,7 @@ static REACTION *FindReactionFromID( char *id ) {
 
 program : { 
         _astEnv = GetSadAstEnv();
+    
     }
     opt_term_list
 ;            
@@ -302,6 +304,7 @@ num_exp :
             yyerror(NULL); return 1;
         } 
         $<ast>$ = ast; 
+        FREE($2);
     }
     | SAD_NUM_OP SAD_SPECIES { 
         species = FindSpeciesFromID( $2 );
@@ -315,6 +318,7 @@ num_exp :
             yyerror(NULL); return 1;
         } 
         $<ast>$ = ast; 
+        FREE($2);
     }
     | SAD_NUM_OP SAD_REACTION { 
         reaction = FindReactionFromID( $2 );
@@ -328,8 +332,10 @@ num_exp :
             yyerror(NULL); return 1;
         }
         $<ast>$ = ast; 
+        FREE($2);
     }
 ;        
         
+
     
 %%

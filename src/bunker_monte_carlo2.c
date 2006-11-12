@@ -279,6 +279,9 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec, int runNu
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, 0.0 ) ) ) ) {
             return ret;
         }
+        if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
+            return ret;
+        }        
     }
     
     return ret;            
