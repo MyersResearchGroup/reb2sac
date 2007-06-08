@@ -41,10 +41,11 @@
 #include "sbml/SpeciesReference.h"
 #include "sbml/ModifierSpeciesReference.h"
 #include "sbml/UnitDefinition.h"
+#include "sbml/UnitKind.h"
 #include "sbml/Compartment.h"
 #include "sbml/Parameter.h"
 #include "sbml/KineticLaw.h"
-#include "sbml/ASTNode.h"
+#include "sbml/math/ASTNode.h"
 
 
 BEGIN_C_NAMESPACE
