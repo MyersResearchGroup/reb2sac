@@ -47,6 +47,7 @@ typedef struct {
     UINT32 seed;
     UINT32 runs; 
     char *outDir; 
+    int startIndex;
     RANDOM_NUMBER_GENERATOR *randomGen;
 } NORMAL_WAITING_TIME_MONTE_CARLO_RECORD;
 
