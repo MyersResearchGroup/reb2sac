@@ -64,7 +64,7 @@
 #define MONTE_CARLO_CI_ERROR_TOLERANCE "monte.carlo.ci.error.tolerance"
 #define DEFAULT_MONTE_CARLO_CI_ERROR_TOLERANCE_VALUE 0.1
 
-#define MONTE_CARLO_SIMULATION_START_INDEX  "monte.carlo.simulation.out.run.start"
+#define MONTE_CARLO_SIMULATION_START_INDEX  "monte.carlo.simulation.start.index"
 #define DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX  1
 
 #define DEFAULT_MONTE_CARLO_SIMULATION_RUNS_VALUE 1
