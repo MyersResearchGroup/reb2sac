@@ -26,7 +26,7 @@
 
 BEGIN_C_NAMESPACE
 
-#define CTMC_ANALYSIS_DT_RATE 0.01
+#define CTMC_ANALYSIS_DT_RATE 0.1
 
 typedef struct {
     double currentProb;

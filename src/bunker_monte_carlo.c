@@ -165,6 +165,15 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     }                
     
     properties = compRec->properties;
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
+        rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToUINT32( &(rec->startIndex), valueString ) ) ) ) {
+            rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
+        }
+    }    
+    
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -249,7 +258,7 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
     rec->seed = rand();
     srand( rec->seed );
     
-    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, runNum );        
+    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );        
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
         return ret;            
     }
@@ -290,6 +299,7 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     int i = 0;
+    double timeLimit = rec->timeLimit;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
@@ -306,7 +316,7 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
         }
         if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {            
             TRACE_1( "the total propensity is 0 at iteration %i", i );
-            rec->time = rec->timeLimit; 
+            rec->time += rec->printInterval; 
             if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
                 return ret;            
             }
@@ -330,8 +340,11 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
         return ret;
     }
 */
+    if( rec->time >= timeLimit ) {
+        rec->time = timeLimit;
+    } 
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
-        return ret;
+            return ret;
     }
     
     if( IS_FAILED( ( ret = printer->PrintEnd( printer ) ) ) ) {

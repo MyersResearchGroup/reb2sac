@@ -50,6 +50,7 @@ typedef struct {
     UINT32 seed;
     UINT32 runs; 
     char *outDir; 
+    int startIndex;
 } GILLESPIE_MONTE_CARLO_RECORD;
 
 
