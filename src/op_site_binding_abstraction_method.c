@@ -333,7 +333,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
             if( ( numer = (KINETIC_LAW*)GetValueFromHashTable( boundOp, sizeof( SPECIES ), massActionTable ) ) == NULL ) {
                 return ErrorReport( FAILING, "_DoTransformation", "could not find mass action ratio for %s", GetCharArrayOfString( GetSpeciesNodeName( boundOp ) ) );
             }   
-            
+/*            
             if( ( numer = CreateOpKineticLaw( KINETIC_LAW_OP_TIMES, numer, CloneKineticLaw( totalConKineticLaw ) ) ) == NULL ) {
                 return ErrorReport( FAILING, "_DoTransformation", "could not create a new kinetic law" );
             }
@@ -341,6 +341,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
             if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_DIVIDE, numer, CloneKineticLaw( denom ) ) ) == NULL ) {
                 return ErrorReport( FAILING, "_DoTransformation", "could not create a new kinetic law for %s", GetCharArrayOfString( GetSpeciesNodeName( boundOp ) ) );
             }
+*/
             ResetCurrentElement( modifierEdges );       
             while( ( modifierEdge = GetNextEdge( modifierEdges ) ) != NULL ) {     
                 productionReaction = GetReactionInIREdge( modifierEdge );
@@ -371,7 +372,9 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
                 FreeString( &lawString );            
 #endif                
             }  
-            FreeKineticLaw( &law );                
+/*
+            FreeKineticLaw( &law );
+*/                
         }
     }
     
