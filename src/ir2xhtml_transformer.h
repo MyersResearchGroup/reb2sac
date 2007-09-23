@@ -58,7 +58,8 @@
 
 #define REB2SAC_XHTML_MATHML_OP_PLUS_FORMAT "<mo>+</mo>"
 #define REB2SAC_XHTML_MATHML_OP_MINUS_FORMAT "<mo>-</mo>"
-#define REB2SAC_XHTML_MATHML_OP_TIMES_FORMAT "<mo><mchar name=\"InvisibleTimes\"/></mo>"
+//#define REB2SAC_XHTML_MATHML_OP_TIMES_FORMAT "<mo><mchar name=\"InvisibleTimes\"/></mo>"
+#define REB2SAC_XHTML_MATHML_OP_TIMES_FORMAT "<mo>*</mo>"
 #define REB2SAC_XHTML_MATHML_START_FRAC_FORMAT "<mfrac>"
 #define REB2SAC_XHTML_MATHML_END_FRAC_FORMAT "</mfrac>"
 #define REB2SAC_XHTML_MATHML_START_POWER_FORMAT "<msup>"
