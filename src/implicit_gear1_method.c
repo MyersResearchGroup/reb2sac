@@ -254,7 +254,7 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
     printer = rec->printer;
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, NULL, time )) ) {
-      printf("Time = %.2f\n",time);
+      if (time > 0.0) printf("Time = %.2f\n",time);
       fflush(stdout);
         if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
             return ret;            
