@@ -72,6 +72,8 @@ DLLSCOPE RET_VAL STDCALL DoNormalWaitingTimeMonteCarloAnalysis( BACK_END_PROCESS
     
     runs = rec.runs;    
     for( i = 1; i <= runs; i++ ) {
+      printf("Run = %d\n",i);
+      fflush(stdout);
         if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
             return ErrorReport( ret, "DoNormalWaitingTimeMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
         }

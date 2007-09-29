@@ -355,6 +355,8 @@ static RET_VAL _Print( EULER_SIMULATION_RECORD *rec ) {
     SIMULATION_PRINTER *printer = rec->printer;
 
     while( nextPrintTime <= time ) {
+      printf("Time = %.2f\n",time);
+      fflush(stdout);
         if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
             return ret;
         }

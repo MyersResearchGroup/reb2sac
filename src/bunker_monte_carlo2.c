@@ -72,6 +72,8 @@ DLLSCOPE RET_VAL STDCALL DoBunkerMonteCarlo2Analysis( BACK_END_PROCESSOR *backen
     
     runs = rec.runs;    
     for( i = 1; i <= runs; i++ ) {
+      printf("Run = %d\n",i);
+      fflush(stdout);
         if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
             return ErrorReport( ret, "DoBunkerMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
         }

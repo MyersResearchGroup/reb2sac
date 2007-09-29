@@ -73,6 +73,8 @@ DLLSCOPE RET_VAL STDCALL DoGillespieMonteCarloAnalysis( BACK_END_PROCESSOR *back
     
     runs = rec.runs;    
     for( i = 1; i <= runs; i++ ) {
+      printf("Run = %d\n",i);
+      fflush(stdout);
         if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
             return ErrorReport( ret, "DoGillespieMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
         }
