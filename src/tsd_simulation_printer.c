@@ -83,6 +83,7 @@ static RET_VAL _PrintHeader( SIMULATION_PRINTER *printer ) {
         fprintf( out, ",\"%s\"", GetCharArrayOfString(GetSpeciesNodeName( speciesArray[i] )) );
     }                 
     fprintf( out, ")" );
+    fflush(out);
     
     return ret;            
 }
@@ -99,6 +100,7 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
         fprintf( out, ",%g", GetAmountInSpeciesNode( speciesArray[i] ) );
     }                 
     fprintf( out, ")" );
+    fflush(out);
     
     return ret;            
 }
@@ -115,6 +117,7 @@ static RET_VAL _PrintConcentrationValues( SIMULATION_PRINTER *printer, double ti
         fprintf( out, ",%g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
     }                 
     fprintf( out, ")" );
+    fflush(out);
     
     return ret;            
 }
