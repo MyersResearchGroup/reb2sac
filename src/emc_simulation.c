@@ -72,8 +72,6 @@ DLLSCOPE RET_VAL STDCALL DoEmcSimulation( BACK_END_PROCESSOR *backend, IR *ir ) 
     
     runs = rec.runs;    
     for( i = 1; i <= runs; i++ ) {
-      printf("Run = %d\n",i);
-      fflush(stdout);
         if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
             return ErrorReport( ret, "DoEmcSimulation", "initialization of the %i-th simulation failed", i );
         }
@@ -83,6 +81,8 @@ DLLSCOPE RET_VAL STDCALL DoEmcSimulation( BACK_END_PROCESSOR *backend, IR *ir ) 
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoEmcSimulation", "cleaning of the %i-th simulation failed", i );
         }         
+      printf("Run = %d\n",i);
+      fflush(stdout);
     }
     END_FUNCTION("DoEmcSimulation", SUCCESS );
     return ret;            
