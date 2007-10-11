@@ -81,7 +81,9 @@ DLLSCOPE RET_VAL STDCALL DoLoopGillespieMonteCarloAnalysis( BACK_END_PROCESSOR *
         }
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoLoopGillespieMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i );
-        }         
+        }       
+	printf("Run = %d\n",i);
+        fflush(stdout);
     }
     END_FUNCTION("DoLoopGillespieMonteCarloAnalysis", SUCCESS );
     return ret;            

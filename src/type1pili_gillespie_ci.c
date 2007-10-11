@@ -122,6 +122,8 @@ DLLSCOPE RET_VAL STDCALL DoGillespiesForType1PiliWithCI( BACK_END_PROCESSOR *bac
             if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
                 return ErrorReport( ret, "DoGillespiesForType1PiliWithCI", "cleaning of the %i-th simulation failed", i );
             }         
+	    printf("Run = %d\n",i);
+	    fflush(stdout);
         }
         totalCount = decider->GetChangeCount( decider );
         

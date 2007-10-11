@@ -86,6 +86,8 @@ DLLSCOPE RET_VAL STDCALL DoSSAWithUserUpdateAnalysis( BACK_END_PROCESSOR *backen
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoSSAWithUserUpdateAnalysis", "cleaning of the %i-th simulation failed", i );
         }         
+	printf("Run = %d\n",i);
+        fflush(stdout);
     }
     END_FUNCTION("DoSSAWithUserUpdateAnalysis", SUCCESS );
     return ret;            
