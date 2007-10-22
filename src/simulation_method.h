@@ -31,6 +31,9 @@
 
 
 
+#define ODE_SIMULATION_ABSOLUTE_ERROR "ode.simulation.absolute.error"
+#define DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR 1.0e-9
+
 #define ODE_SIMULATION_TIME_LIMIT "ode.simulation.time.limit"
 #define DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE 30000.0
 

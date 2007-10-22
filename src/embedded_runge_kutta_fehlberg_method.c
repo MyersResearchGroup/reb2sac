@@ -147,6 +147,15 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
     }                
     
     properties = compRec->properties;
+    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_ABSOLUTE_ERROR ) ) == NULL ) {
+      rec->absoluteError = DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR;
+    }
+    else {
+      if( IS_FAILED( ( ret = StrToFloat( &(rec->absoluteError), valueString ) ) ) ) {
+	rec->absoluteError = DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR;
+      }
+    }    
+
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -248,7 +257,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
     };        
 
     step = gsl_odeiv_step_alloc( stepType, size );
-    control = gsl_odeiv_control_y_new( EMBEDDED_RUNGE_KUTTA_FEHLBERG_ABSOLUTE_ERROR, EMBEDDED_RUNGE_KUTTA_FEHLBERG_LOCAL_ERROR );
+    control = gsl_odeiv_control_y_new( rec->absoluteError, EMBEDDED_RUNGE_KUTTA_FEHLBERG_LOCAL_ERROR );
     evolve = gsl_odeiv_evolve_alloc( size );
     
     printer = rec->printer;

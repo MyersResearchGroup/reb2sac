@@ -24,7 +24,7 @@
 
 BEGIN_C_NAMESPACE
 
-#define EMBEDDED_RUNGE_KUTTA_FEHLBERG_ABSOLUTE_ERROR 1.0e-9
+//#define EMBEDDED_RUNGE_KUTTA_FEHLBERG_ABSOLUTE_ERROR 1.0e-9
 #define EMBEDDED_RUNGE_KUTTA_FEHLBERG_LOCAL_ERROR 0.0
 #define EMBEDDED_RUNGE_KUTTA_FEHLBERG_H 1.0e-9
 
@@ -44,6 +44,7 @@ typedef struct {
     double printInterval;
     double nextPrintTime;    
     double timeLimit;
+    double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
     char *outDir; 
 } EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD;

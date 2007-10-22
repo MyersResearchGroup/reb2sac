@@ -24,7 +24,7 @@
 
 BEGIN_C_NAMESPACE
 
-#define IMPLICIT_GEAR2_ABSOLUTE_ERROR 1.0e-9
+//#define IMPLICIT_GEAR2_ABSOLUTE_ERROR 1.0e-9
 #define IMPLICIT_GEAR2_LOCAL_ERROR 0.0
 #define IMPLICIT_GEAR2_H 1.0e-9
 
@@ -44,6 +44,7 @@ typedef struct {
     double printInterval;
     double nextPrintTime;    
     double timeLimit;
+    double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
     char *outDir; 
 } IMPLICIT_GEAR2_SIMULATION_RECORD;
