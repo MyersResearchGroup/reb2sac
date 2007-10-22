@@ -147,6 +147,15 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
     }                
     
     properties = compRec->properties;
+    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_ABSOLUTE_ERROR ) ) == NULL ) {
+      rec->absoluteError = DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR;
+    }
+    else {
+      if( IS_FAILED( ( ret = StrToFloat( &(rec->absoluteError), valueString ) ) ) ) {
+	rec->absoluteError = DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR;
+      }
+    }    
+
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -248,7 +257,7 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
     };        
 
     step = gsl_odeiv_step_alloc( stepType, size );
-    control = gsl_odeiv_control_y_new( IMPLICIT_GEAR1_ABSOLUTE_ERROR, IMPLICIT_GEAR1_LOCAL_ERROR );
+    control = gsl_odeiv_control_y_new( rec->absoluteError, IMPLICIT_GEAR1_LOCAL_ERROR );
     evolve = gsl_odeiv_evolve_alloc( size );
     
     printer = rec->printer;
