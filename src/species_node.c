@@ -48,7 +48,8 @@ RET_VAL InitSpeciesNode( SPECIES *species, char *name ) {
     species->Clone = _Clone;
     species->GetType = _GetType;
     species->ReleaseResource = _ReleaseResource;
-    
+    species->initType = CONSTANT;
+
     END_FUNCTION("InitSpeciesNode", SUCCESS );
     return ret;
 }

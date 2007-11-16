@@ -199,6 +199,9 @@ static RET_VAL _InitializeRecord( TYPE1PILI_GILLESPIE_CI_RECORD *rec, BACK_END_P
             
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
+    if (rec->reactionsSize==0) {
+        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
+    }
     if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
     }

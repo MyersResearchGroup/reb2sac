@@ -318,7 +318,6 @@ static RET_VAL _CreateEntries( DEFAULT_TIME_SERIES_SPECIES_LEVEL_UPDATER *update
         if( ( speciesIndex = _FindSpeciesIndex( speciesName, updater ) ) < 0 ) {
             continue;
         }
-        
         if( ( entry = _CreateEntry( time, speciesIndex, type, amount ) ) == NULL ) {
             return ErrorReport( FAILING, "_CreateEntries", "could not create an entry for %g %s %c%g",
                               time, speciesName, type, amount );
