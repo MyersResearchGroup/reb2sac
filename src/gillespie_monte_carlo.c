@@ -20,7 +20,7 @@
 #include <math.h>
 #include <float.h>
 #include "gillespie_monte_carlo.h"
-
+#include "uniformly_distributed_random_generator.h"
 
 
 
@@ -139,6 +139,9 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
             
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
+    if (rec->reactionsSize==0) {
+        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
+    }
     if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
     }
@@ -152,22 +155,78 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
+    if (rec->speciesSize==0) {
+        return ErrorReport( FAILING, "_InitializeRecord", "no species remaining in the model" );
+    }
     if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
     }
+
+    properties = compRec->properties;
+
     i = 0;
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
+	char temp[255];
+	strcpy(temp,"reb2sac.initial.type.");
+	strcat(temp,GetCharArrayOfString(species->name));
+	if( ( valueString = properties->GetProperty( properties, temp) ) != NULL ) {
+          if (strcmp(valueString,"uniform")==0) {
+	    species->initType = UNIFORM;
+	    strcpy(temp,"reb2sac.initial.min.");
+	    strcat(temp,GetCharArrayOfString(species->name));
+	    if( ( valueString = properties->GetProperty( properties, temp) ) != NULL ) {
+	      if( IS_FAILED( ( ret = StrToFloat( &(species->initMin), valueString ) ) ) ) {
+		if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+		  species->initMin = GetInitialAmountInSpeciesNode( species );
+		}
+		else {
+		  /* need to multiply concentration by the volume.  But not doing it yet */
+		  species->initMin = GetInitialConcentrationInSpeciesNode( species ); 
+		}
+	      } 
+	    } else {
+	      if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+		species->initMin = GetInitialAmountInSpeciesNode( species );
+	      }
+	      else {
+		/* need to multiply concentration by the volume.  But not doing it yet */
+		species->initMin = GetInitialConcentrationInSpeciesNode( species ); 
+	      }
+	    }
+	    strcpy(temp,"reb2sac.initial.max.");
+	    strcat(temp,GetCharArrayOfString(species->name));
+	    if( ( valueString = properties->GetProperty( properties, temp) ) != NULL ) {
+	      if( IS_FAILED( ( ret = StrToFloat( &(species->initMax), valueString ) ) ) ) {
+		if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+		  species->initMax = GetInitialAmountInSpeciesNode( species );
+		}
+		else {
+		  /* need to multiply concentration by the volume.  But not doing it yet */
+		  species->initMax = GetInitialConcentrationInSpeciesNode( species ); 
+		}
+	      } 
+	    } else {
+	      if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+		species->initMax = GetInitialAmountInSpeciesNode( species );
+	      }
+	      else {
+		/* need to multiply concentration by the volume.  But not doing it yet */
+		species->initMax = GetInitialConcentrationInSpeciesNode( species ); 
+	      }
+	    }
+	  }  
+	}
+	//printf("%s : %d %f %f\n",GetCharArrayOfString(species->name),species->initType,
+	//       species->initMin,species->initMax);
         i++;        
     }
     rec->speciesArray = speciesArray;    
-    
+
     if( ( rec->evaluator = CreateKineticLawEvaluater() ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
     }                
-    
-    properties = compRec->properties;
     
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
         rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
@@ -275,18 +334,27 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     size = rec->speciesSize;        
     for( i = 0; i < size; i++ ) {
         species = speciesArray[i];
+
         if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	  if (species->initType==UNIFORM) {
+	    amount = floor(GetNextUniformRandomNumber(species->initMin,species->initMax+1.0));
+	  } else {
             amount = GetInitialAmountInSpeciesNode( species );
+	  }
         }
         else {
             /* need to multiply concentration by the volume.  But not doing it yet */
+	  if (species->initType==UNIFORM) {
+	    amount = floor(GetNextUniformRandomNumber(species->initMin,species->initMax+1.0));
+	  } else {
             amount = GetInitialConcentrationInSpeciesNode( species ); 
-        }
-        if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
-            return ret;            
-        }
+	  }
+	}
+	//	printf("%s : %f\n",GetCharArrayOfString(species->name),amount);
+	if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
+	  return ret;            
+	}
     }
-            
     size = rec->reactionsSize;
     for( i = 0; i < size; i++ ) {
         reaction = reactionArray[i];
@@ -754,6 +822,7 @@ static double _GetUniformRandom() {
     uniformRandom = (value + 0.999999) / ( RAND_MAX + 1.0 );
     return uniformRandom;
 }
+
 
 static int _ComparePropensity( REACTION *a, REACTION *b ) {
     double d1 = 0.0;

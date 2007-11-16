@@ -27,6 +27,9 @@
 #include "unit_manager.h"
 #include "compartment_manager.h"
 
+#define CONSTANT 0
+#define UNIFORM 1
+
 BEGIN_C_NAMESPACE
 
 struct _SPECIES;
@@ -54,6 +57,9 @@ struct  _SPECIES {
         double amount;
         double concentration;
     } quantity;
+    int initType;
+    double initMin;
+    double initMax;
     UNIT_DEFINITION *substanceUnits;
     UNIT_DEFINITION *spatialSizeUnits;
     int charge;
