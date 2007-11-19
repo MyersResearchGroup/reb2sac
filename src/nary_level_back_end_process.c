@@ -120,11 +120,11 @@ static RET_VAL _GenerateNaryLevels(  BACK_END_PROCESSOR *backend, IR *ir ) {
             return ret;
         }   
     }
-    
+    /*
     if( IS_FAILED( ( ret = _PrintOtherProperties( backend, file ) ) ) ) {
         return ret;
     }   
-    
+    */
     fclose( file );
                 
     return ret;    
@@ -318,12 +318,12 @@ static RET_VAL _CleanCriticalConInfo( CRITICAL_CONCENTRATION_INFO *info ) {
 static RET_VAL _PrintSpeciesProperties( BACK_END_PROCESSOR *backend, FILE *file, SPECIES *species ) {
     RET_VAL ret = SUCCESS;
     
-    
+    /*
     fprintf( file, "%s%s = %s" NEW_LINE,  
             REB2SAC_ABSOLUTE_INHIBITION_THRESHOLD_KEY_PREFIX, 
             GetCharArrayOfString( GetSpeciesNodeName( species ) ),
             REB2SAC_NARY_LEVEL_SPECIES_UNKNOWN_VALUE );                 
-            
+    */      
     fprintf( file, "%s%s = %s" NEW_LINE,  
             REB2SAC_CRITICAL_CONCENTRATION_LEVEL_SPECIFICATION_TYPE_KEY_PREFIX, 
             GetCharArrayOfString( GetSpeciesNodeName( species ) ),
