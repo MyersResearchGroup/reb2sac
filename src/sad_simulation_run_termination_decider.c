@@ -90,7 +90,7 @@ static BOOL _IsTerminationConditionMet( SAD_SIMULATION_RUN_TERMINATION_DECIDER *
     int size = 0;
     double quantity = 0;
     SAD_AST_ENV *env = decider->env;
-            
+
     env->time = time;
     if( reaction != NULL ) {
         IncrementReactionFireCount( reaction ); 

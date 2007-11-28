@@ -360,8 +360,10 @@ static RET_VAL _RunSimulation( SSA_WITH_USER_UPDATE_RECORD *rec ) {
             }
         }
     }
-    
-    if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->timeLimit ) ) ) ) {
+    if( rec->time >= rec->timeLimit ) {
+        rec->time = rec->timeLimit;
+    } 
+    if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
         return ret;
     }
     /*
