@@ -30,6 +30,7 @@ GT ">"
 LE "<="
 GE ">="
 EQ "="
+ATSIGN "@"
 NUM_OP "\#"
 CON_OP "\%"
 TIME "t"
@@ -47,8 +48,6 @@ ALPHA [a-zA-Z]
 LETTER {ALPHA}
 DIGIT [0-9]
 IDENTIFIER (({LETTER}|"_")({LETTER}|{DIGIT}|"_")*)
-SPECIES \${IDENTIFIER}
-REACTION \@{IDENTIFIER}
 CONSTANT 0*{DIGIT}+ 
 INTEGER (0|[1-9][0-9]*)
 REAL1 {INTEGER}"."[0-9]*
@@ -202,6 +201,13 @@ ERROR_STRINGX (\"((\\(\\\\)*)|{WHITE_SPACE})*)$
     return SAD_NUM_OP;            
 }
 
+{ATSIGN} {
+#if LEX_DEBUG
+        printf("at line %i: %s\n", lineNum, yytext );            
+#endif
+    return SAD_ATSIGN;
+}
+
 {CON_OP} {
 #if LEX_DEBUG
         printf("at line %i: %s\n", lineNum, yytext );            
@@ -269,24 +275,14 @@ ERROR_STRINGX (\"((\\(\\\\)*)|{WHITE_SPACE})*)$
     return SAD_IDENTIFIER;            
 }
 
-{SPECIES} {
+{IDENTIFIER} {
     _string = (char*)MALLOC( yyleng );
     strcpy( _string, yytext + 1 );
     yylval.string = _string; 
 #if LEX_DEBUG
         printf("species at line %i: %s\n", lineNum, _string );            
 #endif
-    return SAD_SPECIES;            
-}
-
-{REACTION} {
-    _string = (char*)MALLOC( yyleng );
-    strcpy( _string, yytext + 1 );
-    yylval.string = _string; 
-#if LEX_DEBUG
-        printf("reaction at line %i: %s\n", lineNum, _string );            
-#endif
-    return SAD_REACTION;            
+    return SAD_IDENTIFIER;
 }
 
 {INTEGER} {

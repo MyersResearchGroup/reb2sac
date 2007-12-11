@@ -68,11 +68,12 @@
      SAD_CONSTANT = 284,
      SAD_CON_OP = 285,
      SAD_NUM_OP = 286,
-     SAD_EXP = 287,
-     SAD_POW = 288,
-     SAD_LOG = 289,
-     SAD_ERROR = 290,
-     UMINUS = 291
+     SAD_ATSIGN = 287,
+     SAD_EXP = 288,
+     SAD_POW = 289,
+     SAD_LOG = 290,
+     SAD_ERROR = 291,
+     UMINUS = 292
    };
 #endif
 /* Tokens.  */
@@ -105,11 +106,12 @@
 #define SAD_CONSTANT 284
 #define SAD_CON_OP 285
 #define SAD_NUM_OP 286
-#define SAD_EXP 287
-#define SAD_POW 288
-#define SAD_LOG 289
-#define SAD_ERROR 290
-#define UMINUS 291
+#define SAD_ATSIGN 287
+#define SAD_EXP 288
+#define SAD_POW 289
+#define SAD_LOG 290
+#define SAD_ERROR 291
+#define UMINUS 292
 
 
 
@@ -123,7 +125,7 @@ typedef union YYSTYPE
     SAD_AST *ast;
 }
 /* Line 1489 of yacc.c.  */
-#line 127 "analysis_def_parser.tab.h"
+#line 129 "analysis_def_parser.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
