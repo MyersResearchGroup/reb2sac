@@ -58,7 +58,7 @@ static REACTION *FindReactionFromID( char *id ) {
 %token SAD_LE SAD_LT SAD_GE SAD_GT SAD_EQ
 %token SAD_PLUS SAD_MINUS SAD_TIMES SAD_DIV 
 %token SAD_TIME_VAR SAD_IDENTIFIER SAD_SPECIES SAD_REACTION SAD_STRING SAD_CONSTANT
-%token SAD_CON_OP SAD_NUM_OP
+%token SAD_CON_OP SAD_NUM_OP SAD_ATSIGN
 %token SAD_EXP SAD_POW SAD_LOG
 %token SAD_ERROR        
         
@@ -292,7 +292,7 @@ num_exp :
         } 
         $<ast>$ = ast; 
     }
-    | SAD_CON_OP SAD_SPECIES { 
+    | SAD_CON_OP SAD_IDENTIFIER { 
         species = FindSpeciesFromID( $2 );
         if( species == NULL ) {
             PrintSadAstErrorMessage( "%s is not a valid species ID", $2 );
@@ -320,7 +320,21 @@ num_exp :
         $<ast>$ = ast; 
         FREE($2);
     }
-    | SAD_NUM_OP SAD_REACTION { 
+    | SAD_IDENTIFIER { 
+        species = FindSpeciesFromID( $1 );
+        if( species == NULL ) {
+            PrintSadAstErrorMessage( "%s is not a valid species ID", $1 );
+            yyerror(NULL); return 1;
+        } 
+        ast = (SAD_AST*)CreateSadAstSpeciesCnt( species );
+        if( ast == NULL ) {
+            PrintSadAstErrorMessage( "Error creating species node for %s", $1 );
+            yyerror(NULL); return 1;
+        } 
+        $<ast>$ = ast; 
+        FREE($1);
+    }
+    | SAD_ATSIGN SAD_REACTION { 
         reaction = FindReactionFromID( $2 );
         if( reaction == NULL ) {
             PrintSadAstErrorMessage( "%s is not a valid reaction ID", $2 );
