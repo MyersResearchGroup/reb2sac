@@ -29,6 +29,7 @@ static RET_VAL _PrintListOfReactantsInXHTML( LINKED_LIST *list, FILE *file );
 static RET_VAL _PrintListOfProductsInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ); 
+static RET_VAL _PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
 
 static void _PrintTab( FILE *file, int tabCount );
@@ -60,7 +61,6 @@ RET_VAL GenerateXHTMLFromIR( IR *ir, FILE *file ) {
     fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     fprintf( file, REB2SAC_XHTML_LINE_BREAK );
 
-    
     list = ir->GetListOfReactionNodes( ir );
     if( IS_FAILED( ( ret = _PrintListOfReactionsInXHTML( list, file ) ) ) ) {
         END_FUNCTION("GenerateXHTMLFromIR", ret );
@@ -171,6 +171,12 @@ RET_VAL PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     START_FUNCTION("PrintListOfSpeciesInXHTML");
     END_FUNCTION("PrintListOfSpeciesInXHTML", SUCCESS );
     return _PrintListOfSpeciesInXHTML( list, file );
+}
+
+RET_VAL PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ) {
+    START_FUNCTION("PrintSpeciesListInXHTML");
+    END_FUNCTION("PrintSpeciesListInXHTML", SUCCESS );
+    return _PrintSpeciesListInXHTML( list, file );
 }
 
 RET_VAL PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ) {
@@ -296,7 +302,6 @@ static RET_VAL _PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ) {
     return ret;
 }
 
-
 static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     RET_VAL ret = SUCCESS;
     int stoichiometry = 0;
@@ -336,6 +341,58 @@ static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     return ret;
 }
 
+static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
+    RET_VAL ret = SUCCESS;
+    double initialQuantity = 0.0;
+    COMPARTMENT *compartment = NULL;
+    
+    START_FUNCTION("_PrintSpeciesForXHTML");
+        
+    compartment = GetCompartmentInSpeciesNode( species );
+    
+     if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+         initialQuantity = GetInitialAmountInSpeciesNode( species );
+     } else {
+         initialQuantity = GetInitialConcentrationInSpeciesNode( species );
+     }
+
+    fprintf( file, REB2SAC_XHTML_SPECIES_ENTRY_FORMAT,
+	     GetCharArrayOfString( GetSpeciesNodeID( species ) ),
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ),
+	     initialQuantity );
+
+    fprintf( file, NEW_LINE );
+            
+    END_FUNCTION("_PrintSpeciesForXHTML", SUCCESS );
+    
+    return ret;
+}
+
+static RET_VAL _PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ) {
+    RET_VAL ret = SUCCESS;
+    SPECIES *species = NULL;
+
+    fprintf( file, REB2SAC_XHTML_START_SPECIES_FORMAT );
+    
+    START_FUNCTION("_PrintSpeciesListInXHTML");
+    if( ( list == NULL ) || ( GetLinkedListSize( list ) == 0 ) ) {
+        END_FUNCTION("_PrintListOfSpeciesForSBML", SUCCESS );    
+        return ret;
+    }    
+    ResetCurrentElement( list );
+    while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+        if( IS_FAILED( ( ret = _PrintSpeciesForXHTML( species, file ) ) ) ) {
+            END_FUNCTION("_PrintSpeciesListInXHTML", ret );    
+            return ret;
+        }
+    }
+    
+    fprintf( file, REB2SAC_XHTML_END_SPECIES_FORMAT );
+    fprintf( file, NEW_LINE );
+    
+    END_FUNCTION("_PrintSpeciesListInXHTML", SUCCESS );
+    return ret;
+}
 
 static RET_VAL _PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ) {
     static KINETIC_LAW_VISITOR visitor;
