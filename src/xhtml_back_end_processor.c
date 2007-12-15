@@ -83,7 +83,8 @@ static RET_VAL _HandleIR( BACK_END_PROCESSOR *backend, IR *ir, FILE *file ) {
     fprintf( file, NEW_LINE );
     fprintf( file, NEW_LINE );
         
-    if( IS_FAILED( ( ret = PrintConstantsInXHTML( ir, file ) ) ) ) {
+    list = ir->GetListOfSpeciesNodes( ir );
+    if( IS_FAILED( ( ret = PrintSpeciesListInXHTML( list, file ) ) ) ) {
         END_FUNCTION("GenerateXHTMLFromIR", ret );
         return ret;
     }
@@ -92,6 +93,13 @@ static RET_VAL _HandleIR( BACK_END_PROCESSOR *backend, IR *ir, FILE *file ) {
 
     list = ir->GetListOfReactionNodes( ir );
     ResetCurrentElement( list );
+        
+    if( IS_FAILED( ( ret = PrintConstantsInXHTML( ir, file ) ) ) ) {
+        END_FUNCTION("GenerateXHTMLFromIR", ret );
+        return ret;
+    }
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     
     if( IS_FAILED( ( ret = _HandleListOfReactions( backend, ir, file ) ) ) ) {
         END_FUNCTION("_HandleIR", ret );

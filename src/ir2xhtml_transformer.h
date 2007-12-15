@@ -77,6 +77,15 @@
 #define REB2SAC_XHTML_CONSTANT_ENTRY_FORMAT \
 "<tr><td>%s</td><td>%g</td></tr>" NEW_LINE
 
+#define REB2SAC_XHTML_START_SPECIES_FORMAT \
+"<table border=\"2\"><tr><th>Species ID</th><th>Compartment</th><th>Initial Value</th></tr>" NEW_LINE
+ 
+#define REB2SAC_XHTML_END_SPECIES_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_SPECIES_ENTRY_FORMAT \
+"<tr><td>%s</td><td>%s</td><td>%g</td></tr>" NEW_LINE
+
 #define REB2SAC_XHTML_START_REACTION_FORMAT \
 "<table border=\"2\"><tr><th>Reaction Name</th><td>%s</td></tr>" NEW_LINE
  
@@ -128,6 +137,7 @@ RET_VAL PrintListOfReactantsInXHTML( LINKED_LIST *list, FILE *file );
 RET_VAL PrintListOfProductsInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ); 
+RET_VAL PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
 
 
