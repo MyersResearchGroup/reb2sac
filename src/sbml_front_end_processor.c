@@ -26,7 +26,7 @@
 #include "symtab.h"
 
 #ifdef DEBUG
-#include "sbml/FormulaFormatter.h"
+#include "sbml/math/FormulaFormatter.h"
 #endif
 
 static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend );
@@ -53,7 +53,7 @@ static KINETIC_LAW *_TransformIntValueKineticLaw( FRONT_END_PROCESSOR *frontend,
 static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 
 static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode,  Reaction_t *reaction );
-static UINT _GetNumItems( ListOf_t *list );
+//static UINT _GetNumItems( ListOf_t *list );
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
 
@@ -112,24 +112,24 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
     record = frontend->record;
     
     doc = readSBML( GetCharArrayOfString( record->inputPath ) );
-    SBMLDocument_validate( doc );
-    errorNum = SBMLDocument_getNumWarnings( doc );
-    if( errorNum > 0 ) {
-        /*this is not actually error*/
-        SBMLDocument_printWarnings( doc, stderr );        
-    }     
+    //    SBMLDocument_checkConsistency( doc );
+//     errorNum = SBMLDocument_getNumWarnings( doc );
+//     if( errorNum > 0 ) {
+//         /*this is not actually error*/
+//         SBMLDocument_printWarnings( doc, stderr );        
+//     }     
     
-    errorNum = SBMLDocument_getNumErrors( doc );
-    if( errorNum > 0 ) {
-        SBMLDocument_printErrors( doc, stderr );
-        error = TRUE;         
-    }
+//     errorNum = SBMLDocument_getNumErrors( doc );
+//     if( errorNum > 0 ) {
+//         SBMLDocument_printErrors( doc, stderr );
+//         error = TRUE;         
+//     }
 
-    errorNum = SBMLDocument_getNumFatals( doc );
-    if( errorNum > 0 ) {
-        SBMLDocument_printFatals( doc, stderr );
-        error = TRUE;
-    }
+//     errorNum = SBMLDocument_getNumFatals( doc );
+//     if( errorNum > 0 ) {
+//         SBMLDocument_printFatals( doc, stderr );
+//         error = TRUE;
+//     }
 
     if( error ) {
         END_FUNCTION("_ParseSBML", FAILING );
@@ -272,7 +272,7 @@ static RET_VAL _HandleUnitDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *m
     START_FUNCTION("_HandleUnitDefinitions");
         
     list = Model_getListOfUnitDefinitions( model );
-    size = _GetNumItems( list );
+    size = Model_getNumUnitDefinitions( model );
     for( i = 0; i < size; i++ ) {
         unitDef = (UnitDefinition_t*)ListOf_get( list, i );
         if( IS_FAILED( ( ret = _HandleUnitDefinition( frontend, model, unitDef ) ) ) ) {
@@ -345,7 +345,7 @@ static RET_VAL _HandleCompartments( FRONT_END_PROCESSOR *frontend, Model_t *mode
     START_FUNCTION("_HandleCompartments");
         
     list = Model_getListOfCompartments( model );
-    size = _GetNumItems( list );
+    size = Model_getNumCompartments( model );
     for( i = 0; i < size; i++ ) {
         compartment = (Compartment_t*)ListOf_get( list, i );
         if( IS_FAILED( ( ret = _HandleCompartment( frontend, model, compartment ) ) ) ) {
@@ -451,7 +451,7 @@ static RET_VAL _CreateSpeciesNodes(  FRONT_END_PROCESSOR *frontend, IR *ir, Mode
         
     
     list = Model_getListOfSpecies( model );
-    size = _GetNumItems( list );
+    size = Model_getNumSpecies( model );
     for( i = 0; i < size; i++ ) {
         species = (Species_t*)ListOf_get( list, i );
         if( IS_FAILED( ( ret = _CreateSpeciesNode( frontend, ir, model, species ) ) ) ) {
@@ -638,7 +638,7 @@ static RET_VAL _CreateReactionNodes( FRONT_END_PROCESSOR *frontend, IR *ir, Mode
     START_FUNCTION("_CreateReactionNodes");
             
     list = Model_getListOfReactions( model );
-    size = _GetNumItems( list );
+    size = Model_getNumReactions( model );
     for( i = 0; i < size; i++ ) {
         reaction = (Reaction_t*)ListOf_get( list, i );
         if( IS_FAILED( ( ret = _CreateReactionNode( frontend, ir, model, reaction ) ) ) ) {
@@ -1073,7 +1073,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     table = (HASH_TABLE*)frontend->_internal2;    
     
     reactants = Reaction_getListOfReactants( reaction );
-    num = _GetNumItems( reactants );
+    num = Reaction_getNumReactants( reaction );
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( reactants, i );
         species = SpeciesReference_getSpecies( speciesRef );
@@ -1091,7 +1091,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
   
                   
     products = Reaction_getListOfProducts( reaction );
-    num = _GetNumItems( products );
+    num = Reaction_getNumProducts( reaction );
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( products, i );
         species = SpeciesReference_getSpecies( speciesRef );
@@ -1108,10 +1108,10 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     }
 
     modifiers = Reaction_getListOfModifiers( reaction );
-    num = _GetNumItems( modifiers );
+    num = Reaction_getNumModifiers( reaction );
     for( i = 0; i < num; i++ ) {
         modifierRef = (ModifierSpeciesReference_t*)ListOf_get( modifiers, i );
-        species = ModifierSpeciesReference_getSpecies( modifierRef );
+        species = SpeciesReference_getSpecies( modifierRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
@@ -1127,18 +1127,18 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 }
 
 
-static UINT _GetNumItems( ListOf_t *list ) {
-    UINT i = 0;
-    START_FUNCTION("_GetNumItems");
+// static UINT _GetNumItems( ListOf_t *list ) {
+//     UINT i = 0;
+//     START_FUNCTION("_GetNumItems");
 
-    if( list == NULL ) {
-        END_FUNCTION("_GetNumItems", SUCCESS );
-        return 0;        
-    }
-    i = ListOf_getNumItems( list );
-    END_FUNCTION("_GetNumItems", SUCCESS );
-    return i;
-}
+//     if( list == NULL ) {
+//         END_FUNCTION("_GetNumItems", SUCCESS );
+//         return 0;        
+//     }
+//     i = ListOf_getNumItems( list );
+//     END_FUNCTION("_GetNumItems", SUCCESS );
+//     return i;
+// }
 
  
  

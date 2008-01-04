@@ -100,7 +100,7 @@ static BOOL _LookupValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value 
     localParams = manager->local;
     if( localParams != NULL ) {
         /*first search local */
-        num = ListOf_getNumItems( localParams );
+        num = ListOf_size( localParams );
         for( i = 0; i < num; i++ ) {
             param = (Parameter_t*)ListOf_get( localParams, i );
             if( strcmp( id, Parameter_getId( param ) ) == 0 ) {
@@ -115,7 +115,7 @@ static BOOL _LookupValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value 
     globalParams = manager->global;
     if( globalParams != NULL ) {
         /*then search global */
-        num = ListOf_getNumItems( globalParams );
+        num = ListOf_size( globalParams );
         for( i = 0; i < num; i++ ) {
             param = (Parameter_t*)ListOf_get( globalParams, i );
             if( strcmp( id, Parameter_getId( param ) ) == 0 ) {
@@ -142,7 +142,7 @@ static BOOL _LookupGlobalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *
     globalParams = manager->global;
     if( globalParams != NULL ) {
         /*then search global */
-        num = ListOf_getNumItems( globalParams );
+        num = ListOf_size( globalParams );
         for( i = 0; i < num; i++ ) {
             param = (Parameter_t*)ListOf_get( globalParams, i );
             if( strcmp( id, Parameter_getId( param ) ) == 0 ) {
@@ -169,7 +169,7 @@ static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *v
     localParams = manager->local;
     if( localParams != NULL ) {
         /*first search local */
-        num = ListOf_getNumItems( localParams );
+        num = ListOf_size( localParams );
         for( i = 0; i < num; i++ ) {
             param = (Parameter_t*)ListOf_get( localParams, i );
             if( strcmp( id, Parameter_getId( param ) ) == 0 ) {
@@ -197,7 +197,7 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
 
     globalParams = manager->global;
     if( globalParams != NULL ) {
-        num = ListOf_getNumItems( globalParams );
+        num = ListOf_size( globalParams );
         for( i = 0; i < num; i++ ) {
             param = (Parameter_t*)ListOf_get( globalParams, i );
             id = Parameter_getId( param );
