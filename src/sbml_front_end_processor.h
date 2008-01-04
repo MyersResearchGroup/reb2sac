@@ -39,7 +39,7 @@
 #include "sbml/Species.h"
 #include "sbml/Reaction.h"
 #include "sbml/SpeciesReference.h"
-#include "sbml/ModifierSpeciesReference.h"
+//#include "sbml/ModifierSpeciesReference.h"
 #include "sbml/UnitDefinition.h"
 #include "sbml/UnitKind.h"
 #include "sbml/Compartment.h"
