@@ -1064,7 +1064,8 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     ListOf_t *modifiers = NULL;
     ListOf_t *products = NULL;
     SpeciesReference_t *speciesRef = NULL;
-    ModifierSpeciesReference_t *modifierRef = NULL;        
+    SpeciesReference_t *modifierRef = NULL;        
+    //    ModifierSpeciesReference_t *modifierRef = NULL;        
     SPECIES *speciesNode = NULL;
     HASH_TABLE *table = NULL;
     
@@ -1110,7 +1111,8 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     modifiers = Reaction_getListOfModifiers( reaction );
     num = Reaction_getNumModifiers( reaction );
     for( i = 0; i < num; i++ ) {
-        modifierRef = (ModifierSpeciesReference_t*)ListOf_get( modifiers, i );
+        modifierRef = (SpeciesReference_t*)ListOf_get( modifiers, i );
+	//        modifierRef = (ModifierSpeciesReference_t*)ListOf_get( modifiers, i );
         species = SpeciesReference_getSpecies( modifierRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
