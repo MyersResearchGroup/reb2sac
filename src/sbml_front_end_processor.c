@@ -387,7 +387,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
     id = Compartment_getId( source );
     TRACE_1("creating compartment %s", id );
     if( ( compartment = manager->CreateCompartment( manager, id ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleUnitDefinition", "could not allocate compartment %s", id );
+        return ErrorReport( FAILING, "_HandleCompartment", "could not allocate compartment %s", id );
     }
     
     spatialDimensions = Compartment_getSpatialDimensions( source );
@@ -484,7 +484,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     /*
         use name as the id
     */
-    id = Species_getName( species );
+    //id = Species_getName( species );
     if( id == NULL ) {
         id = key;
     }
@@ -659,9 +659,10 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
 
     START_FUNCTION("_CreateReactionNode");
             
-    if( ( name = Reaction_getName( reaction ) ) == NULL ) {    
-        name = Reaction_getId( reaction );
-    }
+    //if( ( name = Reaction_getName( reaction ) ) == NULL ) {    
+    //    name = Reaction_getId( reaction );
+    //}
+    name = Reaction_getId( reaction );
     TRACE_1("reaction name = %s", name);
     
     if( ( reactionNode = ir->CreateReaction( ir, name ) ) == NULL ) {
