@@ -1047,9 +1047,9 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  funcId = ASTNode_getName( source );
 	  functionManager = GetFunctionManagerInstance( frontend->record );
 	  if( ( functionDef = functionManager->LookupFunctionDefinition( functionManager, funcId ) ) == NULL ) {
-            return ErrorReport( FAILING, "_HandleUnitDefinition", "function def %s is not declared", funcId );
+            return ErrorReport( FAILING, "_HandleFunctionDefinition", "function def %s is not declared", funcId );
 	  }             
-	  if( ( law = CreateFunctionKineticLaw( functionDef->function, functionDef->arguments, children, num ) ) == NULL ) {
+	  if( ( law = CreateFunctionKineticLaw( funcId, functionDef->function, functionDef->arguments, children, num ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }

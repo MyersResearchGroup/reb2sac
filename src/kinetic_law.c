@@ -194,7 +194,7 @@ KINETIC_LAW *CreateFunctionSymbolKineticLaw( char *funcSymbol ) {
     return law;
 }
 
-KINETIC_LAW *CreateFunctionKineticLaw( KINETIC_LAW *function, LINKED_LIST *arguments, KINETIC_LAW **children, int num ) {
+KINETIC_LAW *CreateFunctionKineticLaw( char *funcId, KINETIC_LAW *function, LINKED_LIST *arguments, KINETIC_LAW **children, int num ) {
     KINETIC_LAW *law = NULL;
     int i;
     char *argument = NULL;
@@ -209,8 +209,7 @@ KINETIC_LAW *CreateFunctionKineticLaw( KINETIC_LAW *function, LINKED_LIST *argum
     }
 
     if (GetLinkedListSize(arguments) != num) {
-      // TODO: add which function
-      printf( "number of arguments to function do not match" );
+      printf( "number of arguments to function %s do not match", funcId );
       END_FUNCTION("CreateFunctionKineticLaw", FAILING );        
       return NULL;
     }
@@ -229,10 +228,6 @@ KINETIC_LAW *CreateFunctionKineticLaw( KINETIC_LAW *function, LINKED_LIST *argum
 	return NULL;
       }
     }
-//     if( SetIntValueKineticLaw( law, 1 ) == FAILING ) {
-//         END_FUNCTION("CreateFunctionKineticLaw", FAILING );        
-//         return NULL;
-//     }
     
     END_FUNCTION("CreateFunctionKineticLaw", SUCCESS );        
     return law;
