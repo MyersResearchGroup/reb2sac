@@ -92,7 +92,7 @@ KINETIC_LAW *CreateIntValueKineticLaw( long value );
 KINETIC_LAW *CreateRealValueKineticLaw( double value );
 KINETIC_LAW *CreateSpeciesKineticLaw( SPECIES *species );
 KINETIC_LAW *CreateSymbolKineticLaw( REB2SAC_SYMBOL *symbol );
-KINETIC_LAW *CreateFunctionKineticLaw( KINETIC_LAW *functionDef, LINKED_LIST *arguments, KINETIC_LAW **children, int num );
+KINETIC_LAW *CreateFunctionKineticLaw( char * funcId, KINETIC_LAW *functionDef, LINKED_LIST *arguments, KINETIC_LAW **children, int num );
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
 
 KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law );
