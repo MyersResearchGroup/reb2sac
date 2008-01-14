@@ -85,6 +85,36 @@ static RET_VAL _ApplyKineticLawConstantsSimplifierMethod( ABSTRACTION_METHOD *me
     return ret;
 }      
 
+RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
+    static KINETIC_LAW_VISITOR visitor;
+    RET_VAL ret = SUCCESS;    
+#ifdef DEBUG
+    STRING *kineticLawString = NULL;
+#endif        
+
+    START_FUNCTION("_SimplifyKineticLaw");
+
+    if( visitor.VisitOp == NULL ) {
+        visitor.VisitOp = _VisitOpToSimplifyKineticLaw;
+        visitor.VisitInt = _VisitIntToSimplifyKineticLaw;
+        visitor.VisitReal = _VisitRealToSimplifyKineticLaw;
+        visitor.VisitSpecies = _VisitSpeciesToSimplifyKineticLaw;
+        visitor.VisitSymbol = _VisitSymbolToSimplifyKineticLaw;
+    }    
+
+    if( IS_FAILED( ( ret = kineticLaw->Accept( kineticLaw, &visitor ) ) ) ) {    
+        END_FUNCTION("_SimplifyKineticLaw", ret );
+        return ret;
+    }     
+#ifdef DEBUG
+    kineticLawString = ToStringKineticLaw( kineticLaw );
+    printf("initial assignment is: %s" NEW_LINE, GetCharArrayOfString( kineticLawString ) );
+    FreeString( &kineticLawString );
+#endif        
+    END_FUNCTION("_SimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
 static RET_VAL _SimplifyKineticLaw( ABSTRACTION_METHOD *method, IR *ir, REACTION *reaction ) {
     static KINETIC_LAW_VISITOR visitor;
     RET_VAL ret = SUCCESS;    
