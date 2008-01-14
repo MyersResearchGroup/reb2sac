@@ -28,6 +28,7 @@
 #include "species_node.h"
 #include "reaction_node.h"
 #include "symtab.h"
+#include "function_manager.h"
 
 BEGIN_C_NAMESPACE
 
@@ -47,6 +48,7 @@ struct _IR {
 
     COMPILER_RECORD_T *record;
     UNIT_MANAGER *unitManager;
+    FUNCTION_MANAGER *functionManager;
     COMPARTMENT_MANAGER *compartmentManager;
     REB2SAC_SYMTAB *globalSymtab;
     
@@ -94,10 +96,12 @@ struct _IR {
     BOOL (*IsStructureChanged)( IR *ir );
     
     UNIT_MANAGER * (*GetUnitManager)( IR *ir );
+    FUNCTION_MANAGER * (*GetFunctionManager)( IR *ir );
     COMPARTMENT_MANAGER * (*GetCompartmentManager)( IR *ir );
     REB2SAC_SYMTAB *(*GetGlobalSymtab)( IR *ir );
     
     RET_VAL (*SetUnitManager)( IR *ir, UNIT_MANAGER *unitManager );
+    RET_VAL (*SetFunctionManager)( IR *ir, FUNCTION_MANAGER *functionManager );
     RET_VAL (*SetCompartmentManager)( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
         
     
