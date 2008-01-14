@@ -571,6 +571,13 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     HASH_TABLE *table = NULL;
     COMPARTMENT_MANAGER *compartmentManager = NULL;
     UNIT_MANAGER *unitManager = NULL;
+    UINT i = 0;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    InitialAssignment_t *initialAssignment = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    SBML_SYMTAB_MANAGER *manager = NULL;
 
     START_FUNCTION("_CreateSpeciesNode");
     
@@ -581,9 +588,9 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
         use name as the id
     */
     //id = Species_getName( species );
-    if( id == NULL ) {
-        id = key;
-    }
+    //if( id == NULL ) {
+    id = key;
+    //}
     
     TRACE_2("species id = %s and key for sym is %s", id, key );
     
@@ -621,7 +628,35 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
             }
         }
     }
-    
+
+    list = Model_getListOfInitialAssignments( model );
+    size = Model_getNumInitialAssignments( model );
+    for( i = 0; i < size; i++ ) {
+      initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
+      if (strcmp(InitialAssignment_getSymbol(initialAssignment),id)==0) {
+	node = InitialAssignment_getMath( initialAssignment );
+	if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_CreateSpeciesNode", "error on getting symtab manager" ); 
+	}
+	table = (HASH_TABLE*)frontend->_internal2;    
+	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_CreateSpeciesNode", "failed to create initial assignment for %s", id );        
+	}
+	SimplifyInitialAssignment(law);
+	if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	  initialQuantity = GetRealValueFromKineticLaw(law); 
+	  if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialQuantity ) ) ) ) {
+	    END_FUNCTION("_CreateSpeciesNode", ret );
+	    return ret;   
+	  }
+	} /*else 	if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	  printf("value = %d\n",law->intValue);
+	  initialQunatity = law->intValue; 
+	  } */ else {
+	  return ErrorReport( FAILING, "_CreateSpeciesNode", "failed to create initial assignment for %s", id );        
+	}
+      }
+    }
     
     if( ( unitManager = GetUnitManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_CreateSpeciesNode", "could not get an instance of unit manager" );

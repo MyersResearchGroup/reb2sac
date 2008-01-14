@@ -133,6 +133,8 @@ STRING *ToStringKineticLaw( KINETIC_LAW *law );
 
 BOOL AreKineticLawsStructurallyEqual( KINETIC_LAW *a, KINETIC_LAW *b );
 
+RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw );
+
 END_C_NAMESPACE
 
 #endif
