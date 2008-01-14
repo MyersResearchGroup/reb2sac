@@ -71,16 +71,20 @@ static void _ResetChangeFlag( IR *ir );
 static BOOL _IsStructureChanged( IR *ir );
 
 static UNIT_MANAGER *_GetUnitManager( IR *ir );
+static FUNCTION_MANAGER *_GetFunctionManager( IR *ir );
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir );
 static REB2SAC_SYMTAB *_GetGlobalSymtab( IR *ir );
 
 static RET_VAL _SetUnitManager( IR *ir, UNIT_MANAGER *unitManager );
+static RET_VAL _SetFunctionManager( IR *ir, FUNCTION_MANAGER *functionManager );
 static RET_VAL _SetCompartmentManager( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
 
             
 static RET_VAL _GenerateDotFile( IR *ir, FILE *file );            
 static RET_VAL _GenetateSBML( IR *ir, FILE *file );           
 static RET_VAL _GenerateXHTML( IR *ir, FILE *file );           
+
+// TODO: create function definition print functions
 
 static RET_VAL _PrintListOfUnitDefinitionsForSBML( IR *ir, FILE *file, UINT32 tabCount );
 static RET_VAL _PrintUnitDefinitionForSBML( UNIT_DEFINITION *unitDef, FILE *file, UINT32 tabCount );
@@ -192,6 +196,9 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
 
     ir->GetUnitManager = _GetUnitManager;
     ir->SetUnitManager = _SetUnitManager;    
+
+    ir->GetFunctionManager = _GetFunctionManager;
+    ir->SetFunctionManager = _SetFunctionManager;    
     
     ir->GetCompartmentManager = _GetCompartmentManager;
     ir->SetCompartmentManager = _SetCompartmentManager;    
@@ -852,6 +859,18 @@ static UNIT_MANAGER *_GetUnitManager( IR *ir ) {
     return ir->unitManager;
 }
 
+static FUNCTION_MANAGER *_GetFunctionManager( IR *ir ) {
+    START_FUNCTION("_GetFunctionManager");
+            
+    if( ir == NULL ) {
+        END_FUNCTION("_GetFunctionManager", FAILING );
+        return NULL;    
+    }
+        
+    END_FUNCTION("_GetFunctionManager", SUCCESS );
+    return ir->functionManager;
+}
+
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir ) {
     START_FUNCTION("_GetCompartmentManager");
             
@@ -886,6 +905,18 @@ static RET_VAL _SetUnitManager( IR *ir, UNIT_MANAGER *unitManager ) {
     ir->unitManager = unitManager;
             
     END_FUNCTION("_SetUnitManager", SUCCESS );
+    return SUCCESS;;
+}
+
+static RET_VAL _SetFunctionManager( IR *ir, FUNCTION_MANAGER *functionManager ) {
+    START_FUNCTION("_SetFunctionManager");
+            
+    if( ir == NULL ) {
+        return ErrorReport( FAILING, "_SetFunctionManager", "input ir is null" );
+    }
+    ir->functionManager = functionManager;
+            
+    END_FUNCTION("_SetFunctionManager", SUCCESS );
     return SUCCESS;;
 }
 

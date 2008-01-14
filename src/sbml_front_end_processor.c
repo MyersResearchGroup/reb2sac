@@ -36,6 +36,9 @@ static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *
 static RET_VAL _HandleUnitDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, UnitDefinition_t *unitDef );
 
+static RET_VAL _HandleFunctionDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model );
+static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, FunctionDefinition_t *functionDef );
+
 static RET_VAL _HandleCompartments( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model, Compartment_t *compartment );
 
@@ -57,6 +60,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
 
+int workingOnFunctions;
 
 RET_VAL ProcessSBMLFrontend( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -159,6 +163,7 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     SBMLDocument_t *doc = NULL;
     HASH_TABLE *table = NULL;
     UNIT_MANAGER *unitManager = NULL;
+    FUNCTION_MANAGER *functionManager = NULL;
     COMPARTMENT_MANAGER *compartmentManager = NULL;
     SBML_SYMTAB_MANAGER *sbmlSymtabManager = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
@@ -172,6 +177,7 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     symtab = ir->GetGlobalSymtab( ir );
     frontend->_internal3 = (CADDR_T)symtab;
     
+    workingOnFunctions = 0;
     
     if( IS_FAILED( ( ret = _HandleGlobalParameters( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
@@ -190,6 +196,18 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of unit manager" );
     } 
     if( IS_FAILED( ( ret = ir->SetUnitManager( ir, unitManager ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    } 
+        
+    if( IS_FAILED( ( ret = _HandleFunctionDefinitions( frontend, model ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    }
+    if( ( functionManager = GetFunctionManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of function manager" );
+    } 
+    if( IS_FAILED( ( ret = ir->SetFunctionManager( ir, functionManager ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     } 
@@ -330,6 +348,84 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
     }                             
     
     END_FUNCTION("_HandleUnitDefinition", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleFunctionDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
+    RET_VAL ret = SUCCESS;
+    UINT i = 0;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    FunctionDefinition_t *functionDef = NULL;
+    
+    START_FUNCTION("_HandleFunctionDefinitions");
+
+    workingOnFunctions = 1;
+    
+    list = Model_getListOfFunctionDefinitions( model );
+    size = Model_getNumFunctionDefinitions( model );
+    for( i = 0; i < size; i++ ) {
+        functionDef = (FunctionDefinition_t*)ListOf_get( list, i );
+        if( IS_FAILED( ( ret = _HandleFunctionDefinition( frontend, model, functionDef ) ) ) ) {
+            END_FUNCTION("_HandleFunctionDefinitions", ret );
+            return ret;
+        } 
+    }
+    
+    workingOnFunctions = 0;
+    
+    END_FUNCTION("_HandleFunctionDefinitions", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, FunctionDefinition_t *source ) {
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    int num = 0;
+    char *id = NULL;
+    char *argument = NULL;
+    FUNCTION_DEFINITION *functionDef = NULL; 
+    FUNCTION_MANAGER *functionManager = NULL;
+    HASH_TABLE *table = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    
+    START_FUNCTION("_HandleFunctionDefinition");
+    
+    if( ( functionManager = GetFunctionManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleFunctionDefinition", "could not get an instance of function manager" );
+    }
+    
+    id = FunctionDefinition_getId( source );
+    TRACE_1("creating function definition %s", id );
+    if( ( functionDef = functionManager->CreateFunctionDefinition( functionManager, id ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleFunctionDefinition", "could not allocate function def %s", id );
+    }
+
+    num = FunctionDefinition_getNumArguments( source );
+    for( i = 0; i < num; i++ ) {
+      argument = SBML_formulaToString(FunctionDefinition_getArgument( source, i ));
+      TRACE_1( "adding function %s", id );           
+      if( IS_FAILED( ( ret = AddArgumentInFunctionDefinition( functionDef, argument ) ) ) ) {
+	END_FUNCTION("_HandleFunctionDefinition", ret );
+	return ret;
+      }
+    }                             
+    node = FunctionDefinition_getBody( source );
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleFunctionDefinition", "error on getting symtab manager" ); 
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
+    if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleFunctionDefinition", "failed to create function for %s", id );        
+    }
+    if( IS_FAILED( ( ret = AddFunctionInFunctionDefinition( functionDef, law ) ) ) ) {
+      END_FUNCTION("_HandleFunctionDefinition", ret );
+      return ret;
+    }
+
+    END_FUNCTION("_HandleFunctionDefinition", SUCCESS );
     return ret;
 }
 
@@ -925,6 +1021,9 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     KINETIC_LAW **children = NULL;
     ASTNodeType_t type = AST_UNKNOWN;
     ASTNode_t *childNode = NULL;
+    char * funcId = NULL;
+    FUNCTION_MANAGER *functionManager = NULL;
+    FUNCTION_DEFINITION *functionDef = NULL; 
     
     START_FUNCTION("_TransformFunctionKineticLaw");
     
@@ -944,22 +1043,34 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
      
     type = ASTNode_getType( source );        
     switch( type ) {
+        case AST_FUNCTION:
+	  funcId = ASTNode_getName( source );
+	  functionManager = GetFunctionManagerInstance( frontend->record );
+	  if( ( functionDef = functionManager->LookupFunctionDefinition( functionManager, funcId ) ) == NULL ) {
+            return ErrorReport( FAILING, "_HandleUnitDefinition", "function def %s is not declared", funcId );
+	  }             
+	  if( ( law = CreateFunctionKineticLaw( functionDef->function, functionDef->arguments, children, num ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
         case AST_FUNCTION_POWER:                    
-            if( num != 2 ) {
-                END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
-                return NULL;
-            }
-            if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_POW, children[0], children[1] ) ) == NULL ) {
-                END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
-                return NULL;
-            }
-            FREE( children );
-            END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
-        return law;
-        
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_POW, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
         default:
-            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
-        return NULL;
+	  END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	  return NULL;
     }
 
     END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
@@ -979,6 +1090,13 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
     /* Here!!! */
     
     sym = ASTNode_getName( source );
+    if (workingOnFunctions) {
+      if( ( law = CreateFunctionSymbolKineticLaw( sym ) ) == NULL ) {
+	END_FUNCTION("_TransformSymKineticLaw", FAILING );
+	return NULL;
+      }
+      return law;
+    }
     if( manager->LookupLocalValue( manager, sym, &realValue ) ) {
         symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
         if( ( symbol = symtab->AddRealValueSymbol( symtab, sym, realValue, TRUE ) ) == NULL ) {

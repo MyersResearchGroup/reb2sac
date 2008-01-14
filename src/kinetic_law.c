@@ -35,6 +35,7 @@ static RET_VAL _AcceptForIntValueKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISIT
 static RET_VAL _AcceptForRealValueKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForSpeciesKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptForFunctionSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 
 
 static KINETIC_LAW_VISITOR speciesReplacementVisitor;
@@ -43,9 +44,11 @@ static RET_VAL _VisitOpToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_L
 static RET_VAL _VisitIntToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitFunctionSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceSpeciesWithInt( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceSpeciesWithReal( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceSpeciesWithKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
 
 static RET_VAL _VisitOpToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
@@ -53,6 +56,7 @@ static RET_VAL _VisitIntToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC
 static RET_VAL _VisitRealToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitFunctionSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
 
 static KINETIC_LAW_VISITOR toStringVisitor;
@@ -66,6 +70,7 @@ static RET_VAL _VisitIntToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kin
 static RET_VAL _VisitRealToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitFunctionSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child );
 static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child );
 
@@ -168,11 +173,75 @@ KINETIC_LAW *CreateSymbolKineticLaw( REB2SAC_SYMBOL *symbol ) {
     return law;
 }
 
+KINETIC_LAW *CreateFunctionSymbolKineticLaw( char *funcSymbol ) {
+    KINETIC_LAW *law = NULL;
+    
+    START_FUNCTION("CreateFunctionSymbolKineticLaw");
+
+    if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
+        END_FUNCTION("CreateFunctionSymbolKineticLaw", FAILING );        
+        return NULL;
+    }
+
+    law->valueType = KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL;
+    law->value.funcSymbol = funcSymbol;
+    law->AcceptPostOrder = _AcceptForFunctionSymbolKineticLaw;
+    law->AcceptPreOrder = _AcceptForFunctionSymbolKineticLaw;
+    law->AcceptInOrder = _AcceptForFunctionSymbolKineticLaw;
+    law->Accept = _AcceptForFunctionSymbolKineticLaw;
+    
+    END_FUNCTION("CreateFunctionSymbolKineticLaw", SUCCESS );        
+    return law;
+}
+
+KINETIC_LAW *CreateFunctionKineticLaw( KINETIC_LAW *function, LINKED_LIST *arguments, KINETIC_LAW **children, int num ) {
+    KINETIC_LAW *law = NULL;
+    int i;
+    char *argument = NULL;
+
+    START_FUNCTION("CreateFunctionKineticLaw");
+
+    for (i = 0; i < num; i++) {
+      if (children[i] == NULL) {
+        TRACE_0("the input children kinetic laws are NULL" );
+        return NULL;
+      }
+    }
+
+    if (GetLinkedListSize(arguments) != num) {
+      // TODO: add which function
+      printf( "number of arguments to function do not match" );
+      END_FUNCTION("CreateFunctionKineticLaw", FAILING );        
+      return NULL;
+    }
+
+    if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
+        END_FUNCTION("CreateFunctionKineticLaw", FAILING );        
+        return NULL;
+    }
+
+    law = function;
+    for (i = 0; i < num; i++) {
+      argument = (char*)GetElementByIndex(i,arguments);
+      if (ReplaceFunctionSymbolWithKineticLawInKineticLaw( law, argument, children[i])!=SUCCESS) {
+	printf("problem during function parameter replacement");
+        END_FUNCTION("CreateFunctionKineticLaw", FAILING );        
+	return NULL;
+      }
+    }
+//     if( SetIntValueKineticLaw( law, 1 ) == FAILING ) {
+//         END_FUNCTION("CreateFunctionKineticLaw", FAILING );        
+//         return NULL;
+//     }
+    
+    END_FUNCTION("CreateFunctionKineticLaw", SUCCESS );        
+    return law;
+}
 
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right ) {
     KINETIC_LAW *law = NULL;
     
-    START_FUNCTION("CreateRealValueKineticLaw");
+    START_FUNCTION("CreateOpKineticLaw");
 
     if( ( left == NULL ) || ( right == NULL ) ) {
         TRACE_0("the input children kinetic laws are NULL" );
@@ -180,7 +249,7 @@ KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *ri
     }
     
     if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
-        END_FUNCTION("CreateRealValueKineticLaw", FAILING );        
+        END_FUNCTION("CreatOpKineticLaw", FAILING );        
         return NULL;
     }
     
@@ -193,7 +262,7 @@ KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *ri
     law->AcceptInOrder = _AcceptInOrderForOpKineticLaw;
     law->Accept = _AcceptForOpKineticLaw;
     
-    END_FUNCTION("CreateRealValueKineticLaw", SUCCESS );        
+    END_FUNCTION("CreateOpKineticLaw", SUCCESS );        
     return law;
 }
 
@@ -349,6 +418,30 @@ RET_VAL SetSymbolKineticLaw( KINETIC_LAW *law, REB2SAC_SYMBOL *symbol ) {
     return SUCCESS;
 }
 
+RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol ) {
+    START_FUNCTION("SetFunctionSymbolKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("SetFunctionSymbolKineticLaw", FAILING );        
+        return FAILING;
+    }
+    
+    if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
+        FreeKineticLaw( &(law->value.op.left) );
+        FreeKineticLaw( &(law->value.op.right) );        
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL;
+    law->value.funcSymbol = funcSymbol;
+    law->AcceptPostOrder = _AcceptForFunctionSymbolKineticLaw;
+    law->AcceptPreOrder = _AcceptForFunctionSymbolKineticLaw;
+    law->AcceptInOrder = _AcceptForFunctionSymbolKineticLaw;
+    law->Accept = _AcceptForFunctionSymbolKineticLaw;
+    
+    END_FUNCTION("SetFunctionSymbolKineticLaw", SUCCESS );        
+    return SUCCESS;
+}
+
 
 RET_VAL SetOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right ) {
     START_FUNCTION("SetOpKineticLaw");
@@ -466,6 +559,19 @@ BOOL IsSymbolKineticLaw(KINETIC_LAW *law) {
 }
 
 
+BOOL IsFunctionSymbolKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("IsFunctionSymbolKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("IsFunctionSymbolKineticLaw", SUCCESS );        
+        return FALSE;
+    }
+        
+    END_FUNCTION("IsFunctionSymbolKineticLaw", SUCCESS );        
+    return ( law->valueType == KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL ? TRUE : FALSE );
+}
+
+
 BOOL IsOpKineticLaw(KINETIC_LAW *law) {
     START_FUNCTION("IsOpKineticLaw");
     
@@ -527,6 +633,18 @@ REB2SAC_SYMBOL *GetSymbolFromKineticLaw(KINETIC_LAW *law) {
     return law->value.symbol;
 }
 
+
+char *GetFunctionSymbolFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetFunctionSymbolFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetFunctionSymbolFromKineticLaw", SUCCESS );        
+        return NULL;
+    }
+        
+    END_FUNCTION("GetFunctionSymbolFromKineticLaw", SUCCESS );        
+    return law->value.funcSymbol;
+}
 
 
 BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law) {
@@ -609,6 +727,7 @@ RET_VAL ReplaceSpeciesWithIntInKineticLaw( KINETIC_LAW *law, SPECIES *from, long
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceSpecies;
     }
     speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceSpeciesWithInt;
     
@@ -634,6 +753,7 @@ RET_VAL ReplaceSpeciesWithRealInKineticLaw( KINETIC_LAW *law, SPECIES *from, dou
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceSpecies;
     }
     speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceSpeciesWithReal;
     
@@ -660,8 +780,35 @@ RET_VAL ReplaceSpeciesWithKineticLawInKineticLaw( KINETIC_LAW *law, SPECIES *fro
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceSpecies;
     }
     speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceSpeciesWithKineticLaw;
+    
+    speciesReplacementVisitor._internal1 = (CADDR_T)(to);
+    speciesReplacementVisitor._internal2 = (CADDR_T)from;
+    
+    if( IS_FAILED( ( ret = law->AcceptPostOrder( law, &speciesReplacementVisitor ) ) ) ) {
+        END_FUNCTION("ReplaceSpeciesWithKineticLawInKineticLaw", ret );
+        return ret;        
+    }
+    
+    END_FUNCTION("ReplaceSpeciesWithKineticLawInKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
+RET_VAL ReplaceFunctionSymbolWithKineticLawInKineticLaw( KINETIC_LAW *law, char *from, KINETIC_LAW * to ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("ReplaceFunctionSymbolWithKineticLawInKineticLaw");
+    
+    if( speciesReplacementVisitor.VisitOp == NULL ) {
+        speciesReplacementVisitor.VisitOp = _VisitOpToReplaceSpecies;
+        speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
+        speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
+        speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceConstant;
+    }
+    speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceWithKineticLaw;
     
     speciesReplacementVisitor._internal1 = (CADDR_T)(to);
     speciesReplacementVisitor._internal2 = (CADDR_T)from;
@@ -689,6 +836,7 @@ RET_VAL ReplaceConstantWithAnotherConstantInKineticLaw( KINETIC_LAW *law, double
         visitor.VisitReal = _VisitRealToReplaceConstant;
         visitor.VisitSpecies = _VisitSpeciesToReplaceConstant;
         visitor.VisitSymbol = _VisitSymbolToReplaceConstant;
+        visitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceConstant;
     }
     
     visitor._internal1 = (CADDR_T)(&from);
@@ -789,6 +937,41 @@ static RET_VAL _VisitSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINE
     return SUCCESS;                        
 }
 
+static RET_VAL _VisitFunctionSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double value = 0.0;
+    double from = 0.0;
+    double to = 0.0;
+    char *funcSymbol = NULL;
+    
+    START_FUNCTION("_VisitFunctionSymbolToReplaceConstant");
+    
+    from = *((double*)(visitor->_internal1)); 
+    to = *((double*)(visitor->_internal2)); 
+
+    /* TODO: What do I do here? */       
+//     funcSymbol = GetFunctionSymbolFromKineticLaw( kineticLaw );
+//     if( !IsSymbolConstant( symbol ) ) {
+//         END_FUNCTION("_VisitSymbolToReplaceConstant", SUCCESS );        
+//         return SUCCESS;                        
+//     }
+//     if( !IsRealValueSymbol( symbol ) ) {
+//         END_FUNCTION("_VisitSymbolToReplaceConstant", SUCCESS );        
+//         return SUCCESS;                        
+//     }
+    
+//     value = GetRealValueInSymbol( symbol );        
+//     if( IS_REAL_EQUAL( from, value ) ) {
+//         if( IS_FAILED( ( ret = SetRealValueInSymbol( symbol, to ) ) ) ) {
+//             END_FUNCTION("_VisitSymbolToReplaceConstant", ret );        
+//             return ret;                        
+//         }
+//     }
+    
+    END_FUNCTION("_VisitFunctionSymbolToReplaceConstant", SUCCESS );        
+    return SUCCESS;                        
+}
+
 
 static RET_VAL _VisitSpeciesToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_VisitSpeciesToReplaceConstant");
@@ -819,6 +1002,12 @@ static RET_VAL _VisitRealToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC
 static RET_VAL _VisitSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_VisitSymbolToReplaceSpecies");
     END_FUNCTION("_VisitSymbolToReplaceSpecies", SUCCESS );        
+    return SUCCESS;                        
+}
+
+static RET_VAL _VisitFunctionSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    START_FUNCTION("_VisitFunctionSymbolToReplaceSpecies");
+    END_FUNCTION("_VisitFunctionSymbolToReplaceSpecies", SUCCESS );        
     return SUCCESS;                        
 }
 
@@ -894,6 +1083,38 @@ static RET_VAL _VisitSpeciesToReplaceSpeciesWithKineticLaw( KINETIC_LAW_VISITOR 
         }
     }
     END_FUNCTION("_VisitSpeciesToReplaceSpeciesWithKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
+static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    char *funcSymbol = NULL;
+    KINETIC_LAW *replacement = NULL;
+    STRING *string = NULL;
+    
+    START_FUNCTION("_VisitFunctionSymbolToReplaceWithKineticLaw");
+    
+    funcSymbol = (char*)(visitor->_internal2);
+    
+    if( strcmp(kineticLaw->value.funcSymbol,funcSymbol)==0 ) {
+        replacement = (KINETIC_LAW*)(visitor->_internal1);
+    #if DEBUG
+        string = ToStringKineticLaw( replacement );
+        printf( "replacing %s with %s" NEW_LINE, funcSymbol, GetCharArrayOfString( string ) );
+        FreeString( &string );
+    #endif
+        if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
+            if( IS_FAILED( ( ret = SetOpKineticLaw( kineticLaw, replacement->value.op.opType, 
+                CloneKineticLaw( replacement->value.op.left ), CloneKineticLaw( replacement->value.op.right ) ) ) ) ) {
+                string = ToStringKineticLaw( replacement );
+                return ErrorReport( FAILING, "_VisitFunctionSymbolToReplaceWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
+            } 
+        }
+        else {
+            memcpy( kineticLaw, replacement, sizeof( KINETIC_LAW ) );
+        }
+    }
+    END_FUNCTION("_VisitFunctionSymbolToReplaceWithKineticLaw", SUCCESS );        
     return ret;                        
 }
 
@@ -1059,6 +1280,20 @@ static RET_VAL _AcceptForSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR
     return ret;                        
 }
 
+static RET_VAL _AcceptForFunctionSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_AcceptForFunctionSymbolKineticLaw");
+    
+    if( IS_FAILED( ( ret = visitor->VisitFunctionSymbol( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptForFunctionSymbolKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptForFunctionSymbolKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
 
 STRING *ToStringKineticLaw( KINETIC_LAW *law ) {
     STRING *string = NULL;
@@ -1072,6 +1307,7 @@ STRING *ToStringKineticLaw( KINETIC_LAW *law ) {
         toStringVisitor.VisitReal = _VisitRealToString;
         toStringVisitor.VisitSpecies = _VisitSpeciesToString;
         toStringVisitor.VisitSymbol = _VisitSymbolToString;
+        toStringVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToString;
     }
     if( ( internal.stack = CreateLinkedList() ) == NULL ) {
         END_FUNCTION("ToStringKineticLaw", FAILING );
@@ -1272,6 +1508,26 @@ static RET_VAL _VisitSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *
     return ret;                        
 }
 
+static RET_VAL _VisitFunctionSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    STRING *from = NULL;
+    STRING *str = NULL;    
+    TO_STRING_VISITOR_INTERNAL *internal = NULL;    
+    
+    START_FUNCTION("_VisitFunctionSymbolToString");
+    from = kineticLaw->value.funcSymbol;
+    if( ( str = CloneString( from ) ) == NULL ) {
+        return ErrorReport( FAILING, "_VisitFunctionSymbolToString", "could not create a string for %s", GetCharArrayOfString( from ) );
+    }
+    internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
+    if( IS_FAILED( ( ret = AddElementInLinkedList( str, internal->stack ) ) ) ) {
+        return ErrorReport( FAILING, "_VisitFunctionSymbolToString", "could not add %s", GetCharArrayOfString( from ) );
+    }
+    
+    END_FUNCTION("_VisitFunctionSymbolToString", SUCCESS );        
+    return ret;                        
+}
+
 
 static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     BYTE parentOpType = 0;
@@ -1407,5 +1663,8 @@ BOOL AreKineticLawsStructurallyEqual( KINETIC_LAW *a, KINETIC_LAW *b ) {
         
         case KINETIC_LAW_VALUE_TYPE_SYMBOL:
             return ( a->value.symbol == b->value.symbol ) ? TRUE : FALSE;             
+
+        case KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL:
+            return ( a->value.funcSymbol == b->value.funcSymbol ) ? TRUE : FALSE;             
     }    
 }

@@ -39,6 +39,7 @@ BEGIN_C_NAMESPACE
 #define KINETIC_LAW_VALUE_TYPE_REAL ((BYTE)3)   
 #define KINETIC_LAW_VALUE_TYPE_SPECIES ((BYTE)4)
 #define KINETIC_LAW_VALUE_TYPE_SYMBOL ((BYTE)5)
+#define KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL ((BYTE)6)
 
 struct _KINETIC_LAW_OP;
 typedef struct _KINETIC_LAW_OP KINETIC_LAW_OP;
@@ -62,7 +63,8 @@ struct _KINETIC_LAW {
         long intValue;
         double realValue;
         SPECIES *species;
-        REB2SAC_SYMBOL *symbol;        
+        REB2SAC_SYMBOL *symbol;
+        char *funcSymbol;
     } value;
     BYTE valueType;
     RET_VAL (*AcceptPostOrder)( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
@@ -81,6 +83,7 @@ struct _KINETIC_LAW_VISITOR {
     RET_VAL (*VisitReal)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitSpecies)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitSymbol)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+    RET_VAL (*VisitFunctionSymbol)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 };
 
 
@@ -89,6 +92,7 @@ KINETIC_LAW *CreateIntValueKineticLaw( long value );
 KINETIC_LAW *CreateRealValueKineticLaw( double value );
 KINETIC_LAW *CreateSpeciesKineticLaw( SPECIES *species );
 KINETIC_LAW *CreateSymbolKineticLaw( REB2SAC_SYMBOL *symbol );
+KINETIC_LAW *CreateFunctionKineticLaw( KINETIC_LAW *functionDef, LINKED_LIST *arguments, KINETIC_LAW **children, int num );
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
 
 KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law );
@@ -97,12 +101,14 @@ RET_VAL SetIntValueKineticLaw( KINETIC_LAW *law, long value );
 RET_VAL SetRealValueKineticLaw( KINETIC_LAW *law, double value );
 RET_VAL SetSpeciesKineticLaw( KINETIC_LAW *law, SPECIES *species );
 RET_VAL SetSymbolKineticLaw( KINETIC_LAW *law, REB2SAC_SYMBOL *symbol );
+RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol );
 RET_VAL SetOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
 
 BOOL IsIntValueKineticLaw(KINETIC_LAW *law);
 BOOL IsRealValueKineticLaw(KINETIC_LAW *law);
 BOOL IsSpeciesKineticLaw(KINETIC_LAW *law);
 BOOL IsSymbolKineticLaw(KINETIC_LAW *law);
+BOOL IsFunctionSymbolKineticLaw(KINETIC_LAW *law);
 BOOL IsOpKineticLaw(KINETIC_LAW *law);
 BOOL IsConstantValueKineticLaw(KINETIC_LAW *law);
 
@@ -110,6 +116,7 @@ long GetIntValueFromKineticLaw(KINETIC_LAW *law);
 double GetRealValueFromKineticLaw(KINETIC_LAW *law);
 SPECIES *GetSpeciesFromKineticLaw(KINETIC_LAW *law);
 REB2SAC_SYMBOL *GetSymbolFromKineticLaw(KINETIC_LAW *law);
+char *GetFunctionSymbolFromKineticLaw(KINETIC_LAW *law);
 BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law);
 KINETIC_LAW *GetOpLeftFromKineticLaw(KINETIC_LAW *law);
 KINETIC_LAW *GetOpRightFromKineticLaw(KINETIC_LAW *law);
@@ -118,6 +125,7 @@ void FreeKineticLaw(KINETIC_LAW **law);
 RET_VAL ReplaceSpeciesWithIntInKineticLaw( KINETIC_LAW *law, SPECIES *from, long to );
 RET_VAL ReplaceSpeciesWithRealInKineticLaw( KINETIC_LAW *law, SPECIES *from, double to );
 RET_VAL ReplaceSpeciesWithKineticLawInKineticLaw( KINETIC_LAW *law, SPECIES *from, KINETIC_LAW * to );
+RET_VAL ReplaceFunctionSymbolWithKineticLawInKineticLaw( KINETIC_LAW *law, char *from, KINETIC_LAW * to );
 
 RET_VAL ReplaceConstantWithAnotherConstantInKineticLaw( KINETIC_LAW *law, double from, double to );
 

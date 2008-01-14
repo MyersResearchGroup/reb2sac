@@ -17,45 +17,46 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#if !defined(HAVE_SBML_FRONT_END_PROCESSOR)
-#define HAVE_SBML_FRONT_END_PROCESSOR
+#if !defined(HAVE_FUNCTION_MANAGER)
+#define HAVE_FUNCTION_MANAGER
 
 #include "common.h"
+#include "linked_list.h"
+#include "util.h"
+
 #include "compiler_def.h"
 #include "hash_table.h"
-#include "front_end_processor.h"
-#include "IR.h"
-#include "unit_manager.h"
-#include "function_manager.h"
-#include "compartment_manager.h"
-#include "species_node.h"
-#include "reaction_node.h"
 #include "kinetic_law.h"
-#include "sbml_symtab.h"
-
-#include "sbml/ListOf.h"
-#include "sbml/SBMLDocument.h"
-#include "sbml/SBMLReader.h"
-#include "sbml/Model.h" 
-#include "sbml/Species.h"
-#include "sbml/Reaction.h"
-#include "sbml/SpeciesReference.h"
-//#include "sbml/ModifierSpeciesReference.h"
-#include "sbml/UnitDefinition.h"
-#include "sbml/UnitKind.h"
-#include "sbml/Compartment.h"
-#include "sbml/Parameter.h"
-#include "sbml/KineticLaw.h"
-#include "sbml/math/ASTNode.h"
-
 
 BEGIN_C_NAMESPACE
 
- 
-RET_VAL ProcessSBMLFrontend( FRONT_END_PROCESSOR *frontend, IR *ir );
-RET_VAL CloseSBMLFrontend( FRONT_END_PROCESSOR *frontend );
+typedef struct {
+    STRING *id;
+    LINKED_LIST *arguments;
+    KINETIC_LAW *function;
+} FUNCTION_DEFINITION;
+
+struct _FUNCTION_MANAGER;
+typedef struct _FUNCTION_MANAGER FUNCTION_MANAGER;
+
+struct _FUNCTION_MANAGER {
+    HASH_TABLE *table;   
+    COMPILER_RECORD_T *record;
+    
+    FUNCTION_DEFINITION * (*CreateFunctionDefinition)( FUNCTION_MANAGER *manager, char *id );
+    FUNCTION_DEFINITION * (*LookupFunctionDefinition)( FUNCTION_MANAGER *manager, char *id );
+    LINKED_LIST *(*CreateListOfFunctionDefinitions)( FUNCTION_MANAGER *manager );                  
+};
+
+STRING *GetFunctionDefinitionID( FUNCTION_DEFINITION *functionDef );
+LINKED_LIST *GetArgumentsInFunctionDefinition( FUNCTION_DEFINITION *functionDef );
+RET_VAL AddArgumentInFunctionDefinition( FUNCTION_DEFINITION *functionDef, char *argument );
+KINETIC_LAW *GetFunctionInFunctionDefinition( FUNCTION_DEFINITION *functionDef );
+RET_VAL AddFunctionInFunctionDefinition( FUNCTION_DEFINITION *functionDef, KINETIC_LAW *function );
+
+FUNCTION_MANAGER *GetFunctionManagerInstance( COMPILER_RECORD_T *record );
+RET_VAL CloseFunctionManager( );
 
 END_C_NAMESPACE
-     
-#endif
 
+#endif
