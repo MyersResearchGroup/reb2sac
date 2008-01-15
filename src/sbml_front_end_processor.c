@@ -246,6 +246,7 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
 
     timeout = Model_getNumInitialAssignments( model );
     do {
+      printf("timeout = %d\n",timeout);
       if( IS_FAILED( ( ret1 = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret1 );
         return ret1;
@@ -288,6 +289,7 @@ static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *
 static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir ) {
     RET_VAL ret = SUCCESS;
     SBML_SYMTAB_MANAGER *manager = NULL;
+    COMPARTMENT_MANAGER *compartmentManager = NULL;
     ListOf_t *list = NULL;
     UINT size = 0;
     UINT i = 0;
@@ -296,6 +298,8 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     ListOf_t *listP = NULL;
     UINT sizeS = 0;
     LINKED_LIST *listS = NULL;
+    UINT sizeC = 0;
+    LINKED_LIST *listC = NULL;
     InitialAssignment_t *initialAssignment = NULL;
     Parameter_t *parameter = NULL;
     ASTNode_t *node = NULL;
@@ -304,9 +308,11 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     char * id;
     char * Pid;
     char * Sid;
+    char * Cid;
     int change;
     double Pvalue;
     SPECIES *speciesNode;
+    COMPARTMENT *compartmentNode;
     double initialValue;
 
     START_FUNCTION("_HandleInitialAssignments");
@@ -315,6 +321,9 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleInitialAssignments", "error on getting symtab manager" ); 
     }
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleInitialAssignments", "could not get an instance of compartment manager" );
+    }
     table = (HASH_TABLE*)frontend->_internal2;    
     list = Model_getListOfInitialAssignments( model );
     size = Model_getNumInitialAssignments( model );
@@ -322,6 +331,8 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     sizeP = Model_getNumParameters( model );
     listS = ir->GetListOfSpeciesNodes( ir );
     sizeS = GetLinkedListSize( listS );
+    listC = compartmentManager->CreateListOfCompartments( compartmentManager );
+    sizeC = GetLinkedListSize( listC );
     for( i = 0; i < size; i++ ) {
       initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
       char * id = InitialAssignment_getSymbol(initialAssignment);
@@ -355,7 +366,7 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
 	    if (GetInitialAmountInSpeciesNode( speciesNode ) != initialValue) {
 	      //printf("Changing %s from %g to %g\n",Sid,GetInitialAmountInSpeciesNode( speciesNode ),initialValue);
 	      if( IS_FAILED( ( ret = SetInitialAmountInSpeciesNode( speciesNode, initialValue ) ) ) ) {
-		END_FUNCTION("_CreateSpeciesNode", ret );
+		END_FUNCTION("_HandleInitialAssignments", ret );
 		return ret;   
 	      }
 	      change = 1;
@@ -364,11 +375,25 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
 	    if (GetInitialConcentrationInSpeciesNode( speciesNode ) != initialValue) {
 	      //printf("Changing %s from %g to %g\n",Sid,GetInitialConcentrationInSpeciesNode( speciesNode ),initialValue);
 	      if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialValue ) ) ) ) {
-		END_FUNCTION("_CreateSpeciesNode", ret );
+		END_FUNCTION("_HandleInitialAssignments", ret );
 		return ret;   
 	      }
 	      change = 1;
 	    }
+	  }
+	}
+      }
+      for ( j = 0; j < sizeC; j++ ) {
+	compartmentNode = (COMPARTMENT*)GetElementByIndex(j,listC);
+	Cid = GetCharArrayOfString( GetCompartmentID( compartmentNode ));
+	if (strcmp(id,Cid)==0) {
+	  if (GetSizeInCompartment( compartmentNode ) != initialValue) {
+	    //printf("Changing %s from %g to %g\n",Cid,GetSizeInCompartment( compartmentNode ),initialValue);
+	    if( IS_FAILED( ( ret = SetSizeInCompartment( compartmentNode, initialValue ) ) ) ) {
+	      END_FUNCTION("_HandleInitialAssignments", ret );
+	      return ret;   
+	    }
+	    change = 1;
 	  }
 	}
       }
