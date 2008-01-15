@@ -33,12 +33,16 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend );
 static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir );
 static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir );
+static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir );
 
 static RET_VAL _HandleUnitDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, UnitDefinition_t *unitDef );
 
 static RET_VAL _HandleFunctionDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, FunctionDefinition_t *functionDef );
+
+static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model );
+static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_t *ruleDef );
 
 static RET_VAL _HandleCompartments( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model, Compartment_t *compartment );
@@ -167,6 +171,7 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     HASH_TABLE *table = NULL;
     UNIT_MANAGER *unitManager = NULL;
     FUNCTION_MANAGER *functionManager = NULL;
+    RULE_MANAGER *ruleManager = NULL;
     COMPARTMENT_MANAGER *compartmentManager = NULL;
     SBML_SYMTAB_MANAGER *sbmlSymtabManager = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
@@ -243,22 +248,42 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     }
-
-    timeout = Model_getNumInitialAssignments( model );
-    do {
-      printf("timeout = %d\n",timeout);
-      if( IS_FAILED( ( ret1 = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
-        END_FUNCTION("_GenerateIR", ret1 );
-        return ret1;
-      }
-      if( IS_FAILED( ( ret = _UpdateGlobalParamInSymtab( frontend, symtab, sbmlSymtabManager ) ) ) ) {
+        
+    if( IS_FAILED( ( ret = _HandleRules( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
+    }
+    if( ( ruleManager = GetRuleManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of rule manager" );
+    } 
+    if( IS_FAILED( ( ret = ir->SetRuleManager( ir, ruleManager ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    } 
+
+    timeout = Model_getNumInitialAssignments( model );
+    timeout += Model_getNumRules( model );
+    if (timeout > 0) {
+      timeout++;
+      do {
+	//printf("timeout = %d\n",timeout);
+	if( IS_FAILED( ( ret1 = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
+	  END_FUNCTION("_GenerateIR", ret1 );
+	  return ret1;
+	}
+	if( IS_FAILED( ( ret1 = _HandleRuleAssignments( frontend, model, ir ) ) ) ) {
+	  END_FUNCTION("_GenerateIR", ret1 );
+	  return ret1;
+	}
+	if( IS_FAILED( ( ret = _UpdateGlobalParamInSymtab( frontend, symtab, sbmlSymtabManager ) ) ) ) {
+	  END_FUNCTION("_GenerateIR", ret );
+	  return ret;
+	}
+	timeout--;
+      } while (timeout >= 0 && ret1 == CHANGE);
+      if (timeout < 0) {
+	return ErrorReport( FAILING, "_GenerateIR", "cycle detected in assignments" ); 
       }
-      timeout--;
-    } while (timeout >= 0 && ret1 == CHANGE);
-    if (timeout < 0) {
-      return ErrorReport( FAILING, "_GenerateIR", "cycle detected in assignments" ); 
     }
         
     END_FUNCTION("_GenerateIR", SUCCESS );
@@ -399,9 +424,132 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
       }
     }
     if( IS_FAILED( ( ret = manager->SetGlobal( manager, listP ) ) ) ) {
-        return ErrorReport( FAILING, "_HandleGlobalParameters", "error on setting global" ); 
+        return ErrorReport( FAILING, "_HandleInitialAssignments", "error on setting global" ); 
     }     
     END_FUNCTION("_HandleInitialAssignments", SUCCESS );
+    if (!change)
+      return ret;
+    return CHANGE;
+}
+
+static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir ) {
+    RET_VAL ret = SUCCESS;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    COMPARTMENT_MANAGER *compartmentManager = NULL;
+    ListOf_t *list = NULL;
+    UINT size = 0;
+    UINT i = 0;
+    UINT j = 0;
+    UINT sizeP = 0;
+    ListOf_t *listP = NULL;
+    UINT sizeS = 0;
+    LINKED_LIST *listS = NULL;
+    UINT sizeC = 0;
+    LINKED_LIST *listC = NULL;
+    Rule_t *rule = NULL;
+    Parameter_t *parameter = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    HASH_TABLE *table = NULL;
+    char * id;
+    char * Pid;
+    char * Sid;
+    char * Cid;
+    int change;
+    double Pvalue;
+    SPECIES *speciesNode;
+    COMPARTMENT *compartmentNode;
+    double initialValue;
+
+    START_FUNCTION("_HandleRuleAssignments");
+
+    change = 0;
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRuleAssignments", "error on getting symtab manager" ); 
+    }
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRuleAssignments", "could not get an instance of compartment manager" );
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
+    list = Model_getListOfRules( model );
+    size = Model_getNumRules( model );
+    listP = Model_getListOfParameters( model );
+    sizeP = Model_getNumParameters( model );
+    listS = ir->GetListOfSpeciesNodes( ir );
+    sizeS = GetLinkedListSize( listS );
+    listC = compartmentManager->CreateListOfCompartments( compartmentManager );
+    sizeC = GetLinkedListSize( listC );
+    for( i = 0; i < size; i++ ) {
+      rule = (Rule_t*)ListOf_get( list, i );
+      if (Rule_isAssignment( rule )) {
+	char * id = Rule_getVariable( rule );
+	node = Rule_getMath( rule );
+	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_HandleRuleAssignments", "failed to create initial assignment for rule %s", id );        
+	}
+	SimplifyInitialAssignment(law);
+	if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	  initialValue = GetRealValueFromKineticLaw(law); 
+	} else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	  initialValue = (double)GetIntValueFromKineticLaw(law); 
+	} 
+	for ( j = 0; j < sizeP; j++ ) {
+	  parameter = (Parameter_t*)ListOf_get( listP, j );
+	  Pid = Parameter_getId(parameter);
+	  Pvalue = Parameter_getValue(parameter);
+	  if (strcmp(id,Pid)==0) {
+	    if (Pvalue != initialValue) {
+	      change = 1;
+	      Parameter_setValue(parameter,initialValue); 
+	      //printf("Changing %s from %g to %g\n",Pid,Pvalue,initialValue);
+	    }
+	  } 
+	}
+	for ( j = 0; j < sizeS; j++ ) {
+	  speciesNode = (SPECIES*)GetElementByIndex(j,listS);
+	  Sid = GetCharArrayOfString( GetSpeciesNodeID( speciesNode ));
+	  if (strcmp(id,Sid)==0) {
+	    if (IsInitialQuantityInAmountInSpeciesNode(speciesNode)) {
+	      if (GetInitialAmountInSpeciesNode( speciesNode ) != initialValue) {
+		//printf("Changing %s from %g to %g\n",Sid,GetInitialAmountInSpeciesNode( speciesNode ),initialValue);
+		if( IS_FAILED( ( ret = SetInitialAmountInSpeciesNode( speciesNode, initialValue ) ) ) ) {
+		  END_FUNCTION("_HandleRuleAssignments", ret );
+		  return ret;   
+		}
+		change = 1;
+	      }
+	    } else {
+	      if (GetInitialConcentrationInSpeciesNode( speciesNode ) != initialValue) {
+		//printf("Changing %s from %g to %g\n",Sid,GetInitialConcentrationInSpeciesNode( speciesNode ),initialValue);
+		if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialValue ) ) ) ) {
+		  END_FUNCTION("_HandleRuleAssignments", ret );
+		  return ret;   
+		}
+		change = 1;
+	      }
+	    }
+	  }
+	}
+	for ( j = 0; j < sizeC; j++ ) {
+	  compartmentNode = (COMPARTMENT*)GetElementByIndex(j,listC);
+	  Cid = GetCharArrayOfString( GetCompartmentID( compartmentNode ));
+	  if (strcmp(id,Cid)==0) {
+	    if (GetSizeInCompartment( compartmentNode ) != initialValue) {
+	      //printf("Changing %s from %g to %g\n",Cid,GetSizeInCompartment( compartmentNode ),initialValue);
+	      if( IS_FAILED( ( ret = SetSizeInCompartment( compartmentNode, initialValue ) ) ) ) {
+		END_FUNCTION("_HandleRuleAssignments", ret );
+		return ret;   
+	      }
+	      change = 1;
+	    }
+	  }
+	}
+      }
+    }
+    if( IS_FAILED( ( ret = manager->SetGlobal( manager, listP ) ) ) ) {
+        return ErrorReport( FAILING, "_HandleRuleAssignments", "error on setting global" ); 
+    }     
+    END_FUNCTION("_HandleRuleAssignments", SUCCESS );
     if (!change)
       return ret;
     return CHANGE;
@@ -586,6 +734,79 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
     }
 
     END_FUNCTION("_HandleFunctionDefinition", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
+    RET_VAL ret = SUCCESS;
+    UINT i = 0;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    Rule_t *ruleDef = NULL;
+    
+    START_FUNCTION("_HandleFunctionDefinitions");
+    
+    list = Model_getListOfRules( model );
+    size = Model_getNumRules( model );
+    for( i = 0; i < size; i++ ) {
+        ruleDef = (Rule_t*)ListOf_get( list, i );
+        if( IS_FAILED( ( ret = _HandleRule( frontend, model, ruleDef ) ) ) ) {
+            END_FUNCTION("_HandleFunctionDefinitions", ret );
+            return ret;
+        } 
+    }
+    
+    END_FUNCTION("_HandleFunctionDefinitions", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_t *source ) {
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    int num = 0;
+    char *var = NULL;
+    BYTE type = 0;
+    RULE *ruleDef = NULL; 
+    RULE_MANAGER *ruleManager = NULL;
+    HASH_TABLE *table = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    
+    START_FUNCTION("_HandleRule");
+    
+    if( ( ruleManager = GetRuleManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "could not get an instance of rule manager" );
+    }
+    if (Rule_isAlgebraic( source )) {
+      printf("WARNING: Algebraic rules are currently ignored.\n");
+      return ret;
+    }
+    if (Rule_isAssignment( source )) {
+      type = RULE_TYPE_ASSIGNMENT;
+    } else {
+      type = RULE_TYPE_RATE;
+    }
+    var = Rule_getVariable( source );
+    TRACE_1("creating rule on %s", var );
+    if( ( ruleDef = ruleManager->CreateRule( ruleManager, type, var ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "could not allocate rule on %s", var );
+    }
+
+    node = Rule_getMath( source );
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
+    if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "failed to create rule on %s", var );        
+    }
+    if( IS_FAILED( ( ret = AddMathInRule( ruleDef, law ) ) ) ) {
+      END_FUNCTION("_HandleRuleDefinition", ret );
+      return ret;
+    }
+
+    END_FUNCTION("_HandleRule", SUCCESS );
     return ret;
 }
 

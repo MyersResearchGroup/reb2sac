@@ -30,7 +30,7 @@ noinst_HEADERS = \
 				simulation_printer.h	simulation_run_termination_decider.h species_critical_level_generator.h	species_critical_level.h \
 				species_node.h ssa_with_user_update.h strconv.h	symtab.h tsd_simulation_printer.h \
 				ts_species_level_updater.h	type_1_pili1_simulation_run_termination_decider.h	type_1_pili2_simulation_run_termination_decider.h	type1pili_gillespie_ci.h type_1_pili_markov_analysis_result_reporter.h	type.h \
-				uniformly_distributed_random_generator.h unit_manager.h function_manager.h util.h	vector.h xhtml_back_end_processor.h \
+				uniformly_distributed_random_generator.h unit_manager.h function_manager.h rule_manager.h util.h	vector.h xhtml_back_end_processor.h \
 				analysis_def_parser.tab.h sad_ast.h sad_ast_func_registry.h sad_ast_pretty_printer.h \
 	sad_ast_exp_evaluator.h
 reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
@@ -82,7 +82,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	symtab.c tsd_simulation_printer.c ts_species_level_updater.c \
 	type_1_pili1_simulation_run_termination_decider.c type_1_pili2_simulation_run_termination_decider.c \
 	type1pili_gillespie_ci.c type_1_pili_markov_analysis_result_reporter.c \
-	uniformly_distributed_random_generator.c unit_manager.c function_manager.c util.c vector.c xhtml_back_end_processor.c \
+	uniformly_distributed_random_generator.c unit_manager.c function_manager.c rule_manager.c util.c vector.c xhtml_back_end_processor.c \
 	analysis_def_parser.tab.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c \
 	sad_ast_exp_evaluator.c sad_ast_creator.c sad_simulation_run_termination_decider.c \
 	analysis_def_scanner.c
