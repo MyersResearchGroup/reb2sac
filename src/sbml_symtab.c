@@ -27,6 +27,7 @@ static BOOL _LookupValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value 
 static BOOL _LookupGlobalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
 static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
 static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab );    
+static RET_VAL _UpdateParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab );    
 
 
 SBML_SYMTAB_MANAGER *GetSymtabManagerInstance( COMPILER_RECORD_T *record ) {
@@ -42,6 +43,7 @@ SBML_SYMTAB_MANAGER *GetSymtabManagerInstance( COMPILER_RECORD_T *record ) {
         manager.LookupGlobalValue = _LookupGlobalValue;
         manager.LookupLocalValue = _LookupLocalValue;
         manager.PutParametersInGlobalSymtab = _PutParametersInGlobalSymtab;
+        manager.UpdateParametersInGlobalSymtab = _UpdateParametersInGlobalSymtab;
     }
         
     END_FUNCTION("GetSymtabManagerInstance", SUCCESS);
@@ -206,6 +208,36 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
                 return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
                                     "failed to put parameter %s in global symtab", id );
             }     
+        }
+    }
+    END_FUNCTION("_PutParametersInGlobalSymtab", SUCCESS );
+    return SUCCESS;
+}
+
+static RET_VAL _UpdateParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab ) {
+    RET_VAL ret = SUCCESS;
+    char *id = NULL;
+    double value = 0.0;
+    UINT i = 0;
+    UINT num = 0;
+    Parameter_t *param = NULL;
+    ListOf_t *globalParams = NULL;
+    REB2SAC_SYMBOL *symbol = NULL;
+
+    START_FUNCTION("_PutParametersInGlobalSymtab");
+
+    globalParams = manager->global;
+    if( globalParams != NULL ) {
+        num = ListOf_size( globalParams );
+        for( i = 0; i < num; i++ ) {
+            param = (Parameter_t*)ListOf_get( globalParams, i );
+            id = Parameter_getId( param );
+            value = Parameter_getValue( param );
+            if( ( symbol = globalSymtab->Lookup( globalSymtab, id ) ) == NULL ) {
+                return ErrorReport( FAILING, "_UpdateParametersInGlobalSymtab", 
+                                    "failed to update parameter %s in global symtab", id );
+            }     
+	    SetRealValueInSymbol( symbol, value );
         }
     }
     END_FUNCTION("_PutParametersInGlobalSymtab", SUCCESS );

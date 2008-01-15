@@ -208,6 +208,7 @@ DESCRIPTION:	define all the type used
 #	define SUCCESS			0X00000000
 #	define WARNING			0X00000001
 #	define FAILING			0X00000002 
+#	define CHANGE			0X00000004 
 
 
 #	define IS_FAILED(r)		((r)&FAILING)

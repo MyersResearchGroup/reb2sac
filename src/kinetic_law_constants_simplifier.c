@@ -18,6 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include "abstraction_method_manager.h"
+#include "species_node.h"
 #include "reaction_node.h"
 #include "kinetic_law.h"
 #include <math.h>
@@ -35,6 +36,7 @@ static RET_VAL _VisitIntToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINE
 static RET_VAL _VisitRealToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
 
 ABSTRACTION_METHOD *KineticLawConstantsSimplifierMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager ) {
@@ -95,7 +97,7 @@ RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_SimplifyKineticLaw");
 
     if( visitor.VisitOp == NULL ) {
-        visitor.VisitOp = _VisitOpToSimplifyKineticLaw;
+        visitor.VisitOp = _VisitOpToSimplifyInitial;
         visitor.VisitInt = _VisitIntToSimplifyKineticLaw;
         visitor.VisitReal = _VisitRealToSimplifyKineticLaw;
         visitor.VisitSpecies = _VisitSpeciesToSimplifyKineticLaw;
@@ -145,6 +147,124 @@ static RET_VAL _SimplifyKineticLaw( ABSTRACTION_METHOD *method, IR *ir, REACTION
     FreeString( &kineticLawString );
 #endif        
     END_FUNCTION("_SimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    double leftValue = 0.0;
+    double rightValue = 0.0;
+    KINETIC_LAW *left = NULL;    
+    KINETIC_LAW *right = NULL;
+    REB2SAC_SYMBOL *sym = NULL;    
+    SPECIES *species = NULL;
+ 
+    START_FUNCTION("_VisitOpToSimplifyKineticLaw");
+    
+    left = GetOpLeftFromKineticLaw( kineticLaw );
+    if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
+        END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
+        return ret;
+    }
+    
+    right = GetOpRightFromKineticLaw( kineticLaw );
+    if( IS_FAILED( ( ret = right->Accept( right, visitor ) ) ) ) {
+        END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
+        return ret;
+    }
+    
+    
+//     if( !IsConstantValueKineticLaw( left ) ) {
+//         END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+//         return ret;
+//     }
+//     if( !IsConstantValueKineticLaw( right ) ) {
+//         END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+//         return ret;
+//     }
+    
+    if( IsRealValueKineticLaw( left ) ) {
+        leftValue = GetRealValueFromKineticLaw( left );
+    }
+    else if( IsSymbolKineticLaw( left ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( left );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        leftValue = GetRealValueInSymbol( sym );
+#endif
+    }
+    else if( IsIntValueKineticLaw( left ) ) {
+        leftValue = (double)GetIntValueFromKineticLaw( left );
+    }
+    else if( IsSpeciesKineticLaw( left ) ) {
+      species = GetSpeciesFromKineticLaw( left );
+      if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	leftValue = GetInitialAmountInSpeciesNode( species );
+      } else {
+	leftValue = GetInitialConcentrationInSpeciesNode( species );
+      }
+    }
+    
+    if( IsRealValueKineticLaw( right ) ) {
+        rightValue = GetRealValueFromKineticLaw( right );
+    }
+    else if( IsSymbolKineticLaw( right ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( right );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        rightValue = GetRealValueInSymbol( sym );
+#endif
+    }
+    else if( IsIntValueKineticLaw( right ) ) {
+        rightValue = (double)GetIntValueFromKineticLaw( right );
+    } 
+    else if( IsSpeciesKineticLaw( right ) ) {
+      species = GetSpeciesFromKineticLaw( right );
+      if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	rightValue = GetInitialAmountInSpeciesNode( species );
+      } else {
+	rightValue = GetInitialConcentrationInSpeciesNode( species );
+      }
+    }
+        
+    switch( GetOpTypeFromKineticLaw( kineticLaw ) ) {
+        case KINETIC_LAW_OP_PLUS:
+            result = leftValue + rightValue;
+        break;
+                
+        case KINETIC_LAW_OP_MINUS:
+            result = leftValue - rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_TIMES:
+            result = leftValue * rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_DIVIDE:
+            result = leftValue / rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_POW:
+            result = pow( leftValue, rightValue );
+        break;        
+        
+        default:
+        return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
+    }
+    
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitOpToSimplifyKineticLaw", ret );
+        return ret;
+    } 
+            
+    END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
     return ret;
 }
 
