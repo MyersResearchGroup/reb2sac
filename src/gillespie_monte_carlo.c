@@ -129,9 +129,12 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     SPECIES **speciesArray = NULL;
     REACTION *reaction = NULL;
     REACTION **reactions = NULL;
+    RULE *rule = NULL;
+    RULE **ruleArray = NULL;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
+    RULE_MANAGER *ruleManager;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -152,6 +155,24 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
         i++;        
     }
     rec->reactionArray = reactions;    
+
+//     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+//         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+//     }
+//     list = ruleManager->CreateListOfRules( ruleManager );
+//     rec->rulesSize = GetLinkedListSize( list );
+//     if ( rec->rulesSize > 0 ) {
+//       if( ( ruleArray = (RULE**)MALLOC( rec->rulesSize * sizeof(RULE*) ) ) == NULL ) {
+//         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for rules array" );
+//       }
+//     }
+//     i = 0;
+//     ResetCurrentElement( list );
+//     while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+//         ruleArray[i] = rule;
+//         i++;        
+//     }
+//     rec->ruleArray = ruleArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -365,7 +386,6 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
             return ret;
         }        
     }
-    
     return ret;            
 }
 
@@ -403,6 +423,7 @@ static RET_VAL _RunSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
                 return ret;
             }
             reaction = rec->nextReaction;
+	    printf("time = %g\n",rec->time);
             if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
                 return ret;
             }
@@ -611,6 +632,11 @@ static RET_VAL _FindNextReactionTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     
     random = _GetUniformRandom();
     t = log( 1.0 / random ) / rec->totalPropensities;
+    printf("1:random = %g totalP = %g log = %g t = %g\n",
+	   random,rec->totalPropensities,log(1.0/random),t);
+    t = log( 1.0 / random ) / rec->totalPropensities;
+    printf("2:random = %g totalP = %g log = %g t = %g\n",
+	   random,rec->totalPropensities,log(1.0/random),t);
     rec->time += t;            
     if( rec->time > rec->timeLimit ) {
         rec->time = rec->timeLimit;
@@ -702,6 +728,8 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     REACTION *reaction = rec->nextReaction;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    int i = 0;
+    int j = 0;
 
     edges = GetReactantEdges( reaction );
     ResetCurrentElement( edges );
@@ -731,6 +759,23 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
             amount );
         SetAmountInSpeciesNode( species, amount );
     }    
+
+//     printf("time = %g\n",rec->time);
+//     for (i = 0; i < rec->rulesSize; i++) {
+//       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+// 	printf("Checking rule %s\n",GetCharArrayOfString( GetRuleVar(rec->ruleArray[i]) ) );
+// 	for (j = 0; j < rec->speciesSize; j++) {
+// 	  printf("Checking species %s\n",GetCharArrayOfString( GetSpeciesNodeID(rec->speciesArray[j]) ) );
+// 	  if ( GetRuleVar( rec->ruleArray[i] ) == GetSpeciesNodeID( rec->speciesArray[j] ) ) {
+// 	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+// 								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+// 	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+// 	    break;
+// 	  }
+// 	}
+//       }
+//     }
+
     return ret;            
 }
 
