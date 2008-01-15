@@ -72,11 +72,13 @@ static BOOL _IsStructureChanged( IR *ir );
 
 static UNIT_MANAGER *_GetUnitManager( IR *ir );
 static FUNCTION_MANAGER *_GetFunctionManager( IR *ir );
+static RULE_MANAGER *_GetRuleManager( IR *ir );
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir );
 static REB2SAC_SYMTAB *_GetGlobalSymtab( IR *ir );
 
 static RET_VAL _SetUnitManager( IR *ir, UNIT_MANAGER *unitManager );
 static RET_VAL _SetFunctionManager( IR *ir, FUNCTION_MANAGER *functionManager );
+static RET_VAL _SetRuleManager( IR *ir, RULE_MANAGER *ruleManager );
 static RET_VAL _SetCompartmentManager( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
 
             
@@ -85,6 +87,7 @@ static RET_VAL _GenetateSBML( IR *ir, FILE *file );
 static RET_VAL _GenerateXHTML( IR *ir, FILE *file );           
 
 // TODO: create function definition print functions
+// TODO: create rule definition print functions
 
 static RET_VAL _PrintListOfUnitDefinitionsForSBML( IR *ir, FILE *file, UINT32 tabCount );
 static RET_VAL _PrintUnitDefinitionForSBML( UNIT_DEFINITION *unitDef, FILE *file, UINT32 tabCount );
@@ -199,6 +202,9 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
 
     ir->GetFunctionManager = _GetFunctionManager;
     ir->SetFunctionManager = _SetFunctionManager;    
+
+    ir->GetRuleManager = _GetRuleManager;
+    ir->SetRuleManager = _SetRuleManager;    
     
     ir->GetCompartmentManager = _GetCompartmentManager;
     ir->SetCompartmentManager = _SetCompartmentManager;    
@@ -871,6 +877,18 @@ static FUNCTION_MANAGER *_GetFunctionManager( IR *ir ) {
     return ir->functionManager;
 }
 
+static RULE_MANAGER *_GetRuleManager( IR *ir ) {
+    START_FUNCTION("_GetRuleManager");
+            
+    if( ir == NULL ) {
+        END_FUNCTION("_GetRuleManager", FAILING );
+        return NULL;    
+    }
+        
+    END_FUNCTION("_GetRuleManager", SUCCESS );
+    return ir->ruleManager;
+}
+
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir ) {
     START_FUNCTION("_GetCompartmentManager");
             
@@ -915,6 +933,18 @@ static RET_VAL _SetFunctionManager( IR *ir, FUNCTION_MANAGER *functionManager ) 
         return ErrorReport( FAILING, "_SetFunctionManager", "input ir is null" );
     }
     ir->functionManager = functionManager;
+            
+    END_FUNCTION("_SetFunctionManager", SUCCESS );
+    return SUCCESS;;
+}
+
+static RET_VAL _SetRuleManager( IR *ir, RULE_MANAGER *ruleManager ) {
+    START_FUNCTION("_SetRuleManager");
+            
+    if( ir == NULL ) {
+        return ErrorReport( FAILING, "_SetRuleManager", "input ir is null" );
+    }
+    ir->ruleManager = ruleManager;
             
     END_FUNCTION("_SetFunctionManager", SUCCESS );
     return SUCCESS;;

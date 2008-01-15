@@ -75,6 +75,7 @@ RET_VAL CloseFunctionManager(  ) {
             }
             DeleteLinkedList( &arguments );
         }
+	FreeKineticLaw( &(functionDef->function) );
         FREE( functionDef );
     }
     DeleteLinkedList( &list );

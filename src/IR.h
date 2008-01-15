@@ -29,6 +29,7 @@
 #include "reaction_node.h"
 #include "symtab.h"
 #include "function_manager.h"
+#include "rule_manager.h"
 
 BEGIN_C_NAMESPACE
 
@@ -49,6 +50,7 @@ struct _IR {
     COMPILER_RECORD_T *record;
     UNIT_MANAGER *unitManager;
     FUNCTION_MANAGER *functionManager;
+    RULE_MANAGER *ruleManager;
     COMPARTMENT_MANAGER *compartmentManager;
     REB2SAC_SYMTAB *globalSymtab;
     
@@ -97,11 +99,13 @@ struct _IR {
     
     UNIT_MANAGER * (*GetUnitManager)( IR *ir );
     FUNCTION_MANAGER * (*GetFunctionManager)( IR *ir );
+    RULE_MANAGER * (*GetRuleManager)( IR *ir );
     COMPARTMENT_MANAGER * (*GetCompartmentManager)( IR *ir );
     REB2SAC_SYMTAB *(*GetGlobalSymtab)( IR *ir );
     
     RET_VAL (*SetUnitManager)( IR *ir, UNIT_MANAGER *unitManager );
     RET_VAL (*SetFunctionManager)( IR *ir, FUNCTION_MANAGER *functionManager );
+    RET_VAL (*SetRuleManager)( IR *ir, RULE_MANAGER *ruleManager );
     RET_VAL (*SetCompartmentManager)( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
         
     
