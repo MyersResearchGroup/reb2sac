@@ -32,6 +32,7 @@
 static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend );
 static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir );
 static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *model );
+static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir );
 
 static RET_VAL _HandleUnitDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, UnitDefinition_t *unitDef );
@@ -59,6 +60,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 //static UINT _GetNumItems( ListOf_t *list );
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
+static RET_VAL _UpdateGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
 
 int workingOnFunctions;
 
@@ -159,6 +161,7 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
 
 static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     RET_VAL ret = SUCCESS;
+    RET_VAL ret1 = SUCCESS;
     Model_t *model = NULL;
     SBMLDocument_t *doc = NULL;
     HASH_TABLE *table = NULL;
@@ -167,7 +170,8 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     COMPARTMENT_MANAGER *compartmentManager = NULL;
     SBML_SYMTAB_MANAGER *sbmlSymtabManager = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
-    
+    int timeout = 0;
+
     START_FUNCTION("_GenerateIR");
     
     doc = (SBMLDocument_t*)(frontend->_internal1);
@@ -228,7 +232,7 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     }
-            
+        
     if( IS_FAILED( ( ret = _CreateSpeciesNodes( frontend, ir, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
@@ -239,6 +243,22 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     }
+
+    timeout = Model_getNumInitialAssignments( model );
+    do {
+      if( IS_FAILED( ( ret1 = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret1 );
+        return ret1;
+      }
+      if( IS_FAILED( ( ret = _UpdateGlobalParamInSymtab( frontend, symtab, sbmlSymtabManager ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+      }
+      timeout--;
+    } while (timeout >= 0 && ret1 == CHANGE);
+    if (timeout < 0) {
+      return ErrorReport( FAILING, "_GenerateIR", "cycle detected in assignments" ); 
+    }
         
     END_FUNCTION("_GenerateIR", SUCCESS );
     return ret;
@@ -248,7 +268,9 @@ static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *
     RET_VAL ret = SUCCESS;
     SBML_SYMTAB_MANAGER *manager = NULL;
     ListOf_t *list = NULL;
-    
+    UINT size = 0;
+    UINT i = 0;
+
     START_FUNCTION("_HandleGlobalParameters");
 
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
@@ -263,6 +285,103 @@ static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *
     return ret;
 }
 
+static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir ) {
+    RET_VAL ret = SUCCESS;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    ListOf_t *list = NULL;
+    UINT size = 0;
+    UINT i = 0;
+    UINT j = 0;
+    UINT sizeP = 0;
+    ListOf_t *listP = NULL;
+    UINT sizeS = 0;
+    LINKED_LIST *listS = NULL;
+    InitialAssignment_t *initialAssignment = NULL;
+    Parameter_t *parameter = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    HASH_TABLE *table = NULL;
+    char * id;
+    char * Pid;
+    char * Sid;
+    int change;
+    double Pvalue;
+    SPECIES *speciesNode;
+    double initialValue;
+
+    START_FUNCTION("_HandleInitialAssignments");
+
+    change = 0;
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleInitialAssignments", "error on getting symtab manager" ); 
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
+    list = Model_getListOfInitialAssignments( model );
+    size = Model_getNumInitialAssignments( model );
+    listP = Model_getListOfParameters( model );
+    sizeP = Model_getNumParameters( model );
+    listS = ir->GetListOfSpeciesNodes( ir );
+    sizeS = GetLinkedListSize( listS );
+    for( i = 0; i < size; i++ ) {
+      initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
+      char * id = InitialAssignment_getSymbol(initialAssignment);
+      node = InitialAssignment_getMath( initialAssignment );
+      if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	return ErrorReport( FAILING, "_HandleInitialAssignments", "failed to create initial assignment for %s", id );        
+      }
+      SimplifyInitialAssignment(law);
+      if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	initialValue = GetRealValueFromKineticLaw(law); 
+      } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	initialValue = (double)GetIntValueFromKineticLaw(law); 
+      } 
+      for ( j = 0; j < sizeP; j++ ) {
+	parameter = (Parameter_t*)ListOf_get( listP, j );
+	Pid = Parameter_getId(parameter);
+	Pvalue = Parameter_getValue(parameter);
+	if (strcmp(id,Pid)==0) {
+	  if (Pvalue != initialValue) {
+	      change = 1;
+	      Parameter_setValue(parameter,initialValue); 
+	      //printf("Changing %s from %g to %g\n",Pid,Pvalue,initialValue);
+	  }
+	} 
+      }
+      for ( j = 0; j < sizeS; j++ ) {
+	speciesNode = (SPECIES*)GetElementByIndex(j,listS);
+	Sid = GetCharArrayOfString( GetSpeciesNodeID( speciesNode ));
+	if (strcmp(id,Sid)==0) {
+	  if (IsInitialQuantityInAmountInSpeciesNode(speciesNode)) {
+	    if (GetInitialAmountInSpeciesNode( speciesNode ) != initialValue) {
+	      //printf("Changing %s from %g to %g\n",Sid,GetInitialAmountInSpeciesNode( speciesNode ),initialValue);
+	      if( IS_FAILED( ( ret = SetInitialAmountInSpeciesNode( speciesNode, initialValue ) ) ) ) {
+		END_FUNCTION("_CreateSpeciesNode", ret );
+		return ret;   
+	      }
+	      change = 1;
+	    }
+	  } else {
+	    if (GetInitialConcentrationInSpeciesNode( speciesNode ) != initialValue) {
+	      //printf("Changing %s from %g to %g\n",Sid,GetInitialConcentrationInSpeciesNode( speciesNode ),initialValue);
+	      if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialValue ) ) ) ) {
+		END_FUNCTION("_CreateSpeciesNode", ret );
+		return ret;   
+	      }
+	      change = 1;
+	    }
+	  }
+	}
+      }
+    }
+    if( IS_FAILED( ( ret = manager->SetGlobal( manager, listP ) ) ) ) {
+        return ErrorReport( FAILING, "_HandleGlobalParameters", "error on setting global" ); 
+    }     
+    END_FUNCTION("_HandleInitialAssignments", SUCCESS );
+    if (!change)
+      return ret;
+    return CHANGE;
+}
+
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, 
                                         REB2SAC_SYMTAB *symtab, 
                                         SBML_SYMTAB_MANAGER *sbmlSymtabManager ) {
@@ -270,6 +389,22 @@ static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend,
     
     START_FUNCTION("_AddGlobalParamInSymtab");
     if( IS_FAILED( ( ret = sbmlSymtabManager->PutParametersInGlobalSymtab( sbmlSymtabManager, symtab ) ) ) ) {
+        END_FUNCTION("_AddGlobalParamInSymtab", ret );
+        return ret;
+    }
+    
+    END_FUNCTION("_AddGlobalParamInSymtab", SUCCESS );
+    return SUCCESS;
+
+}
+
+static RET_VAL _UpdateGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, 
+                                        REB2SAC_SYMTAB *symtab, 
+                                        SBML_SYMTAB_MANAGER *sbmlSymtabManager ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_AddGlobalParamInSymtab");
+    if( IS_FAILED( ( ret = sbmlSymtabManager->UpdateParametersInGlobalSymtab( sbmlSymtabManager, symtab ) ) ) ) {
         END_FUNCTION("_AddGlobalParamInSymtab", ret );
         return ret;
     }
@@ -627,35 +762,6 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
                 return ret;   
             }
         }
-    }
-
-    list = Model_getListOfInitialAssignments( model );
-    size = Model_getNumInitialAssignments( model );
-    for( i = 0; i < size; i++ ) {
-      initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
-      if (strcmp(InitialAssignment_getSymbol(initialAssignment),id)==0) {
-	node = InitialAssignment_getMath( initialAssignment );
-	if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
-	  return ErrorReport( FAILING, "_CreateSpeciesNode", "error on getting symtab manager" ); 
-	}
-	table = (HASH_TABLE*)frontend->_internal2;    
-	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
-	  return ErrorReport( FAILING, "_CreateSpeciesNode", "failed to create initial assignment for %s", id );        
-	}
-	SimplifyInitialAssignment(law);
-	if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	  initialQuantity = GetRealValueFromKineticLaw(law); 
-	  if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialQuantity ) ) ) ) {
-	    END_FUNCTION("_CreateSpeciesNode", ret );
-	    return ret;   
-	  }
-	} /*else 	if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	  printf("value = %d\n",law->intValue);
-	  initialQunatity = law->intValue; 
-	  } */ else {
-	  return ErrorReport( FAILING, "_CreateSpeciesNode", "failed to create initial assignment for %s", id );        
-	}
-      }
     }
     
     if( ( unitManager = GetUnitManagerInstance( frontend->record ) ) == NULL ) {
