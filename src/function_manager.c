@@ -114,15 +114,10 @@ RET_VAL AddArgumentInFunctionDefinition( FUNCTION_DEFINITION *functionDef, char 
         return ErrorReport( FAILING, "AddArgumentInFunctionDefinition", "allocatation failed for argument %s", argument ); 
     }
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( argument, functionDef->arguments ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( arg, functionDef->arguments ) ) ) ) {
         END_FUNCTION("GetFunctionsInFunctionDefinition", ret );
         return ret;
     }
-    
-//     if( ( function->argument = CreateString( argument ) ) == NULL ) {
-//         FREE( function );
-//         return ErrorReport( FAILING, "AddArgumentInFunctionDefinition", "allocatation failed for argument %s", argument ); 
-//     }  
     
     END_FUNCTION("AddArgumentInFunctionDefinition", SUCCESS );
     return ret;
@@ -167,7 +162,9 @@ static FUNCTION_DEFINITION * _CreateFunctionDefinition( FUNCTION_MANAGER *manage
     if( ( functionDef->arguments = CreateLinkedList() ) == NULL ) {
         return ErrorReport( FAILING, "_CreateFunctionDefinition", "could not create a function list for %s", id );
     }
-        
+    
+    functionDef->function = NULL;
+    
     if( IS_FAILED( PutInHashTable( GetCharArrayOfString( functionDef->id ), GetStringLength( functionDef->id ), functionDef, manager->table ) ) ) {
         FREE( functionDef );
         END_FUNCTION("_CreateFunctionDefinition", FAILING );

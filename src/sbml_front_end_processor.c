@@ -187,15 +187,6 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     frontend->_internal3 = (CADDR_T)symtab;
     
     workingOnFunctions = 0;
-    
-    if( IS_FAILED( ( ret = _HandleGlobalParameters( frontend, model ) ) ) ) {
-        END_FUNCTION("_GenerateIR", ret );
-        return ret;
-    }
-    if( ( sbmlSymtabManager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
-        return ErrorReport( FAILING, "_GenerateIR", "error on getting symtab manager" ); 
-    }
-        
         
     if( IS_FAILED( ( ret = _HandleUnitDefinitions( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
@@ -208,6 +199,14 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     } 
+    
+    if( IS_FAILED( ( ret = _HandleGlobalParameters( frontend, model ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    }
+    if( ( sbmlSymtabManager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_GenerateIR", "error on getting symtab manager" ); 
+    }
         
     if( IS_FAILED( ( ret = _HandleFunctionDefinitions( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
@@ -618,7 +617,6 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
     int exponent = 0;
     int scale = 0;
     double multiplier = 0.0;
-    double offset = 0.0;    
     char *id = NULL;
     char *kind = NULL;
     UnitKind_t kindID = 0;
@@ -646,10 +644,11 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
         kind = UnitKind_toString( kindID );
         exponent = Unit_getExponent( unit );
         scale = Unit_getScale( unit );
-        multiplier = Unit_getMultiplier( unit );
-        offset = Unit_getOffset( unit );
-        TRACE_6( "adding unit %s (exponent=%i, scale=%i, multiplier=%f, offset=%f) in %s", kind, exponent, scale, multiplier, offset, id );           
-        if( IS_FAILED( ( ret = AddUnitInUnitDefinition( unitDef, kind, exponent, scale, multiplier, offset ) ) ) ) {
+        //multiplier = Unit_getMultiplier( unit );
+	multiplier = 1.0;
+        //printf( "adding unit %s (exponent=%i, scale=%i, multiplier=%f) in %s\n", kind, exponent, scale, multiplier, id );           
+        TRACE_5( "adding unit %s (exponent=%i, scale=%i, multiplier=%f) in %s", kind, exponent, scale, multiplier, id );           
+        if( IS_FAILED( ( ret = AddUnitInUnitDefinition( unitDef, kind, exponent, scale, multiplier ) ) ) ) {
             END_FUNCTION("_HandleUnitDefinition", ret );
             return ret;
         }
