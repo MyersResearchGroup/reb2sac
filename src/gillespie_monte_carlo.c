@@ -156,23 +156,23 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     }
     rec->reactionArray = reactions;    
 
-//     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
-//         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
-//     }
-//     list = ruleManager->CreateListOfRules( ruleManager );
-//     rec->rulesSize = GetLinkedListSize( list );
-//     if ( rec->rulesSize > 0 ) {
-//       if( ( ruleArray = (RULE**)MALLOC( rec->rulesSize * sizeof(RULE*) ) ) == NULL ) {
-//         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for rules array" );
-//       }
-//     }
-//     i = 0;
-//     ResetCurrentElement( list );
-//     while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
-//         ruleArray[i] = rule;
-//         i++;        
-//     }
-//     rec->ruleArray = ruleArray;    
+    if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+    }
+    list = ruleManager->CreateListOfRules( ruleManager );
+    rec->rulesSize = GetLinkedListSize( list );
+    if ( rec->rulesSize > 0 ) {
+      if( ( ruleArray = (RULE**)MALLOC( rec->rulesSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for rules array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+        ruleArray[i] = rule;
+        i++;        
+    }
+    rec->ruleArray = ruleArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -423,7 +423,6 @@ static RET_VAL _RunSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
                 return ret;
             }
             reaction = rec->nextReaction;
-	    printf("time = %g\n",rec->time);
             if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
                 return ret;
             }
@@ -632,11 +631,6 @@ static RET_VAL _FindNextReactionTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     
     random = _GetUniformRandom();
     t = log( 1.0 / random ) / rec->totalPropensities;
-    printf("1:random = %g totalP = %g log = %g t = %g\n",
-	   random,rec->totalPropensities,log(1.0/random),t);
-    t = log( 1.0 / random ) / rec->totalPropensities;
-    printf("2:random = %g totalP = %g log = %g t = %g\n",
-	   random,rec->totalPropensities,log(1.0/random),t);
     rec->time += t;            
     if( rec->time > rec->timeLimit ) {
         rec->time = rec->timeLimit;
@@ -760,21 +754,19 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
         SetAmountInSpeciesNode( species, amount );
     }    
 
-//     printf("time = %g\n",rec->time);
-//     for (i = 0; i < rec->rulesSize; i++) {
-//       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-// 	printf("Checking rule %s\n",GetCharArrayOfString( GetRuleVar(rec->ruleArray[i]) ) );
-// 	for (j = 0; j < rec->speciesSize; j++) {
-// 	  printf("Checking species %s\n",GetCharArrayOfString( GetSpeciesNodeID(rec->speciesArray[j]) ) );
-// 	  if ( GetRuleVar( rec->ruleArray[i] ) == GetSpeciesNodeID( rec->speciesArray[j] ) ) {
-// 	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-// 								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-// 	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
-// 	    break;
-// 	  }
-// 	}
-//       }
-//     }
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	    break;
+	  }
+	}
+      }
+    }
 
     return ret;            
 }

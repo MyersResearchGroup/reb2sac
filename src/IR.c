@@ -1332,11 +1332,6 @@ static RET_VAL _PrintUnitForSBML( UNIT *unit, FILE *file, UINT32 tabCount ) {
         fprintf( file, " multiplier=\"%g\"", multiplier );
     }
 
-    offset = GetOffsetInUnit( unit );
-    if( offset != 0.0 ) {
-        fprintf( file, " offset=\"%g\"", offset );
-    }    
-
     fprintf( file, "/>%s", NEW_LINE );
             
     END_FUNCTION("_PrintUnitForSBML", SUCCESS );

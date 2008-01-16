@@ -142,32 +142,31 @@ LINKED_LIST *GetUnitsInUnitDefinition( UNIT_DEFINITION *unitDef ) {
 }
 
 
-RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier, double offset ) {
+RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier ) {
     RET_VAL ret = SUCCESS;
     UNIT *unit = NULL;    
     
-    START_FUNCTION("GetUnitsInUnitDefinition");
+    START_FUNCTION("AddUnitsInUnitDefinition");
             
     if( ( unit = (UNIT*)MALLOC( sizeof( UNIT ) ) ) == NULL ) {
-        return ErrorReport( FAILING, "GetUnitsInUnitDefinition", "allocatation failed for unit %s", kind ); 
+        return ErrorReport( FAILING, "AddUnitsInUnitDefinition", "allocatation failed for unit %s", kind ); 
     }
     
     if( IS_FAILED( ( ret = AddElementInLinkedList( unit, unitDef->units ) ) ) ) {
-        END_FUNCTION("GetUnitsInUnitDefinition", ret );
+        END_FUNCTION("AddUnitsInUnitDefinition", ret );
         return ret;
     }
     
     if( ( unit->kind = CreateString( kind ) ) == NULL ) {
         FREE( unit );
-        return ErrorReport( FAILING, "GetUnitsInUnitDefinition", "allocatation failed for unit %s", kind ); 
+        return ErrorReport( FAILING, "AddUnitsInUnitDefinition", "allocatation failed for unit %s", kind ); 
     }  
     
     unit->exponent = exponent;
     unit->scale = scale;
     unit->multiplier = multiplier;
-    unit->offset = offset;        
     
-    END_FUNCTION("GetUnitsInUnitDefinition", SUCCESS );
+    END_FUNCTION("AddUnitsInUnitDefinition", SUCCESS );
     return ret;
 }
 
@@ -279,17 +278,3 @@ double GetMultiplierInUnit( UNIT *unit ) {
     END_FUNCTION("GetMultiplierInUnit", SUCCESS );
     return unit->multiplier;
 }
-
-double GetOffsetInUnit( UNIT *unit ) {
-    START_FUNCTION("GetOffsetInUnit");
-    
-    if( unit == NULL ) {
-        END_FUNCTION("GetOffsetInUnit", FAILING );
-        return 0.0;
-    }
-    
-    END_FUNCTION("GetOffsetInUnit", SUCCESS );
-    return unit->offset;
-}
-
-

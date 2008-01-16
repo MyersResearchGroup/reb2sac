@@ -34,7 +34,6 @@ typedef struct {
     int exponent;
     int scale;
     double multiplier;
-    double offset;
 } UNIT;
 
 typedef struct {
@@ -59,13 +58,12 @@ struct _UNIT_MANAGER {
 
 STRING *GetUnitDefinitionID( UNIT_DEFINITION *unitDef );
 LINKED_LIST *GetUnitsInUnitDefinition( UNIT_DEFINITION *unitDef );
-RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier, double offset );
+RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier );
 
 STRING *GetKindInUnit( UNIT *unit );
 int GetExponentInUnit( UNIT *unit );
 int GetScaleInUnit( UNIT *unit );
 double GetMultiplierInUnit( UNIT *unit );
-double GetOffsetInUnit( UNIT *unit );
 
 UNIT_MANAGER *GetUnitManagerInstance( COMPILER_RECORD_T *record );
 RET_VAL CloseUnitManager( );
