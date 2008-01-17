@@ -722,8 +722,8 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     REACTION *reaction = rec->nextReaction;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
-    int i = 0;
-    int j = 0;
+    UINT i = 0;
+    UINT j = 0;
 
     edges = GetReactantEdges( reaction );
     ResetCurrentElement( edges );
