@@ -115,6 +115,9 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     SPECIES **speciesArray = NULL;
     REACTION *reaction = NULL;
     REACTION **reactions = NULL;
+    RULE *rule = NULL;
+    RULE **ruleArray = NULL;
+    RULE_MANAGER *ruleManager;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -138,6 +141,24 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
         i++;        
     }
     rec->reactionArray = reactions;    
+
+    if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+    }
+    list = ruleManager->CreateListOfRules( ruleManager );
+    rec->rulesSize = GetLinkedListSize( list );
+    if ( rec->rulesSize > 0 ) {
+      if( ( ruleArray = (RULE**)MALLOC( rec->rulesSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for rules array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+        ruleArray[i] = rule;
+        i++;        
+    }
+    rec->ruleArray = ruleArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -383,6 +404,7 @@ static RET_VAL _UpdateNodeValues( EULER_SIMULATION_RECORD *rec ) {
 static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
+    UINT32 j = 0;
     UINT32 speciesSize = rec->speciesSize;
     long stoichiometry = 0;
     double concentration = 0.0;    
@@ -431,6 +453,26 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         TRACE_2( "%s changes to %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
             concentration );
         SetConcentrationInSpeciesNode( species, concentration );
+    }
+    for (i = 0; i < rec->rulesSize; i++) {
+      for (j = 0; j < rec->speciesSize; j++) {
+	if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		     GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	  if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	    break;
+	  } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	    /* Note technically correct as rates calculated using new concentrations */
+	    change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    concentration += (change * deltaTime);
+	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	    break;
+	  }
+	}
+      }
     }
     return ret;            
 }

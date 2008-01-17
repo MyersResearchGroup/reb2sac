@@ -61,7 +61,6 @@ static KINETIC_LAW *_TransformIntValueKineticLaw( FRONT_END_PROCESSOR *frontend,
 static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 
 static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode,  Reaction_t *reaction );
-//static UINT _GetNumItems( ListOf_t *list );
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
 static RET_VAL _UpdateGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
@@ -122,7 +121,7 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
     record = frontend->record;
     
     doc = readSBML( GetCharArrayOfString( record->inputPath ) );
-    //    SBMLDocument_checkConsistency( doc );
+//     SBMLDocument_checkConsistency( doc );
 //     errorNum = SBMLDocument_getNumWarnings( doc );
 //     if( errorNum > 0 ) {
 //         /*this is not actually error*/
@@ -265,7 +264,6 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     if (timeout > 0) {
       timeout++;
       do {
-	//printf("timeout = %d\n",timeout);
 	if( IS_FAILED( ( ret1 = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
 	  END_FUNCTION("_GenerateIR", ret1 );
 	  return ret1;
@@ -967,10 +965,10 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     /*
         use name as the id
     */
-    //id = Species_getName( species );
-    //if( id == NULL ) {
+    /* id = Species_getName( species );
+       if( id == NULL ) { */
     id = key;
-    //}
+    /*}*/
     
     TRACE_2("species id = %s and key for sym is %s", id, key );
     
@@ -1141,9 +1139,9 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
 
     START_FUNCTION("_CreateReactionNode");
             
-    //if( ( name = Reaction_getName( reaction ) ) == NULL ) {    
-    //    name = Reaction_getId( reaction );
-    //}
+    /*if( ( name = Reaction_getName( reaction ) ) == NULL ) {    
+        name = Reaction_getId( reaction );
+	}*/
     name = Reaction_getId( reaction );
     TRACE_1("reaction name = %s", name);
     
@@ -1632,20 +1630,6 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     END_FUNCTION("_ResolveNodeLinks", SUCCESS );
     return ret;
 }
-
-
-// static UINT _GetNumItems( ListOf_t *list ) {
-//     UINT i = 0;
-//     START_FUNCTION("_GetNumItems");
-
-//     if( list == NULL ) {
-//         END_FUNCTION("_GetNumItems", SUCCESS );
-//         return 0;        
-//     }
-//     i = ListOf_getNumItems( list );
-//     END_FUNCTION("_GetNumItems", SUCCESS );
-//     return i;
-// }
 
  
  
