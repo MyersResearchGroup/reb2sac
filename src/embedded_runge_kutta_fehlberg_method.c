@@ -117,19 +117,23 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
             
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
-    if (rec->reactionsSize==0) {
-        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
-    }
-    if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
+    if (rec->reactionsSize!=0) {
+      //        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
+      //}
+      if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
-    }
-    i = 0;
-    ResetCurrentElement( list );
-    while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
+      }
+      i = 0;
+      ResetCurrentElement( list );
+      while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
         reactions[i] = reaction;
         i++;        
+      }
+      rec->reactionArray = reactions;    
     }
-    rec->reactionArray = reactions;    
+    else {
+      rec->reactionArray = NULL;
+    }
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
@@ -400,7 +404,6 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     UINT32 speciesSize = rec->speciesSize;
     long stoichiometry = 0;
     double concentration = 0.0;    
-    double change = 0.0;
     double deltaTime = 0.0;    
     double rate = 0.0;
     IR_EDGE *edge = NULL;
@@ -415,6 +418,8 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
         if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, y[i] ) ) ) ) {
             return GSL_FAILURE;            
         }        
+	f[i] = 0.0;
+	//printf("SValue of %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( species )),y[i]);
     }
     for (i = 0; i < rec->rulesSize; i++) {
       for (j = 0; j < rec->speciesSize; j++) {
@@ -424,10 +429,15 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
 									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	    //printf("Value of %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] )),concentration);
+	    concentration = GetConcentrationInSpeciesNode( rec->speciesArray[j] );
+	    //printf("Value is now %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] )),concentration);
 	    break;
 	  } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
 	    f[j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
 								      (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+
+	    //printf("Rate of %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] )),f[j]);
 	    break;
 	  }
 	}
@@ -440,7 +450,6 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     
     for( i = 0; i < speciesSize; i++ ) {    
         species = speciesArray[i];
-        change = 0.0;                
         concentration = GetConcentrationInSpeciesNode( species );
         TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
             concentration );
@@ -450,7 +459,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             stoichiometry = (long)GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            change -= ((double)stoichiometry * rate);
+            f[i] -= ((double)stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
                -((double)stoichiometry * rate));
         }                
@@ -460,12 +469,11 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             stoichiometry = (long)GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            change += ((double)stoichiometry * rate);
+            f[i] += ((double)stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
                ((double)stoichiometry * rate));
         }
-        f[i] = change;
-        TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), change );
+        TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;            
 }
