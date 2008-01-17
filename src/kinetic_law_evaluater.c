@@ -429,6 +429,8 @@ static RET_VAL _VisitSpeciesToEvaluateWithCurrentConcentrations( KINETIC_LAW_VIS
     species = GetSpeciesFromKineticLaw( kineticLaw );
     
     value = GetConcentrationInSpeciesNode( species );
+    //printf("Looking up %s found %g\n",
+    //	   GetCharArrayOfString(GetSpeciesNodeID( species )),value);
     *result = value; 
     
     return SUCCESS;
