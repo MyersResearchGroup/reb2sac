@@ -357,8 +357,8 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     sizeC = GetLinkedListSize( listC );
     for( i = 0; i < size; i++ ) {
       initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
-      char * id = InitialAssignment_getSymbol(initialAssignment);
-      node = InitialAssignment_getMath( initialAssignment );
+      id = (char *)InitialAssignment_getSymbol(initialAssignment);
+      node = (ASTNode_t*)InitialAssignment_getMath( initialAssignment );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	return ErrorReport( FAILING, "_HandleInitialAssignments", "failed to create initial assignment for %s", id );        
       }
@@ -370,7 +370,7 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
       } 
       for ( j = 0; j < sizeP; j++ ) {
 	parameter = (Parameter_t*)ListOf_get( listP, j );
-	Pid = Parameter_getId(parameter);
+	Pid = (char *)Parameter_getId(parameter);
 	Pvalue = Parameter_getValue(parameter);
 	if (strcmp(id,Pid)==0) {
 	  if (Pvalue != initialValue) {
@@ -479,8 +479,8 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
     for( i = 0; i < size; i++ ) {
       rule = (Rule_t*)ListOf_get( list, i );
       if (Rule_isAssignment( rule )) {
-	char * id = Rule_getVariable( rule );
-	node = Rule_getMath( rule );
+	char * id = (char *)Rule_getVariable( rule );
+	node = (ASTNode_t*)Rule_getMath( rule );
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleRuleAssignments", "failed to create initial assignment for rule %s", id );        
 	}
@@ -492,7 +492,7 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
 	} 
 	for ( j = 0; j < sizeP; j++ ) {
 	  parameter = (Parameter_t*)ListOf_get( listP, j );
-	  Pid = Parameter_getId(parameter);
+	  Pid = (char*)Parameter_getId(parameter);
 	  Pvalue = Parameter_getValue(parameter);
 	  if (strcmp(id,Pid)==0) {
 	    if (Pvalue != initialValue) {
@@ -629,7 +629,7 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
         return ErrorReport( FAILING, "_HandleUnitDefinition", "could not get an instance of unit manager" );
     }
     
-    id = UnitDefinition_getId( source );
+    id = (char *)UnitDefinition_getId( source );
     TRACE_1("creating unit definition %s", id );
     if( ( unitDef = unitManager->CreateUnitDefinition( unitManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleUnitDefinition", "could not allocate unit def %s", id );
@@ -639,7 +639,7 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
     for( i = 0; i < num; i++ ) {
         unit = UnitDefinition_getUnit( source, i );
         kindID = Unit_getKind( unit );
-        kind = UnitKind_toString( kindID );
+        kind = (char *)UnitKind_toString( kindID );
         exponent = Unit_getExponent( unit );
         scale = Unit_getScale( unit );
         //multiplier = Unit_getMultiplier( unit );
@@ -702,7 +702,7 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
         return ErrorReport( FAILING, "_HandleFunctionDefinition", "could not get an instance of function manager" );
     }
     
-    id = FunctionDefinition_getId( source );
+    id = (char *)FunctionDefinition_getId( source );
     TRACE_1("creating function definition %s", id );
     if( ( functionDef = functionManager->CreateFunctionDefinition( functionManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleFunctionDefinition", "could not allocate function def %s", id );
@@ -710,14 +710,14 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
 
     num = FunctionDefinition_getNumArguments( source );
     for( i = 0; i < num; i++ ) {
-      argument = SBML_formulaToString(FunctionDefinition_getArgument( source, i ));
-      TRACE_1( "adding function %s", id );           
+      argument = (char *)SBML_formulaToString(FunctionDefinition_getArgument( source, i ));
+      TRACE_1( "adding argument %s", argument );           
       if( IS_FAILED( ( ret = AddArgumentInFunctionDefinition( functionDef, argument ) ) ) ) {
 	END_FUNCTION("_HandleFunctionDefinition", ret );
 	return ret;
       }
     }                             
-    node = FunctionDefinition_getBody( source );
+    node = (ASTNode_t*)FunctionDefinition_getBody( source );
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleFunctionDefinition", "error on getting symtab manager" ); 
     }
@@ -776,21 +776,23 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
         return ErrorReport( FAILING, "_HandleRule", "could not get an instance of rule manager" );
     }
     if (Rule_isAlgebraic( source )) {
-      printf("WARNING: Algebraic rules are currently ignored.\n");
-      return ret;
-    }
-    if (Rule_isAssignment( source )) {
+      printf("Algebraic rules are currently ignored.\n");
+      type = RULE_TYPE_ALGEBRAIC;
+      var = NULL;
+      //return ret;
+    } else if (Rule_isAssignment( source )) {
       type = RULE_TYPE_ASSIGNMENT;
+      var = (char *)Rule_getVariable( source );
     } else {
       type = RULE_TYPE_RATE;
+      var = (char *)Rule_getVariable( source );
     }
-    var = Rule_getVariable( source );
     TRACE_1("creating rule on %s", var );
     if( ( ruleDef = ruleManager->CreateRule( ruleManager, type, var ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "could not allocate rule on %s", var );
     }
 
-    node = Rule_getMath( source );
+    node = (ASTNode_t*)Rule_getMath( source );
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
     }
@@ -858,7 +860,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
         return ErrorReport( FAILING, "_HandleCompartment", "could not get an instance of compartment manager" );
     }
     
-    id = Compartment_getId( source );
+    id = (char*)Compartment_getId( source );
     TRACE_1("creating compartment %s", id );
     if( ( compartment = manager->CreateCompartment( manager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleCompartment", "could not allocate compartment %s", id );
@@ -884,7 +886,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
         }
     }    
         
-    if( (units = Compartment_getUnits( source )) != NULL ) {
+    if( (units = (char*)Compartment_getUnits( source )) != NULL ) {
         unitManager = GetUnitManagerInstance( frontend->record );
         if( ( unitDef = unitManager->LookupUnitDefinition( unitManager, units ) ) == NULL ) {
             return ErrorReport( FAILING, "_HandleUnitDefinition", "unit def %s is not declared", units );
@@ -895,7 +897,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
         }
     }
         
-    if( ( outside = Compartment_getOutside( source ) ) != NULL ) {
+    if( ( outside = (char*)Compartment_getOutside( source ) ) != NULL ) {
         if( IS_FAILED( ( ret = SetOutsideInCompartment( compartment, outside ) ) ) ) {
             END_FUNCTION("_HandleCompartment", ret );
             return ret;
@@ -961,7 +963,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     
     table = (HASH_TABLE*)frontend->_internal2;
     
-    key = Species_getId( species );
+    key = (char*)Species_getId( species );
     /*
         use name as the id
     */
@@ -977,7 +979,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
         return ret;   
     }
     
-    if( IS_FAILED( ( ret = PutInHashTable( key, strlen( key ), speciesNode, table ) ) ) ) {
+    if( IS_FAILED( ( ret = PutInHashTable( key, strlen( key ), (CADDR_T)speciesNode, table ) ) ) ) {
         END_FUNCTION("_CreateSpeciesNode", ret );
         return ret;   
     }  
@@ -1010,7 +1012,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     if( ( unitManager = GetUnitManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_CreateSpeciesNode", "could not get an instance of unit manager" );
     }
-    id = Species_getSubstanceUnits( species );
+    id = (char*)Species_getSubstanceUnits( species );
     if( id != NULL ) {
         if( ( units = unitManager->LookupUnitDefinition( unitManager, id ) ) == NULL ) {
             return ErrorReport( FAILING, "_CreateSpeciesNode", "unit %s is not defined", id );
@@ -1021,7 +1023,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
             return ret;   
         }
     }        
-    id = Species_getSpatialSizeUnits( species );
+    id = (char*)Species_getSpatialSizeUnits( species );
     if( id != NULL ) {
         if( ( units = unitManager->LookupUnitDefinition( unitManager, id ) ) == NULL ) {
             return ErrorReport( FAILING, "_CreateSpeciesNode", "unit %s is not defined", id );
@@ -1037,7 +1039,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_CreateSpeciesNode", "could not get an instance of compartment manager" );
     }
-    id = Species_getCompartment( species );
+    id = (char*)Species_getCompartment( species );
     if( id != NULL ) {
         if( ( compartment = compartmentManager->LookupCompartment( compartmentManager, id ) ) == NULL ) {
             return ErrorReport( FAILING, "_CreateSpeciesNode", "compartment %s is not defined", id );
@@ -1142,7 +1144,7 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
     /*if( ( name = Reaction_getName( reaction ) ) == NULL ) {    
         name = Reaction_getId( reaction );
 	}*/
-    name = Reaction_getId( reaction );
+    name = (char*)Reaction_getId( reaction );
     TRACE_1("reaction name = %s", name);
     
     if( ( reactionNode = ir->CreateReaction( ir, name ) ) == NULL ) {
@@ -1208,7 +1210,7 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
         return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
     }     
         
-    node = KineticLaw_getMath( source );
+    node = (ASTNode_t*)KineticLaw_getMath( source );
     if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
         return ErrorReport( FAILING, "_CreateKineticLaw", "failed to create kinetic law for %s", Reaction_getId( reaction ) );        
     }
@@ -1256,7 +1258,7 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }    
-    else if( ASTNode_isReal( source ) ) {
+    else if( ASTNode_isReal( source ) || ASTNode_isConstant( source ) ) {
         if( ( law = _TransformRealValueKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
             return NULL;
@@ -1272,7 +1274,7 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }    
-    else if(  ASTNode_isFunction( source ) ) {
+    else if(  ASTNode_isFunction( source ) || ASTNode_isLogical( source ) || ASTNode_isRelational( source ) ) {
         if( ( law = _TransformFunctionKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
             return NULL;
@@ -1403,6 +1405,7 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     int num = 0;
     KINETIC_LAW *law = NULL;
     KINETIC_LAW **children = NULL;
+    LINKED_LIST *childrenLL = NULL;
     ASTNodeType_t type = AST_UNKNOWN;
     ASTNode_t *childNode = NULL;
     char * funcId = NULL;
@@ -1428,12 +1431,24 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     type = ASTNode_getType( source );        
     switch( type ) {
         case AST_FUNCTION:
-	  funcId = ASTNode_getName( source );
+	  funcId = (char*)ASTNode_getName( source );
 	  functionManager = GetFunctionManagerInstance( frontend->record );
 	  if( ( functionDef = functionManager->LookupFunctionDefinition( functionManager, funcId ) ) == NULL ) {
-            return ErrorReport( FAILING, "_HandleFunctionDefinition", "function def %s is not declared", funcId );
-	  }             
+            return NULL; //ErrorReport( FAILING, "_HandleFunctionDefinition", "function def %s is not declared", funcId );
+	  }
 	  if( ( law = CreateFunctionKineticLaw( funcId, functionDef->function, functionDef->arguments, children, num ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_PIECEWISE:                    
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_PW, childrenLL ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
@@ -1446,6 +1461,498 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    return NULL;
 	  }
 	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_POW, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ROOT:                    
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_ROOT, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_LOGICAL_AND:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_AND, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_LOGICAL_OR:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_OR, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_LOGICAL_XOR:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_OR, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_LOGICAL_NOT:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_NOT, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ABS:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ABS, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_COT:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_COT, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_COTH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_COTH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_CSC:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CSC, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_CSCH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CSCH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_SEC:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_SEC, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_SECH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_SECH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_COS:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_COS, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_COSH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_COSH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_SIN:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_SIN, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_SINH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_SINH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_TAN:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_TAN, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_TANH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_TANH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCCOT:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCCOT, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCCOTH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCCOTH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCCSC:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCCSC, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCCSCH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCCSCH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCSEC:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCSEC, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCSECH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCSECH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCCOS:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCCOS, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCCOSH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCCOSH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCSIN:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCSIN, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCSINH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCSINH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCTAN:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCTAN, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_ARCTANH:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_ARCTANH, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_CEILING:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CEILING, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_EXP:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_EXP, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_FACTORIAL:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_FACTORIAL, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_FLOOR:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_FLOOR, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_LN:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_LN, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_LOG:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_LOG, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_RELATIONAL_EQ:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_EQ, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_RELATIONAL_GEQ:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_GEQ, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_RELATIONAL_GT:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_GT, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_RELATIONAL_LEQ:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_LEQ, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_RELATIONAL_LT:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_LT, children[0], children[1] ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
@@ -1469,11 +1976,13 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
     KINETIC_LAW *law = NULL;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
-    
+    COMPARTMENT_MANAGER *compartmentManager = NULL;
+    COMPARTMENT *compartment = NULL;
+
     START_FUNCTION("_TransformSymKineticLaw");
     /* Here!!! */
     
-    sym = ASTNode_getName( source );
+    sym = (char*)ASTNode_getName( source );
     if (workingOnFunctions) {
       if( ( law = CreateFunctionSymbolKineticLaw( sym ) ) == NULL ) {
 	END_FUNCTION("_TransformSymKineticLaw", FAILING );
@@ -1495,7 +2004,7 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
         END_FUNCTION("_TransformSymKineticLaw", SUCCESS );
         return law;
     }
-    else if( manager->LookupGlobalValue( manager, sym, &realValue ) ) {
+    else if( strcmp(sym,"t")==0 || manager->LookupGlobalValue( manager, sym, &realValue ) ) {
         symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
         if( ( symbol = symtab->Lookup( symtab, sym ) ) == NULL ) {
             END_FUNCTION("_TransformSymKineticLaw", FAILING );
@@ -1509,7 +2018,21 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
         END_FUNCTION("_TransformSymKineticLaw", SUCCESS );
         return law;
     }        
-    
+
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        END_FUNCTION("_TransformSymKineticLaw", FAILING );
+        return NULL;
+    }
+    if (compartment = compartmentManager->LookupCompartment( compartmentManager, sym )) {
+      TRACE_1( "sym %s is a compartment", GetCharArrayOfString( GetCompartmentID( compartment) ) );
+      if( ( law = CreateCompartmentKineticLaw( compartment ) ) == NULL ) {
+        END_FUNCTION("_TransformSymKineticLaw", FAILING );
+        return NULL;
+      }
+      END_FUNCTION("_TransformSymKineticLaw", SUCCESS );
+      return law;
+    }
+
     if( ( species = (SPECIES*)GetValueFromHashTable( sym, strlen( sym ), table ) ) == NULL ) {
         END_FUNCTION("_TransformSymKineticLaw", FAILING );
         return NULL;
@@ -1543,8 +2066,21 @@ static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend
     KINETIC_LAW *law = NULL;
     
     START_FUNCTION("_TransformRealValueKineticLaw");
-
-    realValue = ASTNode_getReal( source );
+    
+    if (ASTNode_isReal( source )) {
+      realValue = ASTNode_getReal( source );
+    } else if (ASTNode_getType( source ) == AST_CONSTANT_PI) {
+      realValue = 4.*atan(1.);
+    } else if (ASTNode_getType( source ) == AST_CONSTANT_E) {
+      realValue = exp(1);
+    } else if (ASTNode_getType( source ) == AST_CONSTANT_TRUE) {
+      realValue = 1.0;
+    } else if (ASTNode_getType( source ) == AST_CONSTANT_FALSE) {
+      realValue = 0.0;
+    } else {
+      END_FUNCTION("_TransformRealValueKineticLaw", FAILING );
+      return NULL;
+    }
     if( ( law = CreateRealValueKineticLaw( realValue ) ) == NULL ) {
         END_FUNCTION("_TransformRealValueKineticLaw", FAILING );
         return NULL;
@@ -1580,7 +2116,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     num = Reaction_getNumReactants( reaction );
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( reactants, i );
-        species = SpeciesReference_getSpecies( speciesRef );
+        species = (char*)SpeciesReference_getSpecies( speciesRef );
         stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
@@ -1598,7 +2134,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     num = Reaction_getNumProducts( reaction );
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( products, i );
-        species = SpeciesReference_getSpecies( speciesRef );
+        species = (char*)SpeciesReference_getSpecies( speciesRef );
         stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
@@ -1616,7 +2152,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     for( i = 0; i < num; i++ ) {
         modifierRef = (SpeciesReference_t*)ListOf_get( modifiers, i );
 	//        modifierRef = (ModifierSpeciesReference_t*)ListOf_get( modifiers, i );
-        species = SpeciesReference_getSpecies( modifierRef );
+        species = (char*)SpeciesReference_getSpecies( modifierRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );

@@ -44,11 +44,10 @@ struct _RULE_MANAGER;
 typedef struct _RULE_MANAGER RULE_MANAGER;
 
 struct _RULE_MANAGER {
-    HASH_TABLE *table;   
+    LINKED_LIST *rules;   
     COMPILER_RECORD_T *record;
     
-    RULE * (*CreateRule)( RULE_MANAGER *manager, BYTE *type, char *var );
-    RULE * (*LookupRule)( RULE_MANAGER *manager, char *id );
+    RULE * (*CreateRule)( RULE_MANAGER *manager, BYTE type, char *var );
     LINKED_LIST *(*CreateListOfRules)( RULE_MANAGER *manager );                  
 };
 

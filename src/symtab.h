@@ -37,6 +37,7 @@ typedef struct {
     union {
         double realValue;        
     } value;
+    double currentRealValue;
     BYTE type;
     BOOL isConstant;    
 } REB2SAC_SYMBOL;
@@ -45,6 +46,8 @@ STRING *GetSymbolID( REB2SAC_SYMBOL *sym );
 BOOL IsRealValueSymbol( REB2SAC_SYMBOL *sym );
 double GetRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
+double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym );
+RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
 BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym );
 
 struct _REB2SAC_SYMTAB {

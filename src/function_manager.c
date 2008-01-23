@@ -114,6 +114,7 @@ RET_VAL AddArgumentInFunctionDefinition( FUNCTION_DEFINITION *functionDef, char 
         return ErrorReport( FAILING, "AddArgumentInFunctionDefinition", "allocatation failed for argument %s", argument ); 
     }
     
+    arg = argument;
     if( IS_FAILED( ( ret = AddElementInLinkedList( arg, functionDef->arguments ) ) ) ) {
         END_FUNCTION("GetFunctionsInFunctionDefinition", ret );
         return ret;

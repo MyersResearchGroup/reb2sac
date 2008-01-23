@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "util.h"
+#include "compartment_manager.h"
 #include "species_node.h"
 #include "symtab.h"
 
@@ -34,15 +35,78 @@ BEGIN_C_NAMESPACE
 #define KINETIC_LAW_OP_DIVIDE '/'
 #define KINETIC_LAW_OP_POW '^'
 
-#define KINETIC_LAW_VALUE_TYPE_OP ((BYTE)1)
-#define KINETIC_LAW_VALUE_TYPE_INT ((BYTE)2)
-#define KINETIC_LAW_VALUE_TYPE_REAL ((BYTE)3)   
-#define KINETIC_LAW_VALUE_TYPE_SPECIES ((BYTE)4)
-#define KINETIC_LAW_VALUE_TYPE_SYMBOL ((BYTE)5)
-#define KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL ((BYTE)6)
+#define KINETIC_LAW_OP_AND '&'
+#define KINETIC_LAW_OP_OR '|'
+#define KINETIC_LAW_OP_XOR 'X'
+#define KINETIC_LAW_UNARY_OP_NOT '~'
+
+#define KINETIC_LAW_OP_EQ '='
+#define KINETIC_LAW_OP_NEQ 'N'
+#define KINETIC_LAW_OP_GEQ 'G'
+#define KINETIC_LAW_OP_GT '>'
+#define KINETIC_LAW_OP_LEQ 'L'
+#define KINETIC_LAW_OP_LT '<'
+
+#define KINETIC_LAW_OP_PW 'P'
+
+#define KINETIC_LAW_UNARY_OP_ABS 'a'
+#define KINETIC_LAW_UNARY_OP_CEILING '['
+#define KINETIC_LAW_UNARY_OP_EXP 'e'
+#define KINETIC_LAW_UNARY_OP_FACTORIAL '!'
+#define KINETIC_LAW_UNARY_OP_FLOOR ']'
+#define KINETIC_LAW_UNARY_OP_LN 'l'
+#define KINETIC_LAW_UNARY_OP_LOG 'g'
+#define KINETIC_LAW_OP_ROOT 'r'
+
+#define KINETIC_LAW_UNARY_OP_COS 'c'
+#define KINETIC_LAW_UNARY_OP_COSH 'C'
+#define KINETIC_LAW_UNARY_OP_SIN 's'
+#define KINETIC_LAW_UNARY_OP_SINH 'S'
+#define KINETIC_LAW_UNARY_OP_TAN 't'
+#define KINETIC_LAW_UNARY_OP_TANH 'T'
+
+#define KINETIC_LAW_UNARY_OP_COT '('
+#define KINETIC_LAW_UNARY_OP_COTH ')'
+#define KINETIC_LAW_UNARY_OP_CSC '@'
+#define KINETIC_LAW_UNARY_OP_CSCH '%'
+#define KINETIC_LAW_UNARY_OP_SEC '$'
+#define KINETIC_LAW_UNARY_OP_SECH '#'
+
+#define KINETIC_LAW_UNARY_OP_ARCCOS '0'
+#define KINETIC_LAW_UNARY_OP_ARCCOSH '1'
+#define KINETIC_LAW_UNARY_OP_ARCSIN '2'
+#define KINETIC_LAW_UNARY_OP_ARCSINH '3'
+#define KINETIC_LAW_UNARY_OP_ARCTAN '4'
+#define KINETIC_LAW_UNARY_OP_ARCTANH '5'
+
+#define KINETIC_LAW_UNARY_OP_ARCCOT '6'
+#define KINETIC_LAW_UNARY_OP_ARCCOTH '7'
+#define KINETIC_LAW_UNARY_OP_ARCCSC '8'
+#define KINETIC_LAW_UNARY_OP_ARCCSCH '9'
+#define KINETIC_LAW_UNARY_OP_ARCSEC 'q'
+#define KINETIC_LAW_UNARY_OP_ARCSECH 'Q'
+
+#define KINETIC_LAW_VALUE_TYPE_PW ((BYTE)1)
+#define KINETIC_LAW_VALUE_TYPE_OP ((BYTE)2)
+#define KINETIC_LAW_VALUE_TYPE_UNARY_OP ((BYTE)3)
+#define KINETIC_LAW_VALUE_TYPE_INT ((BYTE)4)
+#define KINETIC_LAW_VALUE_TYPE_REAL ((BYTE)5)   
+#define KINETIC_LAW_VALUE_TYPE_COMPARTMENT ((BYTE)6)
+#define KINETIC_LAW_VALUE_TYPE_SPECIES ((BYTE)7)
+#define KINETIC_LAW_VALUE_TYPE_SYMBOL ((BYTE)8)
+#define KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL ((BYTE)9)
+
+#define SQR(x) ((x)*(x))
+#define SQRT(x) pow((x),(.5))
+
+struct _KINETIC_LAW_PW;
+typedef struct _KINETIC_LAW_PW KINETIC_LAW_PW;
 
 struct _KINETIC_LAW_OP;
 typedef struct _KINETIC_LAW_OP KINETIC_LAW_OP;
+
+struct _KINETIC_LAW_UNARY_OP;
+typedef struct _KINETIC_LAW_UNARY_OP KINETIC_LAW_UNARY_OP;
 
 struct _KINETIC_LAW;
 typedef struct _KINETIC_LAW  KINETIC_LAW;
@@ -50,18 +114,30 @@ typedef struct _KINETIC_LAW  KINETIC_LAW;
 struct _KINETIC_LAW_VISITOR;
 typedef struct _KINETIC_LAW_VISITOR KINETIC_LAW_VISITOR;
 
+struct _KINETIC_LAW_PW {
+    BYTE opType;
+    LINKED_LIST *children;
+};
+
 struct _KINETIC_LAW_OP {
     BYTE opType;
     struct _KINETIC_LAW *left;
     struct _KINETIC_LAW *right;
 };
 
+struct _KINETIC_LAW_UNARY_OP {
+    BYTE opType;
+    struct _KINETIC_LAW *child;
+};
 
 struct _KINETIC_LAW {
     union {
+        KINETIC_LAW_PW pw;
         KINETIC_LAW_OP op;
+        KINETIC_LAW_UNARY_OP unaryOp;
         long intValue;
         double realValue;
+        COMPARTMENT *compartment;
         SPECIES *species;
         REB2SAC_SYMBOL *symbol;
         char *funcSymbol;
@@ -78,9 +154,12 @@ struct _KINETIC_LAW_VISITOR {
     CADDR_T _internal1;
     CADDR_T _internal2;
     CADDR_T _internal3;
+    RET_VAL (*VisitPW)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitOp)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+    RET_VAL (*VisitUnaryOp)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitInt)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitReal)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+    RET_VAL (*VisitCompartment)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitSpecies)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitSymbol)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
     RET_VAL (*VisitFunctionSymbol)( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
@@ -90,36 +169,51 @@ struct _KINETIC_LAW_VISITOR {
 KINETIC_LAW *CreateKineticLaw();
 KINETIC_LAW *CreateIntValueKineticLaw( long value );
 KINETIC_LAW *CreateRealValueKineticLaw( double value );
+KINETIC_LAW *CreateCompartmentKineticLaw( COMPARTMENT *compartment );
 KINETIC_LAW *CreateSpeciesKineticLaw( SPECIES *species );
 KINETIC_LAW *CreateSymbolKineticLaw( REB2SAC_SYMBOL *symbol );
 KINETIC_LAW *CreateFunctionKineticLaw( char * funcId, KINETIC_LAW *functionDef, LINKED_LIST *arguments, KINETIC_LAW **children, int num );
+KINETIC_LAW *CreatePWKineticLaw( BYTE opType, LINKED_LIST *children );
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
+KINETIC_LAW *CreateUnaryOpKineticLaw( BYTE opType, KINETIC_LAW *child );
+KINETIC_LAW *CreateFunctionSymbolKineticLaw( char *funcSymbol );
 
 KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law );
 
 RET_VAL SetIntValueKineticLaw( KINETIC_LAW *law, long value );
 RET_VAL SetRealValueKineticLaw( KINETIC_LAW *law, double value );
+RET_VAL SetCompartmentKineticLaw( KINETIC_LAW *law, COMPARTMENT *compartment );
 RET_VAL SetSpeciesKineticLaw( KINETIC_LAW *law, SPECIES *species );
 RET_VAL SetSymbolKineticLaw( KINETIC_LAW *law, REB2SAC_SYMBOL *symbol );
 RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol );
+RET_VAL SetPWKineticLaw( KINETIC_LAW *law, BYTE opType, LINKED_LIST *children );
 RET_VAL SetOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
+RET_VAL SetUnaryOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *child );
 
 BOOL IsIntValueKineticLaw(KINETIC_LAW *law);
 BOOL IsRealValueKineticLaw(KINETIC_LAW *law);
+BOOL IsCompartmentKineticLaw(KINETIC_LAW *law);
 BOOL IsSpeciesKineticLaw(KINETIC_LAW *law);
 BOOL IsSymbolKineticLaw(KINETIC_LAW *law);
 BOOL IsFunctionSymbolKineticLaw(KINETIC_LAW *law);
+BOOL IsPWKineticLaw(KINETIC_LAW *law);
 BOOL IsOpKineticLaw(KINETIC_LAW *law);
+BOOL IsUnaryOpKineticLaw(KINETIC_LAW *law);
 BOOL IsConstantValueKineticLaw(KINETIC_LAW *law);
 
 long GetIntValueFromKineticLaw(KINETIC_LAW *law);
 double GetRealValueFromKineticLaw(KINETIC_LAW *law);
+COMPARTMENT *GetCompartmentFromKineticLaw(KINETIC_LAW *law);
 SPECIES *GetSpeciesFromKineticLaw(KINETIC_LAW *law);
 REB2SAC_SYMBOL *GetSymbolFromKineticLaw(KINETIC_LAW *law);
 char *GetFunctionSymbolFromKineticLaw(KINETIC_LAW *law);
+BYTE GetPWTypeFromKineticLaw(KINETIC_LAW *law);
 BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law);
+BYTE GetUnaryOpTypeFromKineticLaw(KINETIC_LAW *law);
+LINKED_LIST *GetPWChildrenFromKineticLaw(KINETIC_LAW *law);
 KINETIC_LAW *GetOpLeftFromKineticLaw(KINETIC_LAW *law);
 KINETIC_LAW *GetOpRightFromKineticLaw(KINETIC_LAW *law);
+KINETIC_LAW *GetUnaryOpChildFromKineticLaw(KINETIC_LAW *law);
 void FreeKineticLaw(KINETIC_LAW **law);
 
 RET_VAL ReplaceSpeciesWithIntInKineticLaw( KINETIC_LAW *law, SPECIES *from, long to );

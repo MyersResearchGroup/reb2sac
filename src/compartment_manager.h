@@ -36,6 +36,7 @@ struct _COMPARTMENT {
     STRING *id;
     int spatialDimensions;
     double size;
+    double currentSize;
     UNIT_DEFINITION *unit;
     STRING *outside;
     COMPARTMENT *outsideCompartment;
@@ -67,6 +68,9 @@ RET_VAL SetSpatialDimensionsInCompartment( COMPARTMENT *compartment, int spatial
 
 double GetSizeInCompartment( COMPARTMENT *compartment );
 RET_VAL SetSizeInCompartment( COMPARTMENT *compartment, double size );
+
+double GetCurrentSizeInCompartment( COMPARTMENT *compartment );
+RET_VAL SetCurrentSizeInCompartment( COMPARTMENT *compartment, double size );
 
 UNIT_DEFINITION *GetUnitInCompartment( COMPARTMENT *compartment );
 RET_VAL SetUnitInCompartment( COMPARTMENT *compartment, UNIT_DEFINITION *unit );

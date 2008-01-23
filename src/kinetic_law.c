@@ -26,13 +26,24 @@
 
 #define TO_STRING_STRING_BUF_SIZE 64
 
+static RET_VAL _AcceptPostOrderForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptPreOrderForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptInOrderForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+
 static RET_VAL _AcceptPostOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptPreOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptInOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 
+static RET_VAL _AcceptPostOrderForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptPreOrderForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptInOrderForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+
 static RET_VAL _AcceptForIntValueKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForRealValueKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
+static RET_VAL _AcceptForCompartmentKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForSpeciesKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
 static RET_VAL _AcceptForFunctionSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor );
@@ -40,21 +51,40 @@ static RET_VAL _AcceptForFunctionSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW
 
 static KINETIC_LAW_VISITOR speciesReplacementVisitor;
 
+static KINETIC_LAW_VISITOR compartmentReplacementVisitor;
+
+static RET_VAL _VisitPWToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitOpToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitIntToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitFunctionSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceSpeciesWithInt( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceSpeciesWithReal( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceSpeciesWithKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+
+static RET_VAL _VisitPWToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitOpToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitIntToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitRealToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitSymbolToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitFunctionSymbolToReplaceCompartment( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToReplaceCompartmentWithInt( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToReplaceCompartmentWithReal( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToReplaceCompartmentWithKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+
 static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
-
+static RET_VAL _VisitPWToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitOpToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitIntToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitFunctionSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
@@ -65,10 +95,13 @@ typedef struct {
     BYTE parentOp;
 } TO_STRING_VISITOR_INTERNAL;
   
+static RET_VAL _VisitPWToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitOpToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitIntToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitFunctionSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child );
@@ -148,7 +181,28 @@ KINETIC_LAW *CreateSpeciesKineticLaw( SPECIES *species ) {
     law->AcceptInOrder = _AcceptForSpeciesKineticLaw;
     law->Accept = _AcceptForSpeciesKineticLaw;
     
-    END_FUNCTION("CreateRealValueKineticLaw", SUCCESS );        
+    END_FUNCTION("CreateSpeciesKineticLaw", SUCCESS );        
+    return law;
+}
+
+KINETIC_LAW *CreateCompartmentKineticLaw( COMPARTMENT *compartment ) {
+    KINETIC_LAW *law = NULL;
+    
+    START_FUNCTION("CreateCompartmentKineticLaw");
+
+    if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
+        END_FUNCTION("CreateCompartmentKineticLaw", FAILING );        
+        return NULL;
+    }
+
+    law->valueType = KINETIC_LAW_VALUE_TYPE_COMPARTMENT;
+    law->value.compartment = compartment;
+    law->AcceptPostOrder = _AcceptForCompartmentKineticLaw;
+    law->AcceptPreOrder = _AcceptForCompartmentKineticLaw;
+    law->AcceptInOrder = _AcceptForCompartmentKineticLaw;
+    law->Accept = _AcceptForCompartmentKineticLaw;
+    
+    END_FUNCTION("CreateCompartmentKineticLaw", SUCCESS );        
     return law;
 }
 
@@ -233,6 +287,33 @@ KINETIC_LAW *CreateFunctionKineticLaw( char *funcId, KINETIC_LAW *function, LINK
     return law;
 }
 
+KINETIC_LAW *CreatePWKineticLaw( BYTE opType, LINKED_LIST *children ) {
+    KINETIC_LAW *law = NULL;
+    
+    START_FUNCTION("CreatePWKineticLaw");
+
+    if( ( children == NULL ) ) {
+        TRACE_0("the input children kinetic laws are NULL" );
+        return NULL;
+    }
+    
+    if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
+        END_FUNCTION("CreatPWKineticLaw", FAILING );        
+        return NULL;
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_PW;
+    law->value.pw.opType = opType;
+    law->value.pw.children = children;
+    law->AcceptPostOrder = _AcceptPostOrderForPWKineticLaw;
+    law->AcceptPreOrder = _AcceptPreOrderForPWKineticLaw;
+    law->AcceptInOrder = _AcceptInOrderForPWKineticLaw;
+    law->Accept = _AcceptForPWKineticLaw;
+    
+    END_FUNCTION("CreatePWKineticLaw", SUCCESS );        
+    return law;
+}
+
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right ) {
     KINETIC_LAW *law = NULL;
     
@@ -258,6 +339,33 @@ KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *ri
     law->Accept = _AcceptForOpKineticLaw;
     
     END_FUNCTION("CreateOpKineticLaw", SUCCESS );        
+    return law;
+}
+
+KINETIC_LAW *CreateUnaryOpKineticLaw( BYTE opType, KINETIC_LAW *child ) {
+    KINETIC_LAW *law = NULL;
+    
+    START_FUNCTION("CreateUnaryOpKineticLaw");
+
+    if( child == NULL ) {
+        TRACE_0("the input children kinetic laws are NULL" );
+        return NULL;
+    }
+    
+    if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
+        END_FUNCTION("CreatOpKineticLaw", FAILING );        
+        return NULL;
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_UNARY_OP;
+    law->value.unaryOp.opType = opType;
+    law->value.unaryOp.child = child;
+    law->AcceptPostOrder = _AcceptPostOrderForUnaryOpKineticLaw;
+    law->AcceptPreOrder = _AcceptPreOrderForUnaryOpKineticLaw;
+    law->AcceptInOrder = _AcceptInOrderForUnaryOpKineticLaw;
+    law->Accept = _AcceptForUnaryOpKineticLaw;
+    
+    END_FUNCTION("CreateUnaryOpKineticLaw", SUCCESS );        
     return law;
 }
 
@@ -308,6 +416,44 @@ KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law ) {
         END_FUNCTION("CloneKineticLaw", SUCCESS );        
         return clone;
     }
+    else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+      clone->valueType = KINETIC_LAW_VALUE_TYPE_UNARY_OP;
+      if( ( clone->value.unaryOp.child = CloneKineticLaw( law->value.unaryOp.child ) )  == NULL ) {
+#ifdef DEBUG
+	string = ToStringKineticLaw( law->value.unaryOp.child );
+	printf( "could not create a clone of %s", GetCharArrayOfString( string ) );
+	FreeString( &string );
+#endif        
+	END_FUNCTION("CloneKineticLaw", FAILING );        
+	return NULL;
+      }
+      clone->value.unaryOp.opType = law->value.unaryOp.opType;
+      clone->AcceptPostOrder = _AcceptPostOrderForUnaryOpKineticLaw;
+      clone->AcceptPreOrder = _AcceptPreOrderForUnaryOpKineticLaw;
+      clone->AcceptInOrder = _AcceptInOrderForUnaryOpKineticLaw;
+      clone->Accept = _AcceptForUnaryOpKineticLaw;
+      END_FUNCTION("CloneKineticLaw", SUCCESS );        
+      return clone;
+    }
+    else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
+      clone->valueType = KINETIC_LAW_VALUE_TYPE_PW;
+      if( ( clone->value.pw.children = CloneLinkedList( law->value.pw.children ) )  == NULL ) {
+#ifdef DEBUG
+	string = ToStringKineticLaw( law->value.pw.children );
+	printf( "could not create a clone of %s", GetCharArrayOfString( string ) );
+	FreeString( &string );
+#endif        
+	END_FUNCTION("CloneKineticLaw", FAILING );        
+	return NULL;
+      }
+      clone->value.pw.opType = law->value.pw.opType;
+      clone->AcceptPostOrder = _AcceptPostOrderForPWKineticLaw;
+      clone->AcceptPreOrder = _AcceptPreOrderForPWKineticLaw;
+      clone->AcceptInOrder = _AcceptInOrderForPWKineticLaw;
+      clone->Accept = _AcceptForPWKineticLaw;
+      END_FUNCTION("CloneKineticLaw", SUCCESS );        
+      return clone;
+    }
     else {
         memcpy( (CADDR_T)clone, (CADDR_T)law, sizeof( KINETIC_LAW ) );        
         END_FUNCTION("CloneKineticLaw", SUCCESS );        
@@ -329,6 +475,10 @@ RET_VAL SetIntValueKineticLaw( KINETIC_LAW *law, long value ) {
     if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
         FreeKineticLaw( &(law->value.op.left) );
         FreeKineticLaw( &(law->value.op.right) );        
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &(law->value.unaryOp.child) );
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        DeleteLinkedList( &(law->value.pw.children) );        
     }
     
     law->valueType = KINETIC_LAW_VALUE_TYPE_INT;
@@ -352,6 +502,10 @@ RET_VAL SetRealValueKineticLaw( KINETIC_LAW *law, double value ) {
     if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
         FreeKineticLaw( &(law->value.op.left) );
         FreeKineticLaw( &(law->value.op.right) );        
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &(law->value.unaryOp.child) );
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        DeleteLinkedList( &(law->value.pw.children) );        
     }
     
     law->valueType = KINETIC_LAW_VALUE_TYPE_REAL;
@@ -375,6 +529,10 @@ RET_VAL SetSpeciesKineticLaw( KINETIC_LAW *law, SPECIES *species ) {
     if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
         FreeKineticLaw( &(law->value.op.left) );
         FreeKineticLaw( &(law->value.op.right) );        
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &(law->value.unaryOp.child) );
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        DeleteLinkedList( &(law->value.pw.children) );        
     }
     
     law->valueType = KINETIC_LAW_VALUE_TYPE_SPECIES;
@@ -385,6 +543,34 @@ RET_VAL SetSpeciesKineticLaw( KINETIC_LAW *law, SPECIES *species ) {
     law->Accept = _AcceptForSpeciesKineticLaw;
     
     END_FUNCTION("SetSpeciesKineticLaw", SUCCESS );        
+    return SUCCESS;
+}
+
+RET_VAL SetCompartmentKineticLaw( KINETIC_LAW *law, COMPARTMENT *compartment ) {
+    START_FUNCTION("SetCompartmentKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("SetCompartmentKineticLaw", FAILING );        
+        return FAILING;
+    }
+    
+    if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
+        FreeKineticLaw( &(law->value.op.left) );
+        FreeKineticLaw( &(law->value.op.right) );        
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &(law->value.unaryOp.child) );
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        DeleteLinkedList( &(law->value.pw.children) );        
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_COMPARTMENT;
+    law->value.compartment = compartment;
+    law->AcceptPostOrder = _AcceptForCompartmentKineticLaw;
+    law->AcceptPreOrder = _AcceptForCompartmentKineticLaw;
+    law->AcceptInOrder = _AcceptForCompartmentKineticLaw;
+    law->Accept = _AcceptForCompartmentKineticLaw;
+    
+    END_FUNCTION("SetCompartmentKineticLaw", SUCCESS );        
     return SUCCESS;
 }
 
@@ -400,6 +586,10 @@ RET_VAL SetSymbolKineticLaw( KINETIC_LAW *law, REB2SAC_SYMBOL *symbol ) {
     if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
         FreeKineticLaw( &(law->value.op.left) );
         FreeKineticLaw( &(law->value.op.right) );        
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &(law->value.unaryOp.child) );
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        DeleteLinkedList( &(law->value.pw.children) );        
     }
     
     law->valueType = KINETIC_LAW_VALUE_TYPE_SYMBOL;
@@ -424,6 +614,10 @@ RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol ) {
     if( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
         FreeKineticLaw( &(law->value.op.left) );
         FreeKineticLaw( &(law->value.op.right) );        
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &(law->value.unaryOp.child) );
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        DeleteLinkedList( &(law->value.pw.children) );        
     }
     
     law->valueType = KINETIC_LAW_VALUE_TYPE_FUNCTION_SYMBOL;
@@ -437,6 +631,36 @@ RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol ) {
     return SUCCESS;
 }
 
+
+RET_VAL SetPWKineticLaw( KINETIC_LAW *law, BYTE opType, LINKED_LIST *children ) {
+    START_FUNCTION("SetPWKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("SetPWKineticLaw", FAILING );        
+        return FAILING;
+    }
+    
+    if( ( children == NULL ) ) {
+        return ErrorReport( FAILING, "SetPWKineticLaw", "Cannot set NULL children in PW kinetic law");
+    }
+    
+    if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
+        if( children != law->value.pw.children ) {
+            DeleteLinkedList( &(law->value.pw.children) );
+        }
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_PW;
+    law->value.pw.opType = opType;
+    law->value.pw.children = children;
+    law->AcceptPostOrder = _AcceptPostOrderForPWKineticLaw;
+    law->AcceptPreOrder = _AcceptPreOrderForPWKineticLaw;
+    law->AcceptInOrder = _AcceptInOrderForPWKineticLaw;
+    law->Accept = _AcceptForPWKineticLaw;
+    
+    END_FUNCTION("SetPWKineticLaw", SUCCESS );        
+    return SUCCESS;
+}
 
 RET_VAL SetOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right ) {
     START_FUNCTION("SetOpKineticLaw");
@@ -469,6 +693,36 @@ RET_VAL SetOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *left, KINET
     law->Accept = _AcceptForOpKineticLaw;
     
     END_FUNCTION("SetOpKineticLaw", SUCCESS );        
+    return SUCCESS;
+}
+
+RET_VAL SetUnaryOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *child ) {
+    START_FUNCTION("SetUnaryOpKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("SetUnaryOpKineticLaw", FAILING );        
+        return FAILING;
+    }
+    
+    if( child == NULL ) {
+        return ErrorReport( FAILING, "SetUnaryOpKineticLaw", "Cannot set NULL children in Unary Op kinetic law");
+    }
+    
+    if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        if( child != law->value.unaryOp.child ) {
+            FreeKineticLaw( &(law->value.unaryOp.child) );
+        }
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_UNARY_OP;
+    law->value.unaryOp.opType = opType;
+    law->value.unaryOp.child = child;
+    law->AcceptPostOrder = _AcceptPostOrderForUnaryOpKineticLaw;
+    law->AcceptPreOrder = _AcceptPreOrderForUnaryOpKineticLaw;
+    law->AcceptInOrder = _AcceptInOrderForUnaryOpKineticLaw;
+    law->Accept = _AcceptForUnaryOpKineticLaw;
+    
+    END_FUNCTION("SetUnaryOpKineticLaw", SUCCESS );        
     return SUCCESS;
 }
 
@@ -540,6 +794,18 @@ BOOL IsSpeciesKineticLaw(KINETIC_LAW *law) {
     return ( law->valueType == KINETIC_LAW_VALUE_TYPE_SPECIES ? TRUE : FALSE );
 }
 
+BOOL IsCompartmentKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("IsCompartmentKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("IsCompartmentKineticLaw", SUCCESS );        
+        return FALSE;
+    }
+        
+    END_FUNCTION("IsCompartmentKineticLaw", SUCCESS );        
+    return ( law->valueType == KINETIC_LAW_VALUE_TYPE_SPECIES ? TRUE : FALSE );
+}
+
 
 BOOL IsSymbolKineticLaw(KINETIC_LAW *law) {
     START_FUNCTION("IsSymbolKineticLaw");
@@ -567,6 +833,18 @@ BOOL IsFunctionSymbolKineticLaw(KINETIC_LAW *law) {
 }
 
 
+BOOL IsPWKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("IsPWKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("IsPWKineticLaw", SUCCESS );        
+        return FALSE;
+    }
+        
+    END_FUNCTION("IsPWKineticLaw", SUCCESS );        
+    return ( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ? TRUE : FALSE );
+}
+
 BOOL IsOpKineticLaw(KINETIC_LAW *law) {
     START_FUNCTION("IsOpKineticLaw");
     
@@ -577,6 +855,18 @@ BOOL IsOpKineticLaw(KINETIC_LAW *law) {
         
     END_FUNCTION("IsOpKineticLaw", SUCCESS );        
     return ( law->valueType == KINETIC_LAW_VALUE_TYPE_OP ? TRUE : FALSE );
+}
+
+BOOL IsUnaryOpKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("IsUnaryOpKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("IsUnaryOpKineticLaw", SUCCESS );        
+        return FALSE;
+    }
+        
+    END_FUNCTION("IsUnaryOpKineticLaw", SUCCESS );        
+    return ( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ? TRUE : FALSE );
 }
 
 long GetIntValueFromKineticLaw(KINETIC_LAW *law) {
@@ -615,6 +905,18 @@ SPECIES *GetSpeciesFromKineticLaw(KINETIC_LAW *law) {
     return law->value.species;
 }
 
+COMPARTMENT *GetCompartmentFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetCompartmentFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetCompartmentFromKineticLaw", SUCCESS );        
+        return NULL;
+    }
+        
+    END_FUNCTION("GetCompartmentFromKineticLaw", SUCCESS );        
+    return law->value.compartment;
+}
+
 
 REB2SAC_SYMBOL *GetSymbolFromKineticLaw(KINETIC_LAW *law) {
     START_FUNCTION("GetSymbolFromKineticLaw");
@@ -642,6 +944,23 @@ char *GetFunctionSymbolFromKineticLaw(KINETIC_LAW *law) {
 }
 
 
+BYTE GetPWTypeFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetPWTypeFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetPWTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+        
+    if( law->valueType != KINETIC_LAW_VALUE_TYPE_PW ) {
+        END_FUNCTION("GetPWTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+    
+    END_FUNCTION("GetPWTypeFromKineticLaw", SUCCESS );        
+    return law->value.pw.opType;
+}
+
 BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law) {
     START_FUNCTION("GetOpTypeFromKineticLaw");
     
@@ -655,8 +974,42 @@ BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law) {
         return 0;
     }
     
-    END_FUNCTION("GetSymValueFromKineticLaw", SUCCESS );        
+    END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
     return law->value.op.opType;
+}
+
+BYTE GetUnaryOpTypeFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetUnaryOpTypeFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetUnaryOpTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+        
+    if( law->valueType != KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        END_FUNCTION("GetUnaryOpTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+    
+    END_FUNCTION("GetUnaryOpTypeFromKineticLaw", SUCCESS );        
+    return law->value.unaryOp.opType;
+}
+
+LINKED_LIST *GetPWChildrenFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetPWChildrenFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetPWChildrenFromKineticLaw", SUCCESS );        
+        return NULL;
+    }
+        
+    if( law->valueType != KINETIC_LAW_VALUE_TYPE_PW ) {
+        END_FUNCTION("GetPWChildrenFromKineticLaw", SUCCESS );        
+        return NULL;
+    }
+    
+    END_FUNCTION("GetPWChildrenFromKineticLaw", SUCCESS );        
+    return law->value.pw.children;
 }
 
 KINETIC_LAW *GetOpLeftFromKineticLaw(KINETIC_LAW *law) {
@@ -694,6 +1047,23 @@ KINETIC_LAW *GetOpRightFromKineticLaw(KINETIC_LAW *law) {
     return law->value.op.right;
 }
 
+KINETIC_LAW *GetUnaryOpChildFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetUnaryOpChildFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetUnaryOpChildFromKineticLaw", SUCCESS );        
+        return NULL;
+    }
+        
+    if( law->valueType != KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        END_FUNCTION("GetUnaryOpChildFromKineticLaw", SUCCESS );        
+        return NULL;
+    }
+    
+    END_FUNCTION("GetUnaryOpChildFromKineticLaw", SUCCESS );        
+    return law->value.unaryOp.child;
+}
+
 void FreeKineticLaw(KINETIC_LAW **law) {
     START_FUNCTION("FreeKineticLaw");
     
@@ -705,6 +1075,10 @@ void FreeKineticLaw(KINETIC_LAW **law) {
     if( (*law)->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
         FreeKineticLaw( &((*law)->value.op.left) );
         FreeKineticLaw( &((*law)->value.op.right) );
+    } else if( (*law)->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+        FreeKineticLaw( &((*law)->value.unaryOp.child) );
+    } else if( (*law)->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
+        DeleteLinkedList( &((*law)->value.pw.children) );
     }
     FREE( *law );
         
@@ -718,10 +1092,13 @@ RET_VAL ReplaceSpeciesWithIntInKineticLaw( KINETIC_LAW *law, SPECIES *from, long
     START_FUNCTION("ReplaceSpeciesWithIntInKineticLaw");
     
     if( speciesReplacementVisitor.VisitOp == NULL ) {
+        speciesReplacementVisitor.VisitPW = _VisitPWToReplaceSpecies;
         speciesReplacementVisitor.VisitOp = _VisitOpToReplaceSpecies;
+        speciesReplacementVisitor.VisitUnaryOp = _VisitUnaryOpToReplaceSpecies;
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitCompartment = _VisitCompartmentToReplaceSpecies;
         speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceSpecies;
     }
     speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceSpeciesWithInt;
@@ -744,15 +1121,18 @@ RET_VAL ReplaceSpeciesWithRealInKineticLaw( KINETIC_LAW *law, SPECIES *from, dou
     START_FUNCTION("ReplaceSpeciesWithRealInKineticLaw");
     
     if( speciesReplacementVisitor.VisitOp == NULL ) {
+        speciesReplacementVisitor.VisitPW = _VisitPWToReplaceSpecies;
         speciesReplacementVisitor.VisitOp = _VisitOpToReplaceSpecies;
+        speciesReplacementVisitor.VisitUnaryOp = _VisitUnaryOpToReplaceSpecies;
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitCompartment = _VisitCompartmentToReplaceSpecies;
         speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceSpecies;
     }
     speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceSpeciesWithReal;
     
-    TRACE_2( "replacing %s with %f", GetCharArrayOfString( GetSpeciesNodeName( from ) ), to );
+    TRACE_2( "replacing %s with %f", GetCharArrayOfString( GetSpeciesNodeID( from ) ), to );
     speciesReplacementVisitor._internal1 = (CADDR_T)(&to);
     speciesReplacementVisitor._internal2 = (CADDR_T)from;
     
@@ -771,10 +1151,13 @@ RET_VAL ReplaceSpeciesWithKineticLawInKineticLaw( KINETIC_LAW *law, SPECIES *fro
     START_FUNCTION("ReplaceSpeciesWithKineticLawInKineticLaw");
     
     if( speciesReplacementVisitor.VisitOp == NULL ) {
+        speciesReplacementVisitor.VisitPW = _VisitPWToReplaceSpecies;
         speciesReplacementVisitor.VisitOp = _VisitOpToReplaceSpecies;
+        speciesReplacementVisitor.VisitUnaryOp = _VisitUnaryOpToReplaceSpecies;
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitCompartment = _VisitCompartmentToReplaceSpecies;
         speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceSpecies;
     }
     speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceSpeciesWithKineticLaw;
@@ -797,10 +1180,13 @@ RET_VAL ReplaceFunctionSymbolWithKineticLawInKineticLaw( KINETIC_LAW *law, char 
     START_FUNCTION("ReplaceFunctionSymbolWithKineticLawInKineticLaw");
     
     if( speciesReplacementVisitor.VisitOp == NULL ) {
+        speciesReplacementVisitor.VisitPW = _VisitPWToReplaceSpecies;
         speciesReplacementVisitor.VisitOp = _VisitOpToReplaceSpecies;
+        speciesReplacementVisitor.VisitUnaryOp = _VisitUnaryOpToReplaceSpecies;
         speciesReplacementVisitor.VisitInt = _VisitIntToReplaceSpecies;
         speciesReplacementVisitor.VisitReal = _VisitRealToReplaceSpecies;
         speciesReplacementVisitor.VisitSymbol = _VisitSymbolToReplaceSpecies;
+        speciesReplacementVisitor.VisitCompartment = _VisitCompartmentToReplaceSpecies;
         speciesReplacementVisitor.VisitSpecies = _VisitSpeciesToReplaceConstant;
     }
     speciesReplacementVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceWithKineticLaw;
@@ -826,11 +1212,15 @@ RET_VAL ReplaceConstantWithAnotherConstantInKineticLaw( KINETIC_LAW *law, double
     START_FUNCTION("ReplaceConstantWithAnotherConstantInKineticLaw");
     
     if( visitor.VisitOp == NULL ) {
+        visitor.VisitPW = _VisitPWToReplaceConstant;
         visitor.VisitOp = _VisitOpToReplaceConstant;
+        visitor.VisitUnaryOp = _VisitUnaryOpToReplaceConstant;
         visitor.VisitInt = _VisitIntToReplaceConstant;
         visitor.VisitReal = _VisitRealToReplaceConstant;
         visitor.VisitSpecies = _VisitSpeciesToReplaceConstant;
+        visitor.VisitCompartment = _VisitCompartmentToReplaceConstant;
         visitor.VisitSymbol = _VisitSymbolToReplaceConstant;
+        speciesReplacementVisitor.VisitCompartment = _VisitCompartmentToReplaceSpecies;
         visitor.VisitFunctionSymbol = _VisitFunctionSymbolToReplaceConstant;
     }
     
@@ -846,7 +1236,19 @@ RET_VAL ReplaceConstantWithAnotherConstantInKineticLaw( KINETIC_LAW *law, double
     return ret;                        
 }
 
+static RET_VAL _VisitPWToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    START_FUNCTION("_VisitPWToReplaceConstant");
+    END_FUNCTION("_VisitPWToReplaceConstant", SUCCESS );        
+    return SUCCESS;                        
+}
+
 static RET_VAL _VisitOpToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    START_FUNCTION("_VisitOpToReplaceConstant");
+    END_FUNCTION("_VisitOpToReplaceConstant", SUCCESS );        
+    return SUCCESS;                        
+}
+
+static RET_VAL _VisitUnaryOpToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_VisitOpToReplaceConstant");
     END_FUNCTION("_VisitOpToReplaceConstant", SUCCESS );        
     return SUCCESS;                        
@@ -932,6 +1334,36 @@ static RET_VAL _VisitSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINE
     return SUCCESS;                        
 }
 
+static RET_VAL _VisitCompartmentToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double value = 0.0;
+    double from = 0.0;
+    double to = 0.0;
+    COMPARTMENT *compartment = NULL;
+    
+    START_FUNCTION("_VisitCompartmentToReplaceConstant");
+    
+    from = *((double*)(visitor->_internal1)); 
+    to = *((double*)(visitor->_internal2)); 
+       
+    compartment = GetCompartmentFromKineticLaw( kineticLaw );
+    if( !IsCompartmentConstant( compartment ) ) {
+        END_FUNCTION("_VisitSymbolToReplaceConstant", SUCCESS );        
+        return SUCCESS;                        
+    }
+    
+    value = GetSizeInCompartment( compartment );        
+    if( IS_REAL_EQUAL( from, value ) ) {
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, to ) ) ) ) {
+            END_FUNCTION("_VisitCompartmentToReplaceConstant", ret );        
+            return ret;                        
+        }
+    }
+    
+    END_FUNCTION("_VisitCompartmentToReplaceConstant", SUCCESS );        
+    return SUCCESS;                        
+}
+
 static RET_VAL _VisitFunctionSymbolToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     RET_VAL ret = SUCCESS;
     double value = 0.0;
@@ -976,9 +1408,21 @@ static RET_VAL _VisitSpeciesToReplaceConstant( KINETIC_LAW_VISITOR *visitor, KIN
 
 
 
+static RET_VAL _VisitPWToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    START_FUNCTION("_VisitPWToReplaceSpecies");
+    END_FUNCTION("_VisitPWToReplaceSpecies", SUCCESS );        
+    return SUCCESS;                        
+}
+
 static RET_VAL _VisitOpToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_VisitOpToReplaceSpecies");
     END_FUNCTION("_VisitOpToReplaceSpecies", SUCCESS );        
+    return SUCCESS;                        
+}
+
+static RET_VAL _VisitUnaryOpToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    START_FUNCTION("_VisitUnaryOpToReplaceSpecies");
+    END_FUNCTION("_VisitUnaryOpToReplaceSpecies", SUCCESS );        
     return SUCCESS;                        
 }
 
@@ -1000,6 +1444,12 @@ static RET_VAL _VisitSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINET
     return SUCCESS;                        
 }
 
+static RET_VAL _VisitCompartmentToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    START_FUNCTION("_VisitCompartmentToReplaceSpecies");
+    END_FUNCTION("_VisitCompartmentToReplaceSpecies", SUCCESS );        
+    return SUCCESS;                        
+}
+
 static RET_VAL _VisitFunctionSymbolToReplaceSpecies( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_VisitFunctionSymbolToReplaceSpecies");
     END_FUNCTION("_VisitFunctionSymbolToReplaceSpecies", SUCCESS );        
@@ -1018,7 +1468,7 @@ static RET_VAL _VisitSpeciesToReplaceSpeciesWithInt( KINETIC_LAW_VISITOR *visito
     species = (SPECIES*)(visitor->_internal2);
     
     if( kineticLaw->value.species == species ) {
-        TRACE_2( "replacing %s with %li", GetCharArrayOfString( GetSpeciesNodeName( species ) ), value );
+        TRACE_2( "replacing %s with %li", GetCharArrayOfString( GetSpeciesNodeID( species ) ), value );
         if( IS_FAILED( ( ret = SetIntValueKineticLaw( kineticLaw, value ) ) ) ) {
             END_FUNCTION("_VisitSpeciesToReplaceSpeciesWithInt", ret );
             return ret;                        
@@ -1039,7 +1489,7 @@ static RET_VAL _VisitSpeciesToReplaceSpeciesWithReal( KINETIC_LAW_VISITOR *visit
     species = (SPECIES*)(visitor->_internal2);
     
     if( kineticLaw->value.species == species ) {
-        TRACE_2( "replacing %s with %f", GetCharArrayOfString( GetSpeciesNodeName( species ) ), value );
+        TRACE_2( "replacing %s with %f", GetCharArrayOfString( GetSpeciesNodeID( species ) ), value );
         if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, value ) ) ) ) {
             END_FUNCTION("_VisitSpeciesToReplaceSpeciesWithReal", ret );
             return ret;                        
@@ -1063,12 +1513,24 @@ static RET_VAL _VisitSpeciesToReplaceSpeciesWithKineticLaw( KINETIC_LAW_VISITOR 
         replacement = (KINETIC_LAW*)(visitor->_internal1);
 #if DEBUG
         string = ToStringKineticLaw( replacement );
-        printf( "replacing %s with %s" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeName( species ) ), GetCharArrayOfString( string ) );
+        printf( "replacing %s with %s" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), GetCharArrayOfString( string ) );
         FreeString( &string );
 #endif
         if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
             if( IS_FAILED( ( ret = SetOpKineticLaw( kineticLaw, replacement->value.op.opType, 
                 CloneKineticLaw( replacement->value.op.left ), CloneKineticLaw( replacement->value.op.right ) ) ) ) ) {
+                string = ToStringKineticLaw( replacement );
+                return ErrorReport( FAILING, "_VisitSpeciesToReplaceSpeciesWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
+            } 
+        } else if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+            if( IS_FAILED( ( ret = SetUnaryOpKineticLaw( kineticLaw, replacement->value.unaryOp.opType, 
+                CloneKineticLaw( replacement->value.unaryOp.child ) ) ) ) ) {
+                string = ToStringKineticLaw( replacement );
+                return ErrorReport( FAILING, "_VisitSpeciesToReplaceSpeciesWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
+            } 
+        } else if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
+            if( IS_FAILED( ( ret = SetPWKineticLaw( kineticLaw, replacement->value.pw.opType, 
+                CloneLinkedList( replacement->value.pw.children ) ) ) ) ) {
                 string = ToStringKineticLaw( replacement );
                 return ErrorReport( FAILING, "_VisitSpeciesToReplaceSpeciesWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
             } 
@@ -1090,7 +1552,7 @@ static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR 
     START_FUNCTION("_VisitFunctionSymbolToReplaceWithKineticLaw");
     
     funcSymbol = (char*)(visitor->_internal2);
-    
+
     if( strcmp(kineticLaw->value.funcSymbol,funcSymbol)==0 ) {
         replacement = (KINETIC_LAW*)(visitor->_internal1);
     #if DEBUG
@@ -1104,6 +1566,18 @@ static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR 
                 string = ToStringKineticLaw( replacement );
                 return ErrorReport( FAILING, "_VisitFunctionSymbolToReplaceWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
             } 
+        } else if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+            if( IS_FAILED( ( ret = SetUnaryOpKineticLaw( kineticLaw, replacement->value.unaryOp.opType, 
+                CloneKineticLaw( replacement->value.unaryOp.child ) ) ) ) ) {
+                string = ToStringKineticLaw( replacement );
+                return ErrorReport( FAILING, "_VisitFunctionSymbolToReplaceWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
+            } 
+        } else if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
+            if( IS_FAILED( ( ret = SetPWKineticLaw( kineticLaw, replacement->value.pw.opType, 
+                CloneLinkedList( replacement->value.pw.children ) ) ) ) ) {
+                string = ToStringKineticLaw( replacement );
+                return ErrorReport( FAILING, "_VisitSpeciesToReplaceSpeciesWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
+            } 
         }
         else {
             memcpy( kineticLaw, replacement, sizeof( KINETIC_LAW ) );
@@ -1114,6 +1588,33 @@ static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR 
 }
 
 
+
+static RET_VAL _AcceptPostOrderForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    LINKED_LIST *children = NULL;
+    KINETIC_LAW *child = NULL;
+
+    START_FUNCTION("_AcceptPostOrderForPWKineticLaw");
+    
+    children = law->value.pw.children;
+    
+    ResetCurrentElement( children );
+    while ( child = (KINETIC_LAW*)GetNextFromLinkedList( children )) {
+      if( IS_FAILED( ( ret = child->AcceptPostOrder( child, visitor ) ) ) ) {
+        END_FUNCTION("_AcceptPostOrderForPWKineticLaw", ret );        
+        return ret;                        
+      }
+    }
+    
+    if( IS_FAILED( ( ret = visitor->VisitPW( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptPostOrderForPWKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptPostOrderForPWKineticLaw", SUCCESS );        
+    return ret;                        
+}
 
 static RET_VAL _AcceptPostOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
     RET_VAL ret = SUCCESS;
@@ -1144,6 +1645,55 @@ static RET_VAL _AcceptPostOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VI
 }
 
 
+static RET_VAL _AcceptPostOrderForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    KINETIC_LAW *child = NULL;
+    
+    START_FUNCTION("_AcceptPostOrderForUnaryOpKineticLaw");
+    
+    child = law->value.unaryOp.child;
+    if( IS_FAILED( ( ret = child->AcceptPostOrder( child, visitor ) ) ) ) {
+        END_FUNCTION("_AcceptPostOrderForOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    if( IS_FAILED( ( ret = visitor->VisitUnaryOp( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptPostOrderForUnaryOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptPostOrderForUnaryOpKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
+
+
+static RET_VAL _AcceptPreOrderForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    LINKED_LIST *children = NULL;
+    KINETIC_LAW *child = NULL;
+
+    START_FUNCTION("_AcceptPreOrderForPWKineticLaw");
+    
+    if( IS_FAILED( ( ret = visitor->VisitPW( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptPreOrderForPWKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    children = law->value.pw.children;
+    ResetCurrentElement( children );
+    while ( child = (KINETIC_LAW*)GetNextFromLinkedList( children )) {
+      if( IS_FAILED( ( ret = child->AcceptPostOrder( child, visitor ) ) ) ) {
+        END_FUNCTION("_AcceptPostOrderForPWKineticLaw", ret );        
+        return ret;                        
+      }
+    }
+    
+    END_FUNCTION("_AcceptPreOrderForPWKineticLaw", SUCCESS );        
+    return ret;                        
+}
 
 static RET_VAL _AcceptPreOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
     RET_VAL ret = SUCCESS;
@@ -1173,6 +1723,42 @@ static RET_VAL _AcceptPreOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VIS
     return ret;                        
 }
 
+static RET_VAL _AcceptPreOrderForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    KINETIC_LAW *child = NULL;;
+    
+    START_FUNCTION("_AcceptPreOrderForUnaryOpKineticLaw");
+    
+    if( IS_FAILED( ( ret = visitor->VisitUnaryOp( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptPreOrderForUnaryOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    child = law->value.unaryOp.child;
+    if( IS_FAILED( ( ret = child->AcceptPreOrder( child, visitor ) ) ) ) {
+        END_FUNCTION("_AcceptPreOrderForUnaryOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptPreOrderForUnaryOpKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
+static RET_VAL _AcceptForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_AcceptForPWKineticLaw");
+    
+    if( IS_FAILED( ( ret = visitor->VisitPW( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptForPWKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptForPWKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
 static RET_VAL _AcceptForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
     RET_VAL ret = SUCCESS;
     
@@ -1187,7 +1773,47 @@ static RET_VAL _AcceptForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *vi
     return ret;                        
 }
 
+static RET_VAL _AcceptForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_AcceptForUnaryOpKineticLaw");
+    
+    if( IS_FAILED( ( ret = visitor->VisitUnaryOp( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptForUnaryOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptForUnaryOpKineticLaw", SUCCESS );        
+    return ret;                        
+}
 
+
+
+static RET_VAL _AcceptInOrderForPWKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    LINKED_LIST *children = NULL;
+    KINETIC_LAW *child = NULL;;
+    
+    START_FUNCTION("_AcceptInOrderForPWKineticLaw");
+    
+    children = law->value.pw.children;
+    ResetCurrentElement( children );
+    while ( child = (KINETIC_LAW*)GetNextFromLinkedList( children )) {
+      if( IS_FAILED( ( ret = child->AcceptPostOrder( child, visitor ) ) ) ) {
+        END_FUNCTION("_AcceptPostOrderForPWKineticLaw", ret );        
+        return ret;                        
+      }
+    }
+    
+    if( IS_FAILED( ( ret = visitor->VisitPW( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptInOrderForPWKineticLaw", ret );        
+        return ret;                        
+    }
+        
+    END_FUNCTION("_AcceptInOrderForPWKineticLaw", SUCCESS );        
+    return ret;                        
+}
 
 static RET_VAL _AcceptInOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
     RET_VAL ret = SUCCESS;
@@ -1214,6 +1840,29 @@ static RET_VAL _AcceptInOrderForOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISI
     }            
     
     END_FUNCTION("_AcceptInOrderForOpKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
+
+static RET_VAL _AcceptInOrderForUnaryOpKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    KINETIC_LAW *child = NULL;;
+    
+    START_FUNCTION("_AcceptInOrderForUnaryOpKineticLaw");
+    
+    child = law->value.unaryOp.child;
+    if( IS_FAILED( ( ret = child->AcceptInOrder( child, visitor ) ) ) ) {
+        END_FUNCTION("_AcceptInOrderForUnaryOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    if( IS_FAILED( ( ret = visitor->VisitUnaryOp( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptInOrderForUnaryOpKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptInOrderForUnaryOpKineticLaw", SUCCESS );        
     return ret;                        
 }
 
@@ -1261,6 +1910,20 @@ static RET_VAL _AcceptForSpeciesKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITO
     return ret;                        
 }
 
+static RET_VAL _AcceptForCompartmentKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_AcceptForCompartmentKineticLaw");
+    
+    if( IS_FAILED( ( ret = visitor->VisitCompartment( visitor, law ) ) ) ) {
+        END_FUNCTION("_AcceptForCompartmentKineticLaw", ret );        
+        return ret;                        
+    }
+    
+    END_FUNCTION("_AcceptForCompartmentKineticLaw", SUCCESS );        
+    return ret;                        
+}
+
 static RET_VAL _AcceptForSymbolKineticLaw( KINETIC_LAW *law, KINETIC_LAW_VISITOR *visitor ) {
     RET_VAL ret = SUCCESS;
     
@@ -1297,9 +1960,12 @@ STRING *ToStringKineticLaw( KINETIC_LAW *law ) {
     START_FUNCTION("ToStringKineticLaw");
     
     if( toStringVisitor.VisitOp == NULL ) {
+        toStringVisitor.VisitPW = _VisitPWToString;
         toStringVisitor.VisitOp = _VisitOpToString;
+        toStringVisitor.VisitUnaryOp = _VisitUnaryOpToString;
         toStringVisitor.VisitInt = _VisitIntToString;
         toStringVisitor.VisitReal = _VisitRealToString;
+        toStringVisitor.VisitCompartment = _VisitCompartmentToString;
         toStringVisitor.VisitSpecies = _VisitSpeciesToString;
         toStringVisitor.VisitSymbol = _VisitSymbolToString;
         toStringVisitor.VisitFunctionSymbol = _VisitFunctionSymbolToString;
@@ -1325,6 +1991,51 @@ STRING *ToStringKineticLaw( KINETIC_LAW *law ) {
     return string;
 }
 
+
+static RET_VAL _VisitPWToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    int len = 0;
+    char *buf = NULL;
+    STRING *str = NULL;    
+    STRING *childStr = NULL;
+    LINKED_LIST *children = NULL;
+    KINETIC_LAW *child = NULL; 
+    LINKED_LIST *stack = NULL;
+        
+    TO_STRING_VISITOR_INTERNAL *internal = NULL;    
+    
+    START_FUNCTION("_VisitPWToString");
+
+    internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
+    stack = internal->stack;
+    
+    len = 3;
+    
+    childStr = (STRING*)GetTailFromLinkedList( stack );
+    RemoveTailFromLinkedList( stack );
+    len += GetStringLength( childStr );
+    
+    if( ( buf = (char*)MALLOC( len + 1) ) == NULL ) {
+        return ErrorReport( FAILING, "_VisitPWToString", "failed to create %s %c", 
+            GetCharArrayOfString( childStr ),  kineticLaw->value.pw.opType );
+    }
+    else {
+        sprintf( buf, "%s %c", 
+            GetCharArrayOfString( childStr ),  kineticLaw->value.pw.opType );
+    }
+    
+    FreeString( &childStr );
+    
+    if( ( str = CreateString( buf ) ) == NULL ) {
+        return ErrorReport( FAILING, "_VisitPWToString", "could not create a string for %s", buf );
+    }
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, stack ) ) ) ) {
+        return ErrorReport( FAILING, "_VisitPWToString", "could not add %s", buf );
+    }
+    FREE( buf );                           
+    END_FUNCTION("_VisitPWToString", SUCCESS );        
+    return ret;                        
+}
 
 static RET_VAL _VisitOpToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     RET_VAL ret = SUCCESS;
@@ -1413,11 +2124,57 @@ static RET_VAL _VisitOpToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kine
     if( ( str = CreateString( buf ) ) == NULL ) {
         return ErrorReport( FAILING, "_VisitIntToString", "could not create a string for %s", buf );
     }
-    if( IS_FAILED( ( ret = AddElementInLinkedList( str, stack ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, stack ) ) ) ) {
         return ErrorReport( FAILING, "_VisitIntToString", "could not add %s", buf );
     }
     FREE( buf );                           
     END_FUNCTION("_VisitOpToString", SUCCESS );        
+    return ret;                        
+}
+
+static RET_VAL _VisitUnaryOpToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    int len = 0;
+    char *buf = NULL;
+    STRING *str = NULL;    
+    STRING *childStr = NULL;
+    KINETIC_LAW *child = NULL; 
+    LINKED_LIST *stack = NULL;
+        
+    TO_STRING_VISITOR_INTERNAL *internal = NULL;    
+    
+    START_FUNCTION("_VisitUnaryOpToString");
+
+    internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
+    stack = internal->stack;
+    
+    len = 3;
+    
+    childStr = (STRING*)GetTailFromLinkedList( stack );
+    RemoveTailFromLinkedList( stack );
+    len += GetStringLength( childStr );
+        
+    child = kineticLaw->value.unaryOp.child;
+    
+    if( ( buf = (char*)MALLOC( len + 1) ) == NULL ) {
+        return ErrorReport( FAILING, "_VisitUnaryOpToString", "failed to create %c %s", 
+            kineticLaw->value.unaryOp.opType, GetCharArrayOfString( childStr ) );
+    }
+    else {
+        sprintf( buf, "%c %s", 
+            kineticLaw->value.unaryOp.opType, GetCharArrayOfString( childStr ) );
+    }
+    
+    FreeString( &childStr );
+    
+    if( ( str = CreateString( buf ) ) == NULL ) {
+        return ErrorReport( FAILING, "_VisitIntToString", "could not create a string for %s", buf );
+    }
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, stack ) ) ) ) {
+        return ErrorReport( FAILING, "_VisitIntToString", "could not add %s", buf );
+    }
+    FREE( buf );                           
+    END_FUNCTION("_VisitUnaryOpToString", SUCCESS );        
     return ret;                        
 }
 
@@ -1434,7 +2191,7 @@ static RET_VAL _VisitIntToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kin
         return ErrorReport( FAILING, "_VisitIntToString", "could not create a string for %s", buf );
     }
     internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( str, internal->stack ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, internal->stack ) ) ) ) {
         return ErrorReport( FAILING, "_VisitIntToString", "could not add %s", buf );
     }
         
@@ -1455,7 +2212,7 @@ static RET_VAL _VisitRealToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
         return ErrorReport( FAILING, "_VisitRealToString", "could not create a string for %s", buf );
     }
     internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( str, internal->stack ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, internal->stack ) ) ) ) {
         return ErrorReport( FAILING, "_VisitRealToString", "could not add %s", buf );
     }
     
@@ -1470,16 +2227,36 @@ static RET_VAL _VisitSpeciesToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW 
     TO_STRING_VISITOR_INTERNAL *internal = NULL;    
     
     START_FUNCTION("_VisitSpeciesToString");
-    from = GetSpeciesNodeName( kineticLaw->value.species );
+    from = GetSpeciesNodeID( kineticLaw->value.species );
     if( ( str = CloneString( from ) ) == NULL ) {
         return ErrorReport( FAILING, "_VisitSpeciesToString", "could not create a string for %s", GetCharArrayOfString( from ) );
     }
     internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( str, internal->stack ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, internal->stack ) ) ) ) {
         return ErrorReport( FAILING, "_VisitSpeciesToString", "could not add %s", GetCharArrayOfString( from ) );
     }
     
     END_FUNCTION("_VisitSpeciesToString", SUCCESS );        
+    return ret;                        
+}
+
+static RET_VAL _VisitCompartmentToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    STRING *from = NULL;
+    STRING *str = NULL;    
+    TO_STRING_VISITOR_INTERNAL *internal = NULL;    
+    
+    START_FUNCTION("_VisitCompartmentToString");
+    from = GetCompartmentID( kineticLaw->value.compartment );
+    if( ( str = CloneString( from ) ) == NULL ) {
+        return ErrorReport( FAILING, "_VisitCompartmentToString", "could not create a string for %s", GetCharArrayOfString( from ) );
+    }
+    internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, internal->stack ) ) ) ) {
+        return ErrorReport( FAILING, "_VisitCompartmentToString", "could not add %s", GetCharArrayOfString( from ) );
+    }
+    
+    END_FUNCTION("_VisitCompartmentToString", SUCCESS );        
     return ret;                        
 }
 
@@ -1495,7 +2272,7 @@ static RET_VAL _VisitSymbolToString( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *
         return ErrorReport( FAILING, "_VisitSymbolToString", "could not create a string for %s", GetCharArrayOfString( from ) );
     }
     internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( str, internal->stack ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, internal->stack ) ) ) ) {
         return ErrorReport( FAILING, "_VisitSymbolToString", "could not add %s", GetCharArrayOfString( from ) );
     }
     
@@ -1510,12 +2287,12 @@ static RET_VAL _VisitFunctionSymbolToString( KINETIC_LAW_VISITOR *visitor, KINET
     TO_STRING_VISITOR_INTERNAL *internal = NULL;    
     
     START_FUNCTION("_VisitFunctionSymbolToString");
-    from = kineticLaw->value.funcSymbol;
+    from = CreateString(kineticLaw->value.funcSymbol);
     if( ( str = CloneString( from ) ) == NULL ) {
         return ErrorReport( FAILING, "_VisitFunctionSymbolToString", "could not create a string for %s", GetCharArrayOfString( from ) );
     }
     internal = (TO_STRING_VISITOR_INTERNAL*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( str, internal->stack ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)str, internal->stack ) ) ) ) {
         return ErrorReport( FAILING, "_VisitFunctionSymbolToString", "could not add %s", GetCharArrayOfString( from ) );
     }
     
@@ -1531,7 +2308,17 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     START_FUNCTION("_NeedParenForLeft");
     
     parentOpType = parent->value.op.opType;
-    if( parentOpType == KINETIC_LAW_OP_POW ) {
+    if( ( parentOpType == KINETIC_LAW_OP_POW ) ||
+	( parentOpType == KINETIC_LAW_OP_ROOT ) ||
+	( parentOpType == KINETIC_LAW_OP_EQ ) ||
+	( parentOpType == KINETIC_LAW_OP_NEQ ) ||
+	( parentOpType == KINETIC_LAW_OP_GEQ ) ||
+	( parentOpType == KINETIC_LAW_OP_GT ) ||
+	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
+	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_AND ) ||
+	( parentOpType == KINETIC_LAW_OP_XOR ) ||
+	( parentOpType == KINETIC_LAW_OP_OR ) ) {
         if( IsOpKineticLaw( child ) ) {
             END_FUNCTION("_NeedParenForLeft", SUCCESS );        
             return TRUE;
@@ -1571,7 +2358,17 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     START_FUNCTION("_NeedParenForRight");
     
     parentOpType = parent->value.op.opType;
-    if( parentOpType == KINETIC_LAW_OP_POW ) {
+    if( ( parentOpType == KINETIC_LAW_OP_POW ) ||
+	( parentOpType == KINETIC_LAW_OP_ROOT ) ||
+	( parentOpType == KINETIC_LAW_OP_EQ ) ||
+	( parentOpType == KINETIC_LAW_OP_NEQ ) ||
+	( parentOpType == KINETIC_LAW_OP_GEQ ) ||
+	( parentOpType == KINETIC_LAW_OP_GT ) ||
+	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
+	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_AND ) ||
+	( parentOpType == KINETIC_LAW_OP_XOR ) ||
+	( parentOpType == KINETIC_LAW_OP_OR ) ) {
         if( IsOpKineticLaw( child ) ) {
             END_FUNCTION("_NeedParenForRight", SUCCESS );        
             return TRUE;
@@ -1583,7 +2380,17 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     } 
     if( IsOpKineticLaw( child ) ) {        
         childOpType = child->value.op.opType;
-        if( childOpType == KINETIC_LAW_OP_POW ) {
+        if( ( childOpType == KINETIC_LAW_OP_POW ) ||
+	    ( childOpType == KINETIC_LAW_OP_ROOT ) ||
+	    ( childOpType == KINETIC_LAW_OP_EQ ) ||
+	    ( childOpType == KINETIC_LAW_OP_NEQ ) ||
+	    ( childOpType == KINETIC_LAW_OP_GEQ ) ||
+	    ( childOpType == KINETIC_LAW_OP_GT ) ||
+	    ( childOpType == KINETIC_LAW_OP_LEQ ) ||
+	    ( childOpType == KINETIC_LAW_OP_LT ) ||
+	    ( childOpType == KINETIC_LAW_OP_AND ) ||
+	    ( childOpType == KINETIC_LAW_OP_XOR ) ||
+	    ( childOpType == KINETIC_LAW_OP_OR ) ) {
             END_FUNCTION("_NeedParenForRight", SUCCESS );        
             return FALSE;
         }
@@ -1635,16 +2442,39 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 }
 
 BOOL AreKineticLawsStructurallyEqual( KINETIC_LAW *a, KINETIC_LAW *b ) {
+    KINETIC_LAW *aChild;
+    KINETIC_LAW *bChild;
     if( a->valueType != b->valueType ) {
         return FALSE;
     }
     switch( a->valueType ) {
+        case KINETIC_LAW_VALUE_TYPE_PW:
+            if( a->value.pw.opType != b->value.pw.opType ) {
+                return FALSE;
+            }
+	    if (GetLinkedListSize(a->value.pw.children) != GetLinkedListSize(b->value.pw.children)) {
+	      return FALSE;
+	    }
+	    ResetCurrentElement( a->value.pw.children );
+	    while ( aChild = (KINETIC_LAW*)GetNextFromLinkedList( a->value.pw.children )) {
+	      aChild = (KINETIC_LAW*)GetNextFromLinkedList( a->value.pw.children );
+	      if ( !AreKineticLawsStructurallyEqual( aChild, bChild ))
+		return FALSE;
+	    }
+	    return TRUE;
         case KINETIC_LAW_VALUE_TYPE_OP:
             if( a->value.op.opType != b->value.op.opType ) {
                 return FALSE;
             }
             return ( AreKineticLawsStructurallyEqual( a->value.op.left, b->value.op.left ) &&
                      AreKineticLawsStructurallyEqual( a->value.op.right, b->value.op.right ) ) ?
+                    TRUE : FALSE;                     
+
+        case KINETIC_LAW_VALUE_TYPE_UNARY_OP:
+            if( a->value.unaryOp.opType != b->value.unaryOp.opType ) {
+                return FALSE;
+            }
+            return ( AreKineticLawsStructurallyEqual( a->value.unaryOp.child, b->value.unaryOp.child ) ) ?
                     TRUE : FALSE;                     
         
         case KINETIC_LAW_VALUE_TYPE_INT:
@@ -1655,6 +2485,9 @@ BOOL AreKineticLawsStructurallyEqual( KINETIC_LAW *a, KINETIC_LAW *b ) {
         
         case KINETIC_LAW_VALUE_TYPE_SPECIES:
             return ( a->value.species == b->value.species ) ? TRUE : FALSE; 
+        
+        case KINETIC_LAW_VALUE_TYPE_COMPARTMENT:
+            return ( a->value.compartment == b->value.compartment ) ? TRUE : FALSE; 
         
         case KINETIC_LAW_VALUE_TYPE_SYMBOL:
             return ( a->value.symbol == b->value.symbol ) ? TRUE : FALSE;             

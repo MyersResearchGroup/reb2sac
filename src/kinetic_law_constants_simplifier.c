@@ -31,12 +31,18 @@ static RET_VAL _SimplifyKineticLaw( ABSTRACTION_METHOD *method, IR *ir, REACTION
 static BOOL _TransformKineticLaw( KINETIC_LAW *kineticLaw, double *result );
 static BOOL _TransformOpKineticLaw( KINETIC_LAW *kineticLaw, double *result  );
 */
+static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitIntToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitFunctionSymbolToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
 
 ABSTRACTION_METHOD *KineticLawConstantsSimplifierMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager ) {
@@ -97,10 +103,13 @@ RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
     START_FUNCTION("_SimplifyKineticLaw");
 
     if( visitor.VisitOp == NULL ) {
+        visitor.VisitPW = _VisitPWToSimplifyInitial;
         visitor.VisitOp = _VisitOpToSimplifyInitial;
+        visitor.VisitUnaryOp = _VisitUnaryOpToSimplifyInitial;
         visitor.VisitInt = _VisitIntToSimplifyKineticLaw;
         visitor.VisitReal = _VisitRealToSimplifyKineticLaw;
         visitor.VisitSpecies = _VisitSpeciesToSimplifyKineticLaw;
+        visitor.VisitCompartment = _VisitCompartmentToSimplifyKineticLaw;
         visitor.VisitSymbol = _VisitSymbolToSimplifyKineticLaw;
     }    
 
@@ -128,11 +137,15 @@ static RET_VAL _SimplifyKineticLaw( ABSTRACTION_METHOD *method, IR *ir, REACTION
     START_FUNCTION("_SimplifyKineticLaw");
 
     if( visitor.VisitOp == NULL ) {
+        visitor.VisitPW = _VisitPWToSimplifyKineticLaw;
         visitor.VisitOp = _VisitOpToSimplifyKineticLaw;
+        visitor.VisitUnaryOp = _VisitUnaryOpToSimplifyKineticLaw;
         visitor.VisitInt = _VisitIntToSimplifyKineticLaw;
         visitor.VisitReal = _VisitRealToSimplifyKineticLaw;
         visitor.VisitSpecies = _VisitSpeciesToSimplifyKineticLaw;
+        visitor.VisitCompartment = _VisitCompartmentToSimplifyKineticLaw;
         visitor.VisitSymbol = _VisitSymbolToSimplifyKineticLaw;
+        visitor.VisitFunctionSymbol = _VisitFunctionSymbolToSimplifyKineticLaw;
     }    
 
     kineticLaw = GetKineticLawInReactionNode( reaction );
@@ -150,6 +163,139 @@ static RET_VAL _SimplifyKineticLaw( ABSTRACTION_METHOD *method, IR *ir, REACTION
     return ret;
 }
 
+static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    double childValue = 0.0;
+    KINETIC_LAW *child = NULL;
+    REB2SAC_SYMBOL *sym = NULL;    
+    SPECIES *species = NULL;
+    COMPARTMENT *compartment = NULL;
+    LINKED_LIST *children;
+    UINT num = 0;
+    UINT i = 0;
+
+    START_FUNCTION("_VisitPWToSimplifyKineticLaw");
+    
+    children = GetPWChildrenFromKineticLaw( kineticLaw );
+    num = GetLinkedListSize( children );
+    for ( i = 1; i < num; i+=2 ) {
+      child = (KINETIC_LAW*)GetElementByIndex( i,children );
+      if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+        END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+        return ret;
+      }
+      if( IsRealValueKineticLaw( child ) ) {
+        childValue = GetRealValueFromKineticLaw( child );
+      }
+      else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( child );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        childValue = GetRealValueInSymbol( sym );
+#endif
+      }
+      else if( IsIntValueKineticLaw( child ) ) {
+        childValue = (double)GetIntValueFromKineticLaw( child );
+      }
+      else if( IsSpeciesKineticLaw( child ) ) {
+	species = GetSpeciesFromKineticLaw( child );
+	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	  childValue = GetInitialAmountInSpeciesNode( species );
+	} else {
+	  childValue = GetInitialConcentrationInSpeciesNode( species );
+	}
+      }
+      else if( IsCompartmentKineticLaw( child ) ) {
+	compartment = GetCompartmentFromKineticLaw( child );
+	childValue = GetSizeInCompartment( compartment );
+      }
+      if (childValue) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+	  return ret;
+	}
+	if( IsRealValueKineticLaw( child ) ) {
+	  childValue = GetRealValueFromKineticLaw( child );
+	}
+	else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	  sym = GetSymbolFromKineticLaw( child );
+	  if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+	  }
+	  childValue = GetRealValueInSymbol( sym );
+#endif
+	}
+	else if( IsIntValueKineticLaw( child ) ) {
+	  childValue = (double)GetIntValueFromKineticLaw( child );
+	}
+	else if( IsSpeciesKineticLaw( child ) ) {
+	  species = GetSpeciesFromKineticLaw( child );
+	  if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	    childValue = GetInitialAmountInSpeciesNode( species );
+	  } else {
+	    childValue = GetInitialConcentrationInSpeciesNode( species );
+	  }
+	}
+	else if( IsCompartmentKineticLaw( child ) ) {
+	  compartment = GetCompartmentFromKineticLaw( child );
+	  childValue = GetSizeInCompartment( compartment );
+	}
+	result = childValue;
+	break;
+      }
+    }
+    if ( i == num ) {
+      child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+      if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+	return ret;
+      }
+      if( IsRealValueKineticLaw( child ) ) {
+	childValue = GetRealValueFromKineticLaw( child );
+      }
+      else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	sym = GetSymbolFromKineticLaw( child );
+	if( !IsRealValueSymbol( sym ) ) {
+	  END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+	childValue = GetRealValueInSymbol( sym );
+#endif
+      }
+      else if( IsIntValueKineticLaw( child ) ) {
+	childValue = (double)GetIntValueFromKineticLaw( child );
+      }
+      else if( IsSpeciesKineticLaw( child ) ) {
+	species = GetSpeciesFromKineticLaw( child );
+	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	  childValue = GetInitialAmountInSpeciesNode( species );
+	} else {
+	  childValue = GetInitialConcentrationInSpeciesNode( species );
+	}
+      }
+      else if( IsCompartmentKineticLaw( child ) ) {
+	compartment = GetCompartmentFromKineticLaw( child );
+	childValue = GetSizeInCompartment( compartment );
+      }
+      result = childValue;
+    }
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+        return ret;
+    } 
+            
+    END_FUNCTION("_VisitPWToSimplifyInitial", SUCCESS );
+    return ret;
+}
+
 static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     RET_VAL ret = SUCCESS;
     double result = 0.0;
@@ -159,6 +305,7 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
     KINETIC_LAW *right = NULL;
     REB2SAC_SYMBOL *sym = NULL;    
     SPECIES *species = NULL;
+    COMPARTMENT *compartment = NULL;
  
     START_FUNCTION("_VisitOpToSimplifyKineticLaw");
     
@@ -173,16 +320,6 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
         END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
         return ret;
     }
-    
-    
-//     if( !IsConstantValueKineticLaw( left ) ) {
-//         END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
-//         return ret;
-//     }
-//     if( !IsConstantValueKineticLaw( right ) ) {
-//         END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
-//         return ret;
-//     }
     
     if( IsRealValueKineticLaw( left ) ) {
         leftValue = GetRealValueFromKineticLaw( left );
@@ -207,6 +344,10 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
       } else {
 	leftValue = GetInitialConcentrationInSpeciesNode( species );
       }
+    }
+    else if( IsCompartmentKineticLaw( left ) ) {
+      compartment = GetCompartmentFromKineticLaw( left );
+      leftValue = GetSizeInCompartment( compartment );
     }
     
     if( IsRealValueKineticLaw( right ) ) {
@@ -233,6 +374,10 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
 	rightValue = GetInitialConcentrationInSpeciesNode( species );
       }
     }
+    else if( IsCompartmentKineticLaw( right ) ) {
+      compartment = GetCompartmentFromKineticLaw( right );
+      rightValue = GetSizeInCompartment( compartment );
+    }
         
     switch( GetOpTypeFromKineticLaw( kineticLaw ) ) {
         case KINETIC_LAW_OP_PLUS:
@@ -255,6 +400,46 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
             result = pow( leftValue, rightValue );
         break;        
         
+        case KINETIC_LAW_OP_ROOT:
+	  result = pow(rightValue,(1./leftValue));
+        break;        
+
+        case KINETIC_LAW_OP_XOR:
+	  result = (!leftValue && rightValue)||(leftValue && !rightValue);
+        break;        
+
+        case KINETIC_LAW_OP_AND:
+            result = leftValue && rightValue;
+        break;        
+
+        case KINETIC_LAW_OP_OR:
+            result = leftValue || rightValue;
+        break;        
+
+        case KINETIC_LAW_OP_EQ:
+	  result = (leftValue == rightValue);
+        break;
+
+        case KINETIC_LAW_OP_NEQ:
+	  result = (leftValue != rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GEQ:
+	  result = (leftValue >= rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GT:
+	  result = (leftValue > rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LEQ:
+	  result = (leftValue <= rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LT:
+	  result = (leftValue < rightValue);
+        break;
+        
         default:
         return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
     }
@@ -265,6 +450,299 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
     } 
             
     END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    double childValue = 0.0;
+    KINETIC_LAW *child = NULL;
+    REB2SAC_SYMBOL *sym = NULL;    
+    SPECIES *species = NULL;
+    COMPARTMENT *compartment = NULL;
+    UINT i = 0;
+
+    START_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw");
+    
+    child = GetUnaryOpChildFromKineticLaw( kineticLaw );
+    if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+        END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", ret );
+        return ret;
+    }
+    
+    if( IsRealValueKineticLaw( child ) ) {
+        childValue = GetRealValueFromKineticLaw( child );
+    }
+    else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( child );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        childValue = GetRealValueInSymbol( sym );
+#endif
+    }
+    else if( IsIntValueKineticLaw( child ) ) {
+        childValue = (double)GetIntValueFromKineticLaw( child );
+    }
+    else if( IsSpeciesKineticLaw( child ) ) {
+      species = GetSpeciesFromKineticLaw( child );
+      if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	childValue = GetInitialAmountInSpeciesNode( species );
+      } else {
+	childValue = GetInitialConcentrationInSpeciesNode( species );
+      }
+    }
+    else if( IsCompartmentKineticLaw( child ) ) {
+      compartment = GetCompartmentFromKineticLaw( child );
+      childValue = GetSizeInCompartment( compartment );
+    }
+        
+    switch( GetUnaryOpTypeFromKineticLaw( kineticLaw ) ) {
+        case KINETIC_LAW_UNARY_OP_NOT:
+	  result = !childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_ABS:
+	  result = labs(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COT:
+	  result = (1./tan(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_COTH:
+	  result = cosh(childValue)/sinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CSC:
+	  result = (1./sin(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_CSCH:
+	  result = (1./cosh(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_SEC:
+	  result = (1./cos(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_SECH:
+	  result = (1./sinh(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_COS:
+	  result = cos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COSH:
+	  result = cosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SIN:
+	  result = sin(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SINH:
+	  result = sinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_TAN:
+	  result = tan(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_TANH:
+	  result = tanh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOT:
+	  result = atan(1./(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOTH:
+	  result = ((1./2.)*log((childValue+1.)/(childValue-1.)) );
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCSC:
+	  result = atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCSCH:
+	  result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSEC:
+	  result = atan( SQRT(( childValue-1.)*( childValue+1.)) );
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSECH:
+	  result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOS:
+	  result = acos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOSH:
+	  result = acosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSIN:
+	  result = asin(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSINH:
+	  result = asinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCTAN:
+	  result = atan(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCTANH:
+	  result = atanh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CEILING:
+	  result = ceil(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_EXP:
+	  result = exp(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_FACTORIAL:
+	  i = floor(childValue);
+	  for(result=1;i>1;--i)
+	    result *= i;
+        break;
+        case KINETIC_LAW_UNARY_OP_FLOOR:
+	  result = floor(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LN:
+	  result = log(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LOG:
+	  result = log10(childValue);
+        break;
+        
+        default:
+        return ErrorReport( FAILING, "_VisitUnaryOpToSimplifyKineticLaw", "invalid operator type" );        
+    }
+    
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", ret );
+        return ret;
+    } 
+            
+    END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    double childValue = 0.0;
+    KINETIC_LAW *child = NULL;
+    REB2SAC_SYMBOL *sym = NULL;    
+    SPECIES *species = NULL;
+    COMPARTMENT *compartment = NULL;
+    LINKED_LIST *children;
+    UINT num = 0;
+    UINT i = 0;
+
+    START_FUNCTION("_VisitPWToSimplifyKineticLaw");
+    
+    children = GetPWChildrenFromKineticLaw( kineticLaw );
+    num = GetLinkedListSize( children );
+    for ( i = 1; i < num; i+=2 ) {
+      child = (KINETIC_LAW*)GetElementByIndex( i,children );
+      if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+        END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+        return ret;
+      }
+      if( IsRealValueKineticLaw( child ) ) {
+        childValue = GetRealValueFromKineticLaw( child );
+      }
+      else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( child );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        childValue = GetCurrentRealValueInSymbol( sym );
+#endif
+      }
+      else if( IsIntValueKineticLaw( child ) ) {
+        childValue = (double)GetIntValueFromKineticLaw( child );
+      }
+      else if( IsSpeciesKineticLaw( child ) ) {
+	species = GetSpeciesFromKineticLaw( child );
+	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	  childValue = GetAmountInSpeciesNode( species );
+	} else {
+	  childValue = GetConcentrationInSpeciesNode( species );
+	}
+      }
+      else if( IsCompartmentKineticLaw( child ) ) {
+	compartment = GetCompartmentFromKineticLaw( child );
+	childValue = GetCurrentSizeInCompartment( compartment );
+      }
+      if (childValue) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+	  return ret;
+	}
+	if( IsRealValueKineticLaw( child ) ) {
+	  childValue = GetRealValueFromKineticLaw( child );
+	}
+	else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	  sym = GetSymbolFromKineticLaw( child );
+	  if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+	  }
+	  childValue = GetCurrentRealValueInSymbol( sym );
+#endif
+	}
+	else if( IsIntValueKineticLaw( child ) ) {
+	  childValue = (double)GetIntValueFromKineticLaw( child );
+	}
+	else if( IsSpeciesKineticLaw( child ) ) {
+	  species = GetSpeciesFromKineticLaw( child );
+	  if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	    childValue = GetAmountInSpeciesNode( species );
+	  } else {
+	    childValue = GetConcentrationInSpeciesNode( species );
+	  }
+	}
+	else if( IsCompartmentKineticLaw( child ) ) {
+	  compartment = GetCompartmentFromKineticLaw( child );
+	  childValue = GetCurrentSizeInCompartment( compartment );
+	}
+	result = childValue;
+	break;
+      }
+    }
+    if ( i == num ) {
+      child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+      if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+	return ret;
+      }
+      if( IsRealValueKineticLaw( child ) ) {
+	childValue = GetRealValueFromKineticLaw( child );
+      }
+      else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	sym = GetSymbolFromKineticLaw( child );
+	if( !IsRealValueSymbol( sym ) ) {
+	  END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+	childValue = GetCurrentRealValueInSymbol( sym );
+#endif
+      }
+      else if( IsIntValueKineticLaw( child ) ) {
+	childValue = (double)GetIntValueFromKineticLaw( child );
+      }
+      else if( IsSpeciesKineticLaw( child ) ) {
+	species = GetSpeciesFromKineticLaw( child );
+	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	  childValue = GetAmountInSpeciesNode( species );
+	} else {
+	  childValue = GetConcentrationInSpeciesNode( species );
+	}
+      }
+      else if( IsCompartmentKineticLaw( child ) ) {
+	compartment = GetCompartmentFromKineticLaw( child );
+	childValue = GetCurrentSizeInCompartment( compartment );
+      }
+      result = childValue;
+    }
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitPWToSimplifyInitial", ret );
+        return ret;
+    } 
+            
+    END_FUNCTION("_VisitPWToSimplifyInitial", SUCCESS );
     return ret;
 }
 
@@ -311,7 +789,7 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
-        leftValue = GetRealValueInSymbol( sym );
+        leftValue = GetCurrentRealValueInSymbol( sym );
 #endif
     }
     else if( IsIntValueKineticLaw( left ) ) {
@@ -328,7 +806,7 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
-        rightValue = GetRealValueInSymbol( sym );
+        rightValue = GetCurrentRealValueInSymbol( sym );
 #endif
     }
     else if( IsIntValueKineticLaw( right ) ) {
@@ -356,6 +834,46 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             result = pow( leftValue, rightValue );
         break;        
         
+        case KINETIC_LAW_OP_ROOT:
+	  result = pow(rightValue,(1./leftValue));
+        break;        
+
+        case KINETIC_LAW_OP_XOR:
+	  result = (!leftValue && rightValue)||(leftValue && !rightValue);
+        break;        
+
+        case KINETIC_LAW_OP_AND:
+            result = leftValue && rightValue;
+        break;        
+
+        case KINETIC_LAW_OP_OR:
+            result = leftValue || rightValue;
+        break;        
+
+        case KINETIC_LAW_OP_EQ:
+	  result = (leftValue == rightValue);
+        break;
+
+        case KINETIC_LAW_OP_NEQ:
+	  result = (leftValue != rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GEQ:
+	  result = (leftValue >= rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GT:
+	  result = (leftValue > rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LEQ:
+	  result = (leftValue <= rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LT:
+	  result = (leftValue < rightValue);
+        break;
+        
         default:
         return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
     }
@@ -366,6 +884,157 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
     } 
             
     END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    double childValue = 0.0;
+    KINETIC_LAW *child = NULL;
+    REB2SAC_SYMBOL *sym = NULL;    
+    UINT i = 0;
+
+    START_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw");
+    
+    child = GetUnaryOpChildFromKineticLaw( kineticLaw );
+    if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+        END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", ret );
+        return ret;
+    }
+    
+    if( !IsConstantValueKineticLaw( child ) ) {
+        END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", SUCCESS );
+        return ret;
+    }
+    
+    if( IsRealValueKineticLaw( child ) ) {
+        childValue = GetRealValueFromKineticLaw( child );
+    }
+    else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( child );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        childValue = GetCurrentRealValueInSymbol( sym );
+#endif
+    }
+    else if( IsIntValueKineticLaw( child ) ) {
+        childValue = (double)GetIntValueFromKineticLaw( child );
+    }
+    
+    switch( GetUnaryOpTypeFromKineticLaw( kineticLaw ) ) {
+        case KINETIC_LAW_UNARY_OP_NOT:
+	  result = !childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_ABS:
+	  result = labs(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COT:
+	  result = (1./tan(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_COTH:
+	  result = cosh(childValue)/sinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CSC:
+	  result = (1./sin(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_CSCH:
+	  result = (1./cosh(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_SEC:
+	  result = (1./cos(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_SECH:
+	  result = (1./sinh(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_COS:
+	  result = cos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COSH:
+	  result = cosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SIN:
+	  result = sin(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SINH:
+	  result = sinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_TAN:
+	  result = tan(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_TANH:
+	  result = tanh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOT:
+	  result = atan(1./(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOTH:
+	  result = ((1./2.)*log((childValue+1.)/(childValue-1.)) );
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCSC:
+	  result = atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCSCH:
+	  result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSEC:
+	  result = atan( SQRT(( childValue-1.)*( childValue+1.)) );
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSECH:
+	  result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOS:
+	  result = acos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOSH:
+	  result = acosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSIN:
+	  result = asin(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSINH:
+	  result = asinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCTAN:
+	  result = atan(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCTANH:
+	  result = atanh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CEILING:
+	  result = ceil(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_EXP:
+	  result = exp(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_FACTORIAL:
+	  i = floor(childValue);
+	  for(result=1;i>1;--i)
+	    result *= i;
+        break;
+        case KINETIC_LAW_UNARY_OP_FLOOR:
+	  result = floor(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LN:
+	  result = log(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LOG:
+	  result = log10(childValue);
+        break;
+        
+        default:
+        return ErrorReport( FAILING, "_VisitUnaryOpToSimplifyKineticLaw", "invalid operator type" );        
+    }
+    
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", ret );
+        return ret;
+    } 
+            
+    END_FUNCTION("_VisitUnaryOpToSimplifyKineticLaw", SUCCESS );
     return ret;
 }
 
@@ -389,10 +1058,24 @@ static RET_VAL _VisitSpeciesToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
     return ret;
 }
 
+static RET_VAL _VisitCompartmentToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;    
+    START_FUNCTION("_VisitCompartmentToSimplifyKineticLaw");
+    END_FUNCTION("_VisitCompartmentToSimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
 static RET_VAL _VisitSymbolToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     RET_VAL ret = SUCCESS;    
     START_FUNCTION("_VisitSymbolToSimplifyKineticLaw");
     END_FUNCTION("_VisitSymbolToSimplifyKineticLaw", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitFunctionSymbolToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;    
+    START_FUNCTION("_VisitFunctionSymbolToSimplifyKineticLaw");
+    END_FUNCTION("_VisitFunctionSymbolToSimplifyKineticLaw", SUCCESS );
     return ret;
 }
 
