@@ -115,6 +115,12 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     SPECIES **speciesArray = NULL;
     REACTION *reaction = NULL;
     REACTION **reactions = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = NULL;
+    REB2SAC_SYMTAB *symTab;
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
     RULE_MANAGER *ruleManager;
@@ -128,17 +134,16 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
             
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
-    if (rec->reactionsSize==0) {
-        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
-    }
-    if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
+    if (rec->reactionsSize!=0) {
+      if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
-    }
-    i = 0;
-    ResetCurrentElement( list );
-    while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
+      }
+      i = 0;
+      ResetCurrentElement( list );
+      while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
         reactions[i] = reaction;
         i++;        
+      }
     }
     rec->reactionArray = reactions;    
 
@@ -159,6 +164,42 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
         i++;        
     }
     rec->ruleArray = ruleArray;    
+
+    if( ( symTab = ir->GetGlobalSymtab( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the symbol table" );
+    }
+    list = symTab->GenerateListOfSymbols( symTab );
+    rec->symbolsSize = GetLinkedListSize( list );
+    if ( rec->symbolsSize > 0 ) {
+      if( ( symbolArray = (REB2SAC_SYMBOL**)MALLOC( rec->symbolsSize * sizeof(REB2SAC_SYMBOL*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for symbols array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+        symbolArray[i] = symbol;
+        i++;        
+    }
+    rec->symbolArray = symbolArray;    
+
+    if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
+    }
+    list = compartmentManager->CreateListOfCompartments( compartmentManager );
+    rec->compartmentsSize = GetLinkedListSize( list );
+    if ( rec->compartmentsSize > 0 ) {
+      if( ( compartmentArray = (RULE**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        compartmentArray[i] = compartment;
+        i++;        
+    }
+    rec->compartmentArray = compartmentArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -226,13 +267,19 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
 static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum ) {
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
+    double param = 0.0;
+    double compSize = 0.0;
     double concentration = 0.0;
     UINT32 i = 0;
     UINT32 size = 0;
     SPECIES *species = NULL;
     SPECIES **speciesArray = rec->speciesArray;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = rec->compartmentArray;
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
     
@@ -255,6 +302,22 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
             concentration = GetInitialConcentrationInSpeciesNode( species ); 
         }
         if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, concentration ) ) ) ) {
+            return ret;            
+        }
+    }
+    size = rec->compartmentsSize;        
+    for( i = 0; i < size; i++ ) {
+        compartment = compartmentArray[i];
+	compSize = GetSizeInCompartment( compartment );
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;            
+        }
+    }
+    size = rec->symbolsSize;        
+    for( i = 0; i < size; i++ ) {
+        symbol = symbolArray[i];
+	param = GetRealValueInSymbol( symbol );
+        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
             return ret;            
         }
     }
@@ -418,8 +481,55 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	      /* Not technically correct as rates calculated using new concentrations */
+	      change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      concentration = GetConcentrationInSpeciesNode( rec->speciesArray[j] );
+	      concentration += (change * deltaTime);
+	      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	      break;
+	    }
+	  }
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	      /* Not technically correct as rates calculated using new concentrations */
+	      change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      concentration = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
+	      concentration += (change * deltaTime);
+	      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	      break;
+	    }
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	      /* Not technically correct as rates calculated using new concentrations */
+	      change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      concentration = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
+	      concentration += (change * deltaTime);
+	      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	      break;
+	    }
+	  }
+	}
+      }
+    }
     for( i = 0; i < speciesSize; i++ ) {    
         species = speciesArray[i];
+	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         change = 0.0;        
         
         concentration = GetConcentrationInSpeciesNode( species );
@@ -455,21 +565,41 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         SetConcentrationInSpeciesNode( species, concentration );
     }
     for (i = 0; i < rec->rulesSize; i++) {
-      for (j = 0; j < rec->speciesSize; j++) {
-	if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		     GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	  if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	    break;
-	  } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	    /* Note technically correct as rates calculated using new concentrations */
-	    change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    concentration += (change * deltaTime);
-	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	    break;
+      if ( GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	      break;
+	    } 
+	  }
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	      break;
+	    } 
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	      break;
+	    } 
+	  }
+	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
 	  }
 	}
       }

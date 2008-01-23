@@ -129,12 +129,18 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     SPECIES **speciesArray = NULL;
     REACTION *reaction = NULL;
     REACTION **reactions = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = NULL;
+    REB2SAC_SYMTAB *symTab;
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
+    RULE_MANAGER *ruleManager;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
-    RULE_MANAGER *ruleManager;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -173,6 +179,42 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
         i++;        
     }
     rec->ruleArray = ruleArray;    
+
+    if( ( symTab = ir->GetGlobalSymtab( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the symbol table" );
+    }
+    list = symTab->GenerateListOfSymbols( symTab );
+    rec->symbolsSize = GetLinkedListSize( list );
+    if ( rec->symbolsSize > 0 ) {
+      if( ( symbolArray = (REB2SAC_SYMBOL**)MALLOC( rec->symbolsSize * sizeof(REB2SAC_SYMBOL*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for symbols array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+        symbolArray[i] = symbol;
+        i++;        
+    }
+    rec->symbolArray = symbolArray;    
+
+    if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
+    }
+    list = compartmentManager->CreateListOfCompartments( compartmentManager );
+    rec->compartmentsSize = GetLinkedListSize( list );
+    if ( rec->compartmentsSize > 0 ) {
+      if( ( compartmentArray = (RULE**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        compartmentArray[i] = compartment;
+        i++;        
+    }
+    rec->compartmentArray = compartmentArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -330,6 +372,7 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
     double amount = 0;
+    double param = 0;
     UINT32 i = 0;
     UINT32 size = 0;
     SPECIES *species = NULL;
@@ -338,6 +381,11 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     REACTION **reactionArray = rec->reactionArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
+    double compSize = 0.0;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = rec->compartmentArray;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     
     srand( rec->seed );
     rec->seed = rand();
@@ -385,6 +433,22 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
         if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
             return ret;
         }        
+    }
+    size = rec->compartmentsSize;        
+    for( i = 0; i < size; i++ ) {
+        compartment = compartmentArray[i];
+	compSize = GetSizeInCompartment( compartment );
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;            
+        }
+    }
+    size = rec->symbolsSize;        
+    for( i = 0; i < size; i++ ) {
+        symbol = symbolArray[i];
+	param = GetRealValueInSymbol( symbol );
+        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
+            return ret;            
+        }
     }
     return ret;            
 }
@@ -631,7 +695,8 @@ static RET_VAL _FindNextReactionTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     
     random = _GetUniformRandom();
     t = log( 1.0 / random ) / rec->totalPropensities;
-    rec->time += t;            
+    rec->time += t;     
+    rec->t = t;
     if( rec->time > rec->timeLimit ) {
         rec->time = rec->timeLimit;
     }
@@ -717,6 +782,7 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
     double amount = 0;    
+    double change = 0;    
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
     REACTION *reaction = rec->nextReaction;
@@ -725,11 +791,53 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     UINT i = 0;
     UINT j = 0;
 
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    /* Not technically correct as only calculated when a reaction fires */
+	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    amount = GetAmountInSpeciesNode( rec->speciesArray[j] );
+	    amount += (change * rec->t);
+	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    /* Not technically correct as only calculated when a reaction fires */
+	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    amount = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
+	    amount += (change * rec->t);
+	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    /* Not technically correct as only calculated when a reaction fires */
+	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    amount = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
+	    amount += (change * rec->t);
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	    break;
+	  }
+	}
+      }
+    }
+
     edges = GetReactantEdges( reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) - (double)stoichiometry;
         TRACE_3( "the amount of %s decreases from %g to %g", 
             GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
@@ -746,6 +854,7 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) + (double)stoichiometry;
         TRACE_3( "the amount of %s increases from %g to %g", 
             GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
@@ -763,11 +872,31 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
 								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
 	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	    break;
+	  } 
+	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
 	  }
 	}
       }
     }
-
     return ret;            
 }
 

@@ -107,6 +107,12 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
     RULE_MANAGER *ruleManager;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = NULL;
+    REB2SAC_SYMTAB *symTab;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -118,8 +124,6 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
     if (rec->reactionsSize!=0) {
-      //        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
-      //}
       if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
       }
@@ -129,11 +133,8 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
         reactions[i] = reaction;
         i++;        
       }
-      rec->reactionArray = reactions;    
     }
-    else {
-      rec->reactionArray = NULL;
-    }
+    rec->reactionArray = reactions;    
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
@@ -152,6 +153,42 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
         i++;        
     }
     rec->ruleArray = ruleArray;    
+
+    if( ( symTab = ir->GetGlobalSymtab( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the symbol table" );
+    }
+    list = symTab->GenerateListOfSymbols( symTab );
+    rec->symbolsSize = GetLinkedListSize( list );
+    if ( rec->symbolsSize > 0 ) {
+      if( ( symbolArray = (REB2SAC_SYMBOL**)MALLOC( rec->symbolsSize * sizeof(REB2SAC_SYMBOL*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for symbols array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+        symbolArray[i] = symbol;
+        i++;        
+    }
+    rec->symbolArray = symbolArray;    
+
+    if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
+    }
+    list = compartmentManager->CreateListOfCompartments( compartmentManager );
+    rec->compartmentsSize = GetLinkedListSize( list );
+    if ( rec->compartmentsSize > 0 ) {
+      if( ( compartmentArray = (RULE**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        compartmentArray[i] = compartment;
+        i++;        
+    }
+    rec->compartmentArray = compartmentArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -166,7 +203,7 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
     }
     rec->speciesArray = speciesArray;    
 
-    if( ( rec->concentrations = (double*)MALLOC( rec->speciesSize * sizeof( double ) ) ) == NULL ) {
+    if( ( rec->concentrations = (double*)MALLOC( (rec->symbolsSize + rec->compartmentsSize + rec->speciesSize) * sizeof( double ) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for concentrations" );
     }
     
@@ -224,11 +261,17 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
     double concentration = 0.0;
+    double compSize = 0.0;
+    double param = 0.0;
     double *concentrations = rec->concentrations;
     UINT32 i = 0;
     UINT32 size = 0;
     SPECIES *species = NULL;
     SPECIES **speciesArray = rec->speciesArray;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = rec->compartmentArray;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
@@ -257,6 +300,24 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
         }
         concentrations[i] = concentration;
     }
+    size = rec->compartmentsSize;        
+    for( i = 0; i < size; i++ ) {
+        compartment = compartmentArray[i];
+	compSize = GetSizeInCompartment( compartment );
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;            
+        }
+	concentrations[rec->speciesSize + i] = compSize;
+    }
+    size = rec->symbolsSize;        
+    for( i = 0; i < size; i++ ) {
+        symbol = symbolArray[i];
+	param = GetRealValueInSymbol( symbol );
+        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
+            return ret;            
+        }
+	concentrations[rec->compartmentsSize + rec->speciesSize + i] = param;
+    }
     
     return ret;            
 }
@@ -275,7 +336,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
     gsl_odeiv_step *step = NULL;
     gsl_odeiv_control *control = NULL;
     gsl_odeiv_evolve *evolve = NULL;
-    int size = rec->speciesSize;
+    int size = rec->speciesSize + rec->compartmentsSize + rec->symbolsSize;
     gsl_odeiv_system system = 
     { 
         (int(*)(double , const double [], double [], void*))_Update, 
@@ -402,12 +463,18 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     UINT32 i = 0;
     UINT32 j = 0;
     UINT32 speciesSize = rec->speciesSize;
+    UINT32 compartmentsSize = rec->compartmentsSize;
     long stoichiometry = 0;
     double concentration = 0.0;    
     double deltaTime = 0.0;    
     double rate = 0.0;
     IR_EDGE *edge = NULL;
     REACTION *reaction = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentsArray = rec->compartmentArray;
+    UINT32 symbolsSize = rec->symbolsSize;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     SPECIES *species = NULL;
     SPECIES **speciesArray = rec->speciesArray;
     LINKED_LIST *edges = NULL;
@@ -419,26 +486,69 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             return GSL_FAILURE;            
         }        
 	f[i] = 0.0;
-	//printf("SValue of %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( species )),y[i]);
+    }
+    for( i = 0; i < compartmentsSize; i++ ) {
+        compartment = compartmentsArray[i];
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, y[speciesSize + i] ) ) ) ) {
+            return GSL_FAILURE;            
+        }        
+	f[speciesSize + i] = 0.0;
+    }
+    for( i = 0; i < symbolsSize; i++ ) {
+        symbol = symbolArray[i];
+        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, y[speciesSize + compartmentsSize + i] ) ) ) ) {
+            return GSL_FAILURE;            
+        }
+	f[speciesSize + compartmentsSize + i] = 0.0;
+	if (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0) {
+	  f[speciesSize + compartmentsSize + i] = 1.0;
+	}
     }
     for (i = 0; i < rec->rulesSize; i++) {
-      for (j = 0; j < rec->speciesSize; j++) {
-	if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		     GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	  if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	    //printf("Value of %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] )),concentration);
-	    concentration = GetConcentrationInSpeciesNode( rec->speciesArray[j] );
-	    //printf("Value is now %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] )),concentration);
-	    break;
-	  } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	    f[j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-								      (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-
-	    //printf("Rate of %s is %g\n",GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] )),f[j]);
-	    break;
+      if (GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	      break;
+	    } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	      f[j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      break;
+	    }
+	  }
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	      break;
+	    } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	      f[speciesSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      break;
+	    }
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	      break;
+	    } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	      f[speciesSize + compartmentsSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	      break;
+	    }
 	  }
 	}
       }
@@ -450,6 +560,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     
     for( i = 0; i < speciesSize; i++ ) {    
         species = speciesArray[i];
+	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         concentration = GetConcentrationInSpeciesNode( species );
         TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
             concentration );

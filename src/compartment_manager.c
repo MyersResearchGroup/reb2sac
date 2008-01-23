@@ -148,6 +148,33 @@ RET_VAL SetSizeInCompartment( COMPARTMENT *compartment, double size ) {
 }
 
 
+double GetCurrentSizeInCompartment( COMPARTMENT *compartment ) {
+    START_FUNCTION("GetSizeInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("GetSizeInCompartment", FAILING );
+        return -1.0;
+    }
+    
+    END_FUNCTION("GetSizeInCompartment", SUCCESS );
+    return compartment->currentSize;
+}
+
+
+RET_VAL SetCurrentSizeInCompartment( COMPARTMENT *compartment, double size ) {
+    START_FUNCTION("SetSizeInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("SetSizeInCompartment", FAILING );
+        return FAILING;
+    }
+    
+    compartment->currentSize = size;
+    END_FUNCTION("SetSizeInCompartment", SUCCESS );
+    return SUCCESS;
+}
+
+
 
 UNIT_DEFINITION *GetUnitInCompartment( COMPARTMENT *compartment ) {
     START_FUNCTION("GetUnitInCompartment");

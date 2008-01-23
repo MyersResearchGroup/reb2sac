@@ -51,6 +51,18 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
     return sym->value.realValue;
 }
 
+double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
+    START_FUNCTION("GetRealValueInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("GetRealValueInSymbol", FAILING );
+        return 0.0/0.0;
+    }
+        
+    END_FUNCTION("GetRealValueInSymbol", SUCCESS );
+    return sym->currentRealValue;
+}
+
 BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym ) {
     START_FUNCTION("IsSymbolConstant");
 
@@ -91,6 +103,21 @@ RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     return SUCCESS;
 }
 
+RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
+    
+    START_FUNCTION("SetRealValueInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("SetRealValueInSymbol", FAILING );
+        return FAILING;
+    }
+    
+    sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
+    sym->currentRealValue = value;
+    
+    END_FUNCTION("SetRealValueInSymbol", SUCCESS );
+    return SUCCESS;
+}
 
 static REB2SAC_SYMBOL *_CloneSymbol( REB2SAC_SYMBOL *sym ) {
     REB2SAC_SYMBOL *clone = NULL;
