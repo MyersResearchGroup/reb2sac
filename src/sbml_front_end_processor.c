@@ -44,6 +44,12 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
 static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_t *ruleDef );
 
+static RET_VAL _HandleConstraints( FRONT_END_PROCESSOR *frontend, Model_t *model );
+static RET_VAL _HandleConstraint( FRONT_END_PROCESSOR *frontend, Model_t *model, Constraint_t *constraintDef );
+
+static RET_VAL _HandleEvents( FRONT_END_PROCESSOR *frontend, Model_t *model );
+static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Event_t *eventDef );
+
 static RET_VAL _HandleCompartments( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model, Compartment_t *compartment );
 
@@ -171,6 +177,8 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     UNIT_MANAGER *unitManager = NULL;
     FUNCTION_MANAGER *functionManager = NULL;
     RULE_MANAGER *ruleManager = NULL;
+    CONSTRAINT_MANAGER *constraintManager = NULL;
+    EVENT_MANAGER *eventManager = NULL;
     COMPARTMENT_MANAGER *compartmentManager = NULL;
     SBML_SYMTAB_MANAGER *sbmlSymtabManager = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
@@ -255,6 +263,30 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of rule manager" );
     } 
     if( IS_FAILED( ( ret = ir->SetRuleManager( ir, ruleManager ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    } 
+
+    if( IS_FAILED( ( ret = _HandleConstraints( frontend, model ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    }
+    if( ( constraintManager = GetConstraintManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of constraint manager" );
+    } 
+    if( IS_FAILED( ( ret = ir->SetConstraintManager( ir, constraintManager ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    } 
+
+    if( IS_FAILED( ( ret = _HandleEvents( frontend, model ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    }
+    if( ( eventManager = GetEventManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of event manager" );
+    } 
+    if( IS_FAILED( ( ret = ir->SetEventManager( ir, eventManager ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     } 
@@ -806,6 +838,171 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
     }
 
     END_FUNCTION("_HandleRule", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleConstraints( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
+    RET_VAL ret = SUCCESS;
+    UINT i = 0;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    Constraint_t *constraintDef = NULL;
+    
+    START_FUNCTION("_HandleConstraints");
+    
+    list = Model_getListOfConstraints( model );
+    size = Model_getNumConstraints( model );
+    for( i = 0; i < size; i++ ) {
+        constraintDef = (Constraint_t*)ListOf_get( list, i );
+        if( IS_FAILED( ( ret = _HandleConstraint( frontend, model, constraintDef ) ) ) ) {
+            END_FUNCTION("_HandleConstraints", ret );
+            return ret;
+        } 
+    }
+    
+    END_FUNCTION("_HandleConstraints", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleConstraint( FRONT_END_PROCESSOR *frontend, Model_t *model, Constraint_t *source ) {
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    int num = 0;
+    char *id = NULL;
+    char *message = NULL;
+    CONSTRAINT *constraintDef = NULL; 
+    CONSTRAINT_MANAGER *constraintManager = NULL;
+    HASH_TABLE *table = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    
+    START_FUNCTION("_HandleConstraint");
+    
+    if( ( constraintManager = GetConstraintManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleConstraint", "could not get an instance of constraint manager" );
+    }
+    id = (char *)SBase_getMetaId( source );
+    TRACE_1("creating constraint %s", id );
+    if( ( constraintDef = constraintManager->CreateConstraint( constraintManager, id ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleConstraint", "could not allocate constraint %s", id );
+    }
+
+    node = (ASTNode_t*)Constraint_getMath( source );
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleConstraint", "error on getting symtab manager" ); 
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
+    if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleConstraint", "failed to create constraint %s", id );        
+    }
+    if( IS_FAILED( ( ret = AddMathInConstraint( constraintDef, law ) ) ) ) {
+      END_FUNCTION("_HandleConstraintDefinition", ret );
+      return ret;
+    }
+    //message = (char *)Constraint_getMessage( source );
+    message = NULL;
+    // ADD message here
+
+    END_FUNCTION("_HandleConstraint", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleEvents( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
+    RET_VAL ret = SUCCESS;
+    UINT i = 0;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    Event_t *eventDef = NULL;
+    
+    START_FUNCTION("_HandleEvents");
+    
+    list = Model_getListOfEvents( model );
+    size = Model_getNumEvents( model );
+    for( i = 0; i < size; i++ ) {
+        eventDef = (Event_t*)ListOf_get( list, i );
+        if( IS_FAILED( ( ret = _HandleEvent( frontend, model, eventDef ) ) ) ) {
+            END_FUNCTION("_HandleEvents", ret );
+            return ret;
+        } 
+    }
+    
+    END_FUNCTION("_HandleEvents", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Event_t *source ) {
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    int num = 0;
+    char *id = NULL;
+    char *message = NULL;
+    EVENT *eventDef = NULL; 
+    EVENT_MANAGER *eventManager = NULL;
+    HASH_TABLE *table = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    Trigger_t *trigger = NULL;
+    Delay_t *delay = NULL;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    EventAssignment_t *eventAssignmentDef;
+
+    START_FUNCTION("_HandleEvent");
+    
+    if( ( eventManager = GetEventManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleEvent", "could not get an instance of event manager" );
+    }
+    id = (char *)Event_getId( source );
+    TRACE_1("creating event %s", id );
+    if( ( eventDef = eventManager->CreateEvent( eventManager, id ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleEvent", "could not allocate event %s", id );
+    }
+
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleConstraint", "error on getting symtab manager" ); 
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
+
+    if (Event_isSetTrigger( source ) ) {
+      trigger = (Trigger_t*)Event_getTrigger( source );
+      node  = (ASTNode_t*)Trigger_getMath( trigger );
+      if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+      }
+      if( IS_FAILED( ( ret = AddTriggerInEvent( eventDef, law ) ) ) ) {
+	END_FUNCTION("_HandleConstraintDefinition", ret );
+	return ret;
+      }
+    }
+
+    if (Event_isSetDelay( source ) ) {
+      delay = (Delay_t*)Event_getDelay( source );
+      node  = (ASTNode_t*)Delay_getMath( delay );
+      if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+      }
+      if( IS_FAILED( ( ret = AddDelayInEvent( eventDef, law ) ) ) ) {
+	END_FUNCTION("_HandleConstraintDefinition", ret );
+	return ret;
+      }
+    }
+
+    list = (ListOf_t*)Event_getListOfEventAssignments( source );
+    size = Event_getNumEventAssignments( source );
+    for( i = 0; i < size; i++ ) {
+        eventAssignmentDef = (EventAssignment_t*)ListOf_get( list, i );
+	node  = (ASTNode_t*)EventAssignment_getMath( eventAssignmentDef );
+	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+	}
+	if( IS_FAILED( ( ret = AddEventAssignmentToEvent( eventDef, (char*)EventAssignment_getVariable(eventAssignmentDef), law ) ) ) ) {
+	  return ErrorReport( FAILING, "_HandleEvent", "could not allocate event %s", id );
+	}
+    }
+	
+    END_FUNCTION("_HandleEvent", SUCCESS );
     return ret;
 }
 
@@ -2107,17 +2304,36 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     //    ModifierSpeciesReference_t *modifierRef = NULL;        
     SPECIES *speciesNode = NULL;
     HASH_TABLE *table = NULL;
-    
+    ASTNode_t *node;
+    KINETIC_LAW *law;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+
     START_FUNCTION("_ResolveNodeLinks");
         
     table = (HASH_TABLE*)frontend->_internal2;    
-    
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+      return ErrorReport( FAILING, "_ResolveNodeLinks", "error on getting symtab manager" ); 
+    }
     reactants = Reaction_getListOfReactants( reaction );
     num = Reaction_getNumReactants( reaction );
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( reactants, i );
         species = (char*)SpeciesReference_getSpecies( speciesRef );
-        stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
+	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
+	  StoichiometryMath_t *sm = (StoichiometryMath_t *)SpeciesReference_getStoichiometryMath( speciesRef );
+	  node = (ASTNode_t*)StoichiometryMath_getMath( sm );
+	  if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	    return ErrorReport( FAILING, "_ResolveNodeLinks", "failed to create stoichiometry math" );        
+	  }
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    stoichiometry = (int)GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    stoichiometry = GetIntValueFromKineticLaw(law); 
+	  } 
+	} else {
+	  stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
+	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
@@ -2135,7 +2351,21 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( products, i );
         species = (char*)SpeciesReference_getSpecies( speciesRef );
-        stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
+	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
+	  StoichiometryMath_t *sm = (StoichiometryMath_t *)SpeciesReference_getStoichiometryMath( speciesRef );
+	  node = (ASTNode_t*)StoichiometryMath_getMath( sm );
+	  if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	    return ErrorReport( FAILING, "_ResolveNodeLinks", "failed to create stoichiometry math" );        
+	  }
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    stoichiometry = (int)GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    stoichiometry = GetIntValueFromKineticLaw(law); 
+	  } 
+	} else {
+	  stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
+	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );

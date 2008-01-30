@@ -167,19 +167,19 @@ static RET_VAL _HandleReaction( BACK_END_PROCESSOR *backend, REACTION *reaction,
 
     fprintf( file, REB2SAC_XHTML_START_REACTION_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( IS_FAILED( ( ret = PrintListOfReactantsInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_HandleReaction", ret );
         return ret;
     }    
     
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( IS_FAILED( ( ret = PrintListOfProductsInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_HandleReaction", ret );
         return ret;
     }    
 
-    list = GetModifierEdges( reaction );
+    list = GetModifierEdges( (IR_NODE*)reaction );
     if( IS_FAILED( ( ret = PrintListOfModifiersInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_HandleReaction", ret );
         return ret;
@@ -289,16 +289,16 @@ static RET_VAL _InitProcessInfo( BACK_END_PROCESSOR *backend, SPECIES *target, L
     
     ResetCurrentElement( reactions );
     while( ( reaction = (REACTION*)GetNextFromLinkedList( reactions ) ) != NULL ) {
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         ResetCurrentElement( list );
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
             if( species == target ) {
-                if( IS_FAILED( ( ret = AddElementInLinkedList( reaction, productions ) ) ) ) {
+	      if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reaction, productions ) ) ) ) {
                     END_FUNCTION("_InitProcessInfo", ret );        
                     return ret;
                 }
-                if( IS_FAILED( ( ret = RemoveElementFromLinkedList( reaction, reactions ) ) ) ) {
+                if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)reaction, reactions ) ) ) ) {
                     END_FUNCTION("_InitProcessInfo", ret );        
                     return ret;
                 }
@@ -308,16 +308,16 @@ static RET_VAL _InitProcessInfo( BACK_END_PROCESSOR *backend, SPECIES *target, L
         
     ResetCurrentElement( reactions );
     while( ( reaction = (REACTION*)GetNextFromLinkedList( reactions ) ) != NULL ) {
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         ResetCurrentElement( list );
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
             if( species == target ) {
-                if( IS_FAILED( ( ret = AddElementInLinkedList( reaction, degradations ) ) ) ) {
+                if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reaction, degradations ) ) ) ) {
                     END_FUNCTION("_InitProcessInfo", ret );        
                     return ret;
                 }
-                if( IS_FAILED( ( ret = RemoveElementFromLinkedList( reaction, reactions ) ) ) ) {
+                if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)reaction, reactions ) ) ) ) {
                     END_FUNCTION("_InitProcessInfo", ret );        
                     return ret;
                 }

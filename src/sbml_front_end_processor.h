@@ -27,6 +27,8 @@
 #include "IR.h"
 #include "unit_manager.h"
 #include "function_manager.h"
+#include "rule_manager.h"
+#include "constraint_manager.h"
 #include "compartment_manager.h"
 #include "species_node.h"
 #include "reaction_node.h"

@@ -133,6 +133,18 @@ static RET_VAL _InitializeRecord( SSA_WITH_USER_UPDATE_RECORD *rec, BACK_END_PRO
     SPECIES **speciesArray = NULL;
     REACTION *reaction = NULL;
     REACTION **reactions = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
+    RULE *rule = NULL;
+    RULE **ruleArray = NULL;
+    RULE_MANAGER *ruleManager;
+    CONSTRAINT *constraint = NULL;
+    CONSTRAINT **constraintArray = NULL;
+    CONSTRAINT_MANAGER *constraintManager;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = NULL;
+    REB2SAC_SYMTAB *symTab;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -156,6 +168,60 @@ static RET_VAL _InitializeRecord( SSA_WITH_USER_UPDATE_RECORD *rec, BACK_END_PRO
         i++;        
     }
     rec->reactionArray = reactions;    
+
+    if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+    }
+    list = ruleManager->CreateListOfRules( ruleManager );
+    rec->rulesSize = GetLinkedListSize( list );
+    if ( rec->rulesSize > 0 ) {
+      if( ( ruleArray = (RULE**)MALLOC( rec->rulesSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for rules array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+        ruleArray[i] = rule;
+        i++;        
+    }
+    rec->ruleArray = ruleArray;    
+
+    if( ( symTab = ir->GetGlobalSymtab( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the symbol table" );
+    }
+    list = symTab->GenerateListOfSymbols( symTab );
+    rec->symbolsSize = GetLinkedListSize( list );
+    if ( rec->symbolsSize > 0 ) {
+      if( ( symbolArray = (REB2SAC_SYMBOL**)MALLOC( rec->symbolsSize * sizeof(REB2SAC_SYMBOL*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for symbols array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+        symbolArray[i] = symbol;
+        i++;        
+    }
+    rec->symbolArray = symbolArray;    
+
+    if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
+    }
+    list = compartmentManager->CreateListOfCompartments( compartmentManager );
+    rec->compartmentsSize = GetLinkedListSize( list );
+    if ( rec->compartmentsSize > 0 ) {
+      if( ( compartmentArray = (COMPARTMENT**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        compartmentArray[i] = compartment;
+        i++;        
+    }
+    rec->compartmentArray = compartmentArray;    
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
@@ -231,10 +297,32 @@ static RET_VAL _InitializeRecord( SSA_WITH_USER_UPDATE_RECORD *rec, BACK_END_PRO
     if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
+    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
+    }                
+
+    if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the constraint manager" );
+    }
+    list = constraintManager->CreateListOfConstraints( constraintManager );
+    rec->constraintsSize = GetLinkedListSize( list );
+    if ( rec->constraintsSize > 0 ) {
+      if( ( constraintArray = (CONSTRAINT**)MALLOC( rec->constraintsSize * sizeof(CONSTRAINT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for constraints array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        constraintArray[i] = constraint;
+        i++;        
+    }
+    rec->constraintArray = constraintArray;    
     
     if( ( rec->decider = 
-        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, rec->timeLimit ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation termination decider" );
+        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, 
+					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, rec->timeLimit ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
     
     if( ( rec->timeSeriesSpeciesLevelUpdater = 
@@ -496,7 +584,7 @@ static RET_VAL _CalculatePropensity( SSA_WITH_USER_UPDATE_RECORD *rec, REACTION 
     KINETIC_LAW *law = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
         
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -514,7 +602,7 @@ static RET_VAL _CalculatePropensity( SSA_WITH_USER_UPDATE_RECORD *rec, REACTION 
         }                
     }    
 #if 0    
-    edges = GetModifierEdges( reaction );
+    edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -649,13 +737,57 @@ static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
     double amount = 0;    
+    double change = 0;    
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
     REACTION *reaction = rec->nextReaction;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    UINT i = 0;
+    UINT j = 0;
 
-    edges = GetReactantEdges( reaction );
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    /* Not technically correct as only calculated when a reaction fires */
+	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    amount = GetAmountInSpeciesNode( rec->speciesArray[j] );
+	    amount += (change * rec->time);
+	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    /* Not technically correct as only calculated when a reaction fires */
+	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    amount = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
+	    amount += (change * rec->time);
+	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    /* Not technically correct as only calculated when a reaction fires */
+	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    amount = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
+	    amount += (change * rec->time);
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	    break;
+	  }
+	}
+      }
+    }
+
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -671,7 +803,7 @@ static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
         }        
     }    
         
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -683,6 +815,42 @@ static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
             amount );
         SetAmountInSpeciesNode( species, amount );
     }    
+
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	    break;
+	  } 
+	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
+	  }
+	}
+      }
+    }
+
     return ret;            
 }
 
@@ -697,12 +865,12 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
     LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
 
-    edges = GetReactantEdges( rec->nextReaction );
+    edges = GetReactantEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
         
-        updateEdges = GetReactantEdges( species );
+        updateEdges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -711,7 +879,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
             }
         }                
     
-        updateEdges = GetModifierEdges( species );
+        updateEdges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -720,7 +888,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
             }
         }                
     
-        updateEdges = GetProductEdges( species );
+        updateEdges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -730,12 +898,12 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
         }                
     }    
         
-    edges = GetProductEdges( rec->nextReaction );
+    edges = GetProductEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
         
-        updateEdges = GetReactantEdges( species );
+        updateEdges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -744,7 +912,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
             }
         }                
     
-        updateEdges = GetModifierEdges( species );
+        updateEdges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -753,7 +921,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
             }
         }                
     
-        updateEdges = GetProductEdges( species );
+        updateEdges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );

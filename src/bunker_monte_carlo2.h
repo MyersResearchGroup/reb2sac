@@ -38,6 +38,14 @@ typedef struct {
     UINT32 reactionsSize;
     SPECIES **speciesArray;
     UINT32 speciesSize;
+    RULE **ruleArray;
+    UINT32 rulesSize;
+    COMPARTMENT **compartmentArray;
+    UINT32 compartmentsSize;
+    REB2SAC_SYMBOL **symbolArray;
+    UINT32 symbolsSize;
+    CONSTRAINT **constraintArray;
+    UINT32 constraintsSize;
     REACTION *nextReaction;    
     SIMULATION_PRINTER *printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;

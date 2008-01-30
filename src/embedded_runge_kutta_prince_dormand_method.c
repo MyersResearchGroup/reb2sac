@@ -110,6 +110,12 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
     RULE_MANAGER *ruleManager;
+    EVENT *event = NULL;
+    EVENT **eventArray = NULL;
+    EVENT_MANAGER *eventManager;
+    CONSTRAINT *constraint = NULL;
+    CONSTRAINT **constraintArray = NULL;
+    CONSTRAINT_MANAGER *constraintManager;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = NULL;
     REB2SAC_SYMTAB *symTab;
@@ -178,7 +184,7 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
     list = compartmentManager->CreateListOfCompartments( compartmentManager );
     rec->compartmentsSize = GetLinkedListSize( list );
     if ( rec->compartmentsSize > 0 ) {
-      if( ( compartmentArray = (RULE**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+      if( ( compartmentArray = (COMPARTMENT**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
       }
     }
@@ -246,11 +252,48 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
     if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
+
+    if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the constraint manager" );
+    }
+    list = constraintManager->CreateListOfConstraints( constraintManager );
+    rec->constraintsSize = GetLinkedListSize( list );
+    if ( rec->constraintsSize > 0 ) {
+      if( ( constraintArray = (CONSTRAINT**)MALLOC( rec->constraintsSize * sizeof(CONSTRAINT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for constraints array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        constraintArray[i] = constraint;
+        i++;        
+    }
+    rec->constraintArray = constraintArray;    
     
     if( ( rec->decider = 
-        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, rec->timeLimit ) ) == NULL ) {
+        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, 
+					       rec->constraintArray, rec->constraintsSize, rec->evaluator, TRUE, rec->timeLimit ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
+
+    if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
+    }
+    list = eventManager->CreateListOfEvents( eventManager );
+    rec->eventsSize = GetLinkedListSize( list );
+    if ( rec->eventsSize > 0 ) {
+      if( ( eventArray = (EVENT**)MALLOC( rec->eventsSize * sizeof(EVENT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for events array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        eventArray[i] = event;
+        i++;        
+    }
+    rec->eventArray = eventArray;    
         
     backend->_internal1 = (CADDR_T)rec;
     
@@ -317,6 +360,14 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULA
             return ret;            
         }
 	concentrations[rec->compartmentsSize + rec->speciesSize + i] = param;
+    }
+    for (i = 0; i < rec->eventsSize; i++) {
+      if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+      } else {
+	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      }
     }
     
     return ret;            
@@ -458,6 +509,46 @@ static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMUL
 }
 
 
+static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double concentration = 0.0;    
+  UINT j;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    for (j = 0; j < rec->speciesSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
+	printf("conc = %g\n",concentration);
+	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	break;
+      } 
+    }
+    for (j = 0; j < rec->compartmentsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );  
+	printf("conc = %g\n",concentration);
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	break;
+      }
+    }
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );   
+	printf("conc = %g\n",concentration);
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	break;
+      } 
+    }
+  }
+}
+
 static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
@@ -479,26 +570,34 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    double nextEventTime;
+    BOOL triggerEnabled;
 
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
-        if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, y[i] ) ) ) ) {
+	if (f[i] != 0.0) {
+	  if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, y[i] ) ) ) ) {
             return GSL_FAILURE;            
-        }        
+	  }        
+	}
 	f[i] = 0.0;
     }
     for( i = 0; i < compartmentsSize; i++ ) {
         compartment = compartmentsArray[i];
-        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, y[speciesSize + i] ) ) ) ) {
+	if (f[speciesSize + i] != 0.0) {
+	  if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, y[speciesSize + i] ) ) ) ) {
             return GSL_FAILURE;            
-        }        
+	  }   
+	}     
 	f[speciesSize + i] = 0.0;
     }
     for( i = 0; i < symbolsSize; i++ ) {
         symbol = symbolArray[i];
-        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, y[speciesSize + compartmentsSize + i] ) ) ) ) {
+	if (f[speciesSize + compartmentsSize + i] != 0.0) {
+	  if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, y[speciesSize + compartmentsSize + i] ) ) ) ) {
             return GSL_FAILURE;            
-        }
+	  }
+	}
 	f[speciesSize + compartmentsSize + i] = 0.0;
 	if (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0) {
 	  f[speciesSize + compartmentsSize + i] = 1.0;
@@ -553,6 +652,38 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	}
       }
     }
+
+    for (i = 0; i < rec->eventsSize; i++) {
+      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+      if ((nextEventTime != -1.0) && (t >= nextEventTime)) {
+	fireEvent( rec->eventArray[i], rec );
+	SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+      }
+      if (!triggerEnabled) {
+	if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+							       (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	    deltaTime = 0; 
+	  } 
+	  else {
+	    deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									   (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	  }
+	  if (deltaTime > 0) { 
+	    SetNextEventTimeInEvent( rec->eventArray[i], t + deltaTime );
+	  } else {
+	    fireEvent( rec->eventArray[i], rec );
+	  }
+	}
+      } else {
+	if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	}
+      }
+    }
     
     if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
         return GSL_FAILURE;            
@@ -564,7 +695,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
         concentration = GetConcentrationInSpeciesNode( species );
         TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
             concentration );
-        edges = GetReactantEdges( species );
+        edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -574,7 +705,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
                -((double)stoichiometry * rate));
         }                
-        edges = GetProductEdges( species );
+        edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = (long)GetStoichiometryInIREdge( edge );

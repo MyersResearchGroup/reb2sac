@@ -26,12 +26,16 @@
 #include "sac_phage_lambda_simulation_run_termination_decider.h"
 #include "type_1_pili1_simulation_run_termination_decider.h"
 #include "type_1_pili2_simulation_run_termination_decider.h"
-
 #include "sad_simulation_run_termination_decider.h"
+#include "constraint_simulation_run_termination_decider.h"
 
  
  
-DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSimulationRunTerminationDecider( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, REACTION **reactionArray, int reactionSize, double timeLimit ) {
+DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSimulationRunTerminationDecider( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, 
+											     REACTION **reactionArray, int reactionSize, 
+											     CONSTRAINT **constraintArray, int constraintsSize, 
+											     KINETIC_LAW_EVALUATER *evaluator, BOOL useConcentrations, 
+											     double timeLimit ) {
     int i = 0;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     char *valueString = NULL;
@@ -97,6 +101,16 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSimulationRunTermina
             else if( strcmp( valueString, SAD_SIMULATION_RUN_TERMINATION_DECIDER_ID ) == 0 ) {
                 if( ( decider = CreateSadSimulationRunTerminationDecider( 
                       backend, speciesArray, size, reactionArray, reactionSize, timeLimit ) ) == NULL ) {
+                    END_FUNCTION("CreateSimulationRunTerminationDecider", FAILING );
+                    return NULL;
+                }
+            }        
+        break;
+
+        case 'c':
+	  if( strcmp( valueString, CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER_ID ) == 0 ) {
+                if( ( decider = CreateConstraintSimulationRunTerminationDecider( 
+                      backend, constraintArray, constraintsSize, evaluator, useConcentrations, timeLimit ) ) == NULL ) {
                     END_FUNCTION("CreateSimulationRunTerminationDecider", FAILING );
                     return NULL;
                 }

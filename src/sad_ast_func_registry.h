@@ -51,5 +51,3 @@ RET_VAL FreeSadAstFuncRegistryInstance();
 END_C_NAMESPACE
         
 #endif
-        
-        

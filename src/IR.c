@@ -73,12 +73,16 @@ static BOOL _IsStructureChanged( IR *ir );
 static UNIT_MANAGER *_GetUnitManager( IR *ir );
 static FUNCTION_MANAGER *_GetFunctionManager( IR *ir );
 static RULE_MANAGER *_GetRuleManager( IR *ir );
+static CONSTRAINT_MANAGER *_GetConstraintManager( IR *ir );
+static EVENT_MANAGER *_GetEventManager( IR *ir );
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir );
 static REB2SAC_SYMTAB *_GetGlobalSymtab( IR *ir );
 
 static RET_VAL _SetUnitManager( IR *ir, UNIT_MANAGER *unitManager );
 static RET_VAL _SetFunctionManager( IR *ir, FUNCTION_MANAGER *functionManager );
 static RET_VAL _SetRuleManager( IR *ir, RULE_MANAGER *ruleManager );
+static RET_VAL _SetConstraintManager( IR *ir, CONSTRAINT_MANAGER *constraintManager );
+static RET_VAL _SetEventManager( IR *ir, EVENT_MANAGER *eventManager );
 static RET_VAL _SetCompartmentManager( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
 
             
@@ -205,6 +209,12 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
 
     ir->GetRuleManager = _GetRuleManager;
     ir->SetRuleManager = _SetRuleManager;    
+
+    ir->GetConstraintManager = _GetConstraintManager;
+    ir->SetConstraintManager = _SetConstraintManager;    
+
+    ir->GetEventManager = _GetEventManager;
+    ir->SetEventManager = _SetEventManager;    
     
     ir->GetCompartmentManager = _GetCompartmentManager;
     ir->SetCompartmentManager = _SetCompartmentManager;    
@@ -335,7 +345,7 @@ static SPECIES *_CreateSpecies( IR *ir, char *name ) {
     
     TRACE_1( "species %s is created", name );    
     
-    if( IS_FAILED( ( AddElementInLinkedList( speciesNode, ir->speciesList ) ) ) ) {        
+    if( IS_FAILED( ( AddElementInLinkedList( (CADDR_T)speciesNode, ir->speciesList ) ) ) ) {        
         FREE( speciesNode );
         END_FUNCTION("_CreateSpecies", FAILING );
         return NULL;
@@ -365,7 +375,7 @@ static REACTION *_CreateReaction( IR *ir, char *name ) {
     
     TRACE_1( "reaction %s is created", name );    
     
-    if( IS_FAILED( ( AddElementInLinkedList( reactionNode, ir->reactionList ) ) ) ) {
+    if( IS_FAILED( ( AddElementInLinkedList( (CADDR_T)reactionNode, ir->reactionList ) ) ) ) {
         FREE( reactionNode );
         END_FUNCTION("_CreateReaction", FAILING );
         return NULL;
@@ -382,12 +392,12 @@ static SPECIES* _CloneSpecies( IR *ir, SPECIES *species ) {
     
     START_FUNCTION("_CloneSpecies");
     
-    if( ( clone = species->Clone( species ) ) == NULL ) {
+    if( ( clone = (SPECIES*)species->Clone( (IR_NODE*)species ) ) == NULL ) {
         END_FUNCTION("_CloneSpecies", FAILING );
         return NULL;
     }
    
-    if( IS_FAILED( ( AddElementInLinkedList( clone, ir->speciesList ) ) ) ) {        
+    if( IS_FAILED( ( AddElementInLinkedList( (CADDR_T)clone, ir->speciesList ) ) ) ) {        
         FREE( clone );
         END_FUNCTION("_CloneSpecies", FAILING );
         return NULL;
@@ -403,12 +413,12 @@ static REACTION* _CloneReaction( IR *ir, REACTION *reaction ) {
     
     START_FUNCTION("_CloneReaction");
 
-    if( ( clone = reaction->Clone( reaction ) ) == NULL ) {
+    if( ( clone = (REACTION*)reaction->Clone( (IR_NODE*)reaction ) ) == NULL ) {
         END_FUNCTION("_CreateReaction", FAILING );
         return NULL;
     }
     
-    if( IS_FAILED( ( AddElementInLinkedList( clone, ir->reactionList ) ) ) ) {
+    if( IS_FAILED( ( AddElementInLinkedList( (CADDR_T)clone, ir->reactionList ) ) ) ) {
         FREE( clone );
         END_FUNCTION("_CloneReaction", FAILING );
         return NULL;
@@ -425,7 +435,7 @@ static RET_VAL  _AddSpecies( IR *ir, SPECIES *species ) {
     
     START_FUNCTION("_AddSpecies");
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( species, ir->speciesList ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)species, ir->speciesList ) ) ) ) {
         END_FUNCTION("_AddSpecies", ret );
         return ret;
     } 
@@ -439,12 +449,12 @@ static RET_VAL _RemoveSpecies( IR *ir, SPECIES *species ) {
     
     START_FUNCTION("_RemoveSpecies");
     
-    if( IS_FAILED( ( ret = RemoveElementFromLinkedList( species, ir->speciesList ) ) ) ) {
+    if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)species, ir->speciesList ) ) ) ) {
         END_FUNCTION("_RemoveSpecies", ret );
         return ret;
     } 
         
-    if( IS_FAILED( ( ret = species->ReleaseResource( species ) ) ) ) {
+    if( IS_FAILED( ( ret = species->ReleaseResource( (IR_NODE*)species ) ) ) ) {
         END_FUNCTION("_RemoveSpecies", ret );
         return ret;    
     } 
@@ -461,7 +471,7 @@ static RET_VAL _AddReaction( IR *ir, REACTION *reaction ) {
     
     START_FUNCTION("_AddReaction");
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( reaction, ir->reactionList ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reaction, ir->reactionList ) ) ) ) {
         END_FUNCTION("_AddReaction", ret );
         return ret;
     } 
@@ -476,12 +486,12 @@ static RET_VAL _RemoveReaction( IR *ir, REACTION *reaction ) {
     
     START_FUNCTION("_RemoveReaction");
     
-    if( IS_FAILED( ( ret = RemoveElementFromLinkedList( reaction, ir->reactionList ) ) ) ) {
+    if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)reaction, ir->reactionList ) ) ) ) {
         END_FUNCTION("_RemoveReaction", ret );
         return ret;
     } 
     
-    if( IS_FAILED( ( ret = reaction->ReleaseResource( reaction ) ) ) ) {
+    if( IS_FAILED( ( ret = reaction->ReleaseResource( (IR_NODE*)reaction ) ) ) ) {
         END_FUNCTION("_RemoveSpecies", ret );
         return ret;    
     } 
@@ -510,11 +520,11 @@ static RET_VAL _AddReactantInReaction( IR *ir, REACTION *reaction, SPECIES *reac
         }
     }
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( reactant, reaction->reactants ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reactant, reaction->reactants ) ) ) ) {
         END_FUNCTION("_AddReactantInReaction", ret );
         return ret;    
     }
-    if( IS_FAILED( ( ret = AddElementInLinkedList( reaction, reactant->reactionsAsReactant ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reaction, reactant->reactionsAsReactant ) ) ) ) {
         END_FUNCTION("_AddReactantInReaction", ret );
         return ret;    
     }
@@ -541,11 +551,11 @@ static RET_VAL _AddModifierInReaction( IR *ir, REACTION *reaction, SPECIES *modi
         }
     }
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( modifier, reaction->modifiers ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)modifier, reaction->modifiers ) ) ) ) {
         END_FUNCTION("_AddModifierInReaction", ret );
         return ret;    
     }
-    if( IS_FAILED( ( ret = AddElementInLinkedList( reaction, modifier->reactionsAsModifier ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reaction, modifier->reactionsAsModifier ) ) ) ) {
         END_FUNCTION("_AddModifierInReaction", ret );
         return ret;    
     }
@@ -571,11 +581,11 @@ static RET_VAL _AddProductInReaction( IR *ir, REACTION *reaction, SPECIES *produ
         }
     }
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( product, reaction->products ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)product, reaction->products ) ) ) ) {
         END_FUNCTION("_AddProductInReaction", ret );
         return ret;    
     }
-    if( IS_FAILED( ( ret = AddElementInLinkedList( reaction, product->reactionsAsProduct ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)reaction, product->reactionsAsProduct ) ) ) ) {
         END_FUNCTION("_AddProductInReaction", ret );
         return ret;    
     }
@@ -594,7 +604,7 @@ static RET_VAL _RemoveProductInReaction( IR *ir, REACTION *reaction, SPECIES *pr
         
     START_FUNCTION("_RemoveProductInReaction");
     
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -619,7 +629,7 @@ static RET_VAL _RemoveModifierInReaction( IR *ir, REACTION *reaction, SPECIES *m
         
     START_FUNCTION("_RemoveModifierInReaction");
     
-    edges = GetModifierEdges( reaction );
+    edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -646,7 +656,7 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
         
     START_FUNCTION("_RemoveReactantInReaction");
     
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -678,7 +688,7 @@ static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, 
     
     START_FUNCTION("_AddReactantEdge");
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         if( GetSpeciesInIREdge( edge ) == reactant ) {
@@ -688,7 +698,7 @@ static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, 
         }
     }
     
-    if( ( edge = CreateReactantEdge( reaction, reactant, stoichiometry ) ) == NULL ) {
+    if( ( edge = CreateReactantEdge( (IR_NODE*)reaction, (IR_NODE*)reactant, stoichiometry ) ) == NULL ) {
         END_FUNCTION("_AddReactantEdge", ret );
         return FAILING;    
     }
@@ -742,7 +752,7 @@ static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, 
         }
     }
     
-    if( ( edge = CreateModifierEdge( reaction, modifier, stoichiometry ) ) == NULL ) {
+    if( ( edge = CreateModifierEdge( (IR_NODE*)reaction, (IR_NODE*)modifier, stoichiometry ) ) == NULL ) {
         END_FUNCTION("_AddModifierEdge", FAILING );
         return FAILING;    
     }
@@ -793,7 +803,7 @@ static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, in
         }
     }
     
-    if( ( edge = CreateProductEdge( reaction, product, stoichiometry ) ) == NULL ) {
+    if( ( edge = CreateProductEdge( (IR_NODE*)reaction, (IR_NODE*)product, stoichiometry ) ) == NULL ) {
         END_FUNCTION("_AddProductEdge", FAILING );
         return FAILING;    
     }
@@ -889,6 +899,30 @@ static RULE_MANAGER *_GetRuleManager( IR *ir ) {
     return ir->ruleManager;
 }
 
+static CONSTRAINT_MANAGER *_GetConstraintManager( IR *ir ) {
+    START_FUNCTION("_GetConstraintManager");
+            
+    if( ir == NULL ) {
+        END_FUNCTION("_GetConstraintManager", FAILING );
+        return NULL;    
+    }
+        
+    END_FUNCTION("_GetConstraintManager", SUCCESS );
+    return ir->constraintManager;
+}
+
+static EVENT_MANAGER *_GetEventManager( IR *ir ) {
+    START_FUNCTION("_GetEventManager");
+            
+    if( ir == NULL ) {
+        END_FUNCTION("_GetEventManager", FAILING );
+        return NULL;    
+    }
+        
+    END_FUNCTION("_GetEventManager", SUCCESS );
+    return ir->eventManager;
+}
+
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir ) {
     START_FUNCTION("_GetCompartmentManager");
             
@@ -947,6 +981,30 @@ static RET_VAL _SetRuleManager( IR *ir, RULE_MANAGER *ruleManager ) {
     ir->ruleManager = ruleManager;
             
     END_FUNCTION("_SetFunctionManager", SUCCESS );
+    return SUCCESS;;
+}
+
+static RET_VAL _SetConstraintManager( IR *ir, CONSTRAINT_MANAGER *constraintManager ) {
+    START_FUNCTION("_SetConstraintManager");
+            
+    if( ir == NULL ) {
+        return ErrorReport( FAILING, "_SetConstraintManager", "input ir is null" );
+    }
+    ir->constraintManager = constraintManager;
+            
+    END_FUNCTION("_SetConstraintManager", SUCCESS );
+    return SUCCESS;;
+}
+
+static RET_VAL _SetEventManager( IR *ir, EVENT_MANAGER *eventManager ) {
+    START_FUNCTION("_SetEventManager");
+            
+    if( ir == NULL ) {
+        return ErrorReport( FAILING, "_SetEventManager", "input ir is null" );
+    }
+    ir->eventManager = eventManager;
+            
+    END_FUNCTION("_SetEventManager", SUCCESS );
     return SUCCESS;;
 }
 
@@ -1638,7 +1696,7 @@ static RET_VAL _PrintReactionForSBML( REACTION *reaction, FILE *file, UINT32 tab
         fprintf( file, " name=\"%s\" reversible=\"false\">%s", GetCharArrayOfString( GetReactionNodeName( reaction ) ), NEW_LINE );
     }
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 0 ) {
         _PrintTab( file, tabCount + 1 );
         fprintf( file, "<listOfReactants>%s",  NEW_LINE );
