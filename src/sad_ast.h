@@ -286,5 +286,3 @@ END_C_NAMESPACE
 
 
 #endif
-        
-        

@@ -531,7 +531,7 @@ static RET_VAL _CalculatePropensity( TYPE1PILI_GILLESPIE_CI_RECORD *rec, REACTIO
     KINETIC_LAW *law = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
         
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -549,7 +549,7 @@ static RET_VAL _CalculatePropensity( TYPE1PILI_GILLESPIE_CI_RECORD *rec, REACTIO
         }                
     }    
 #if 0    
-    edges = GetModifierEdges( reaction );
+    edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -690,7 +690,7 @@ static RET_VAL _UpdateSpeciesValues( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
 
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -706,7 +706,7 @@ static RET_VAL _UpdateSpeciesValues( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
         }        
     }    
         
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -732,12 +732,12 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
     LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
 
-    edges = GetReactantEdges( rec->nextReaction );
+    edges = GetReactantEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
         
-        updateEdges = GetReactantEdges( species );
+        updateEdges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -746,7 +746,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
             }
         }                
     
-        updateEdges = GetModifierEdges( species );
+        updateEdges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -755,7 +755,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
             }
         }                
     
-        updateEdges = GetProductEdges( species );
+        updateEdges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -765,12 +765,12 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
         }                
     }    
         
-    edges = GetProductEdges( rec->nextReaction );
+    edges = GetProductEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
         
-        updateEdges = GetReactantEdges( species );
+        updateEdges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -779,7 +779,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
             }
         }                
     
-        updateEdges = GetModifierEdges( species );
+        updateEdges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -788,7 +788,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
             }
         }                
     
-        updateEdges = GetProductEdges( species );
+        updateEdges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );

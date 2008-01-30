@@ -24,6 +24,8 @@
 #include "species_node.h"
 #include "reaction_node.h"
 #include "back_end_processor.h"
+#include "kinetic_law.h"
+#include "kinetic_law_evaluater.h"
 
 #define SIMULATION_RUN_TERMINATION_DECIDER_KEY "simulation.run.termination.decider"
 
@@ -42,14 +44,21 @@ struct _SIMULATION_RUN_TERMINATION_DECIDER {
     BOOL (*IsTerminationConditionMet)( SIMULATION_RUN_TERMINATION_DECIDER *decider, REACTION *reaction, double time );
     RET_VAL (*Report)( SIMULATION_RUN_TERMINATION_DECIDER *decider, FILE *file );
     RET_VAL (*Destroy)( SIMULATION_RUN_TERMINATION_DECIDER *decider );
+    
+    KINETIC_LAW_EVALUATER *evaluator;
+    BOOL useConcentrations;
+    int timeLimitCount;
+    int totalCount;
 };
 
 
 
 DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL 
-    CreateSimulationRunTerminationDecider( 
-        BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, 
-        REACTION **reactionArray, int reactionSize, double timeLimit );
+    CreateSimulationRunTerminationDecider( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, 
+					   REACTION **reactionArray, int reactionSize, 
+					   CONSTRAINT **constraintArray, int constraintsSize, 
+					   KINETIC_LAW_EVALUATER *evaluator, BOOL useConcentrations, 
+					   double timeLimit );
 
 DLLSCOPE RET_VAL STDCALL DestroySimulationRunTerminationDecider( SIMULATION_RUN_TERMINATION_DECIDER *decider );
 

@@ -124,6 +124,12 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
     RULE_MANAGER *ruleManager;
+    CONSTRAINT *constraint = NULL;
+    CONSTRAINT **constraintArray = NULL;
+    CONSTRAINT_MANAGER *constraintManager;
+    EVENT *event = NULL;
+    EVENT **eventArray = NULL;
+    EVENT_MANAGER *eventManager;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -189,7 +195,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     list = compartmentManager->CreateListOfCompartments( compartmentManager );
     rec->compartmentsSize = GetLinkedListSize( list );
     if ( rec->compartmentsSize > 0 ) {
-      if( ( compartmentArray = (RULE**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+      if( ( compartmentArray = (COMPARTMENT**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
       }
     }
@@ -253,11 +259,48 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
+
+    if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the constraint manager" );
+    }
+    list = constraintManager->CreateListOfConstraints( constraintManager );
+    rec->constraintsSize = GetLinkedListSize( list );
+    if ( rec->constraintsSize > 0 ) {
+      if( ( constraintArray = (CONSTRAINT**)MALLOC( rec->constraintsSize * sizeof(CONSTRAINT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for constraints array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        constraintArray[i] = constraint;
+        i++;        
+    }
+    rec->constraintArray = constraintArray;    
     
     if( ( rec->decider = 
-        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, rec->timeLimit ) ) == NULL ) {
+        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, 
+					       rec->constraintArray, rec->constraintsSize, rec->evaluator, TRUE, rec->timeLimit ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
+
+    if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
+    }
+    list = eventManager->CreateListOfEvents( eventManager );
+    rec->eventsSize = GetLinkedListSize( list );
+    if ( rec->eventsSize > 0 ) {
+      if( ( eventArray = (EVENT**)MALLOC( rec->eventsSize * sizeof(EVENT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for events array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        eventArray[i] = event;
+        i++;        
+    }
+    rec->eventArray = eventArray;    
         
     backend->_internal1 = (CADDR_T)rec;
     
@@ -320,6 +363,14 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
         if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
             return ret;            
         }
+    }
+    for (i = 0; i < rec->eventsSize; i++) {
+      if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+      } else {
+	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      }
     }
     
     return ret;            
@@ -464,6 +515,47 @@ static RET_VAL _UpdateNodeValues( EULER_SIMULATION_RECORD *rec ) {
 }
 
 
+static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double concentration = 0.0;    
+  UINT j;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    for (j = 0; j < rec->speciesSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
+	printf("conc = %g\n",concentration);
+	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	break;
+      } 
+    }
+    for (j = 0; j < rec->compartmentsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );  
+	printf("conc = %g\n",concentration);
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	break;
+      }
+    }
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );   
+	printf("conc = %g\n",concentration);
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	break;
+      } 
+    }
+  }
+}
+
+
 static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
@@ -480,6 +572,8 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     SPECIES **speciesArray = rec->speciesArray;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    double nextEventTime;
+    BOOL triggerEnabled;
     
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
@@ -535,7 +629,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         concentration = GetConcentrationInSpeciesNode( species );
         TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
             concentration );
-        edges = GetReactantEdges( species );
+        edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -545,7 +639,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
                -((double)stoichiometry * rate));
         }                
-        edges = GetProductEdges( species );
+        edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -601,6 +695,37 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
 	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
 	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
 	  }
+	}
+      }
+    }
+    for (i = 0; i < rec->eventsSize; i++) {
+      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+      if ((nextEventTime != -1.0) && (rec->time >= nextEventTime)) {
+	fireEvent( rec->eventArray[i], rec );
+	SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+      }
+      if (!triggerEnabled) {
+	if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+							       (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	    deltaTime = 0; 
+	  } 
+	  else {
+	    deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									   (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	  }
+	  if (deltaTime > 0) { 
+	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
+	  } else {
+	    fireEvent( rec->eventArray[i], rec );
+	  }
+	}
+      } else {
+	if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	}
       }
     }

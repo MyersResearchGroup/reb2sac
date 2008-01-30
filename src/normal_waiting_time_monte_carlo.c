@@ -48,6 +48,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
 static int _ComparePropensity( REACTION *a, REACTION *b );
 static BOOL _IsTerminationConditionMet( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 
+static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 
 static double _GetUniformRandom();
 
@@ -131,15 +132,21 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
     RULE_MANAGER *ruleManager;
+    CONSTRAINT *constraint = NULL;
+    CONSTRAINT **constraintArray = NULL;
+    CONSTRAINT_MANAGER *constraintManager;
+    EVENT *event = NULL;
+    EVENT **eventArray = NULL;
+    EVENT_MANAGER *eventManager;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = NULL;
     REB2SAC_SYMTAB *symTab;
-    COMPILER_RECORD_T *compRec = backend->record;
-    LINKED_LIST *list = NULL;
-    REB2SAC_PROPERTIES *properties = NULL;
     COMPARTMENT *compartment = NULL;
     COMPARTMENT **compartmentArray = NULL;
     COMPARTMENT_MANAGER *compartmentManager;
+    COMPILER_RECORD_T *compRec = backend->record;
+    LINKED_LIST *list = NULL;
+    REB2SAC_PROPERTIES *properties = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -203,7 +210,7 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     list = compartmentManager->CreateListOfCompartments( compartmentManager );
     rec->compartmentsSize = GetLinkedListSize( list );
     if ( rec->compartmentsSize > 0 ) {
-      if( ( compartmentArray = (RULE**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
+      if( ( compartmentArray = (COMPARTMENT**)MALLOC( rec->compartmentsSize * sizeof(RULE*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for compartment array" );
       }
     }
@@ -238,7 +245,7 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
         rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
     }
     else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(rec->startIndex), valueString ) ) ) ) {
+      if( IS_FAILED( ( ret = StrToUINT32( (UINT32*)&(rec->startIndex), valueString ) ) ) ) {
             rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
         }
     }    
@@ -300,15 +307,52 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
+
+    if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the constraint manager" );
+    }
+    list = constraintManager->CreateListOfConstraints( constraintManager );
+    rec->constraintsSize = GetLinkedListSize( list );
+    if ( rec->constraintsSize > 0 ) {
+      if( ( constraintArray = (CONSTRAINT**)MALLOC( rec->constraintsSize * sizeof(CONSTRAINT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for constraints array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        constraintArray[i] = constraint;
+        i++;        
+    }
+    rec->constraintArray = constraintArray;    
     
     if( ( rec->decider = 
-        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, rec->timeLimit ) ) == NULL ) {
+        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, 
+					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, rec->timeLimit ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
         
     if( ( rec->randomGen = CreateRandomNumberGenerator() ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create random number generator" );
     }
+
+    if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
+    }
+    list = eventManager->CreateListOfEvents( eventManager );
+    rec->eventsSize = GetLinkedListSize( list );
+    if ( rec->eventsSize > 0 ) {
+      if( ( eventArray = (EVENT**)MALLOC( rec->eventsSize * sizeof(EVENT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for events array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        eventArray[i] = event;
+        i++;        
+    }
+    rec->eventArray = eventArray;    
     
     backend->_internal1 = (CADDR_T)rec;
     
@@ -388,6 +432,14 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
             return ret;            
         }
     }
+    for (i = 0; i < rec->eventsSize; i++) {
+      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+      } else {
+	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      }
+    }
     
     return ret;            
 }
@@ -395,10 +447,13 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
 static RET_VAL _RunSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     int i = 0;
+    int j = 0;
     REACTION *reaction = NULL;
     double timeLimit = rec->timeLimit;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
+    int nextEvent = 0;
+    double nextEventTime = 0;
     
     printer = rec->printer;
     decider = rec->decider;
@@ -422,13 +477,26 @@ static RET_VAL _RunSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
             if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
                 return ret;
             }
-            if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
+	    nextEvent = -1;
+	    for (j = 0; j < rec->eventsSize; j++) {
+	      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[j] );
+	      if ( nextEventTime > 0 && nextEventTime < rec->time ) {
+		nextEvent = j;
+		rec->time = GetNextEventTimeInEvent( rec->eventArray[j] );
+	      }
+	    }
+	    if ( nextEvent >= 0) {
+	      fireEvent( rec->eventArray[nextEvent], rec );
+	      SetNextEventTimeInEvent( rec->eventArray[nextEvent], -1.0 );
+	    } else {
+	      if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
                 return ret;
-            }
-            reaction = rec->nextReaction;
-            if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	      }
+	      reaction = rec->nextReaction;
+	      if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
                 return ret;
-            }
+	      }
+	    }
         }
     }
 /*    
@@ -568,7 +636,7 @@ static RET_VAL _CalculatePropensity( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
     KINETIC_LAW *law = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
         
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -586,7 +654,7 @@ static RET_VAL _CalculatePropensity( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
         }                
     }    
 #if 0    
-    edges = GetModifierEdges( reaction );
+    edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -720,18 +788,60 @@ static RET_VAL _UpdateNodeValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) 
 }
 
 
+static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double amount = 0.0;    
+  UINT j;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    for (j = 0; j < rec->speciesSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+	printf("conc = %g\n",amount);
+	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	break;
+      } 
+    }
+    for (j = 0; j < rec->compartmentsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
+	printf("conc = %g\n",amount);
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	break;
+      }
+    }
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
+	printf("conc = %g\n",amount);
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	break;
+      } 
+    }
+  }
+}
+
 static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
     double amount = 0;    
-    double change = 0;    
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
     REACTION *reaction = rec->nextReaction;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    double change = 0;    
     UINT i = 0;
     UINT j = 0;
+    double deltaTime;
+    BOOL triggerEnabled;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
@@ -773,7 +883,7 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
 	}
       }
     }
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -790,7 +900,7 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
         }        
     }    
         
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
@@ -837,6 +947,32 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
 	}
       }
     }
+    for (i = 0; i < rec->eventsSize; i++) {
+      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+      if (!triggerEnabled) {
+	if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	    deltaTime = 0; 
+	  } 
+	  else {
+	    deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								    (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	  }
+	  if (deltaTime > 0) { 
+	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
+	  } else {
+	    fireEvent( rec->eventArray[i], rec );
+	  }
+	}
+      } else {
+	if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	}
+      }
+    }
     return ret;            
 }
 
@@ -851,12 +987,12 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
     LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
 
-    edges = GetReactantEdges( rec->nextReaction );
+    edges = GetReactantEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
         
-        updateEdges = GetReactantEdges( species );
+        updateEdges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -865,7 +1001,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
             }
         }                
     
-        updateEdges = GetModifierEdges( species );
+        updateEdges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -874,7 +1010,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
             }
         }                
     
-        updateEdges = GetProductEdges( species );
+        updateEdges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -884,12 +1020,12 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
         }                
     }    
         
-    edges = GetProductEdges( rec->nextReaction );
+    edges = GetProductEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
         
-        updateEdges = GetReactantEdges( species );
+        updateEdges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -898,7 +1034,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
             }
         }                
     
-        updateEdges = GetModifierEdges( species );
+        updateEdges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );
@@ -907,7 +1043,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
             }
         }                
     
-        updateEdges = GetProductEdges( species );
+        updateEdges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( updateEdges );
         while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
             reaction = GetReactionInIREdge( updateEdge );

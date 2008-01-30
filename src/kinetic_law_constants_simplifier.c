@@ -44,6 +44,11 @@ static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
 static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
+static RET_VAL _VisitIntToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitRealToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitSpeciesToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitSymbolToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
 ABSTRACTION_METHOD *KineticLawConstantsSimplifierMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager ) {
     static ABSTRACTION_METHOD method;
@@ -106,11 +111,11 @@ RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
         visitor.VisitPW = _VisitPWToSimplifyInitial;
         visitor.VisitOp = _VisitOpToSimplifyInitial;
         visitor.VisitUnaryOp = _VisitUnaryOpToSimplifyInitial;
-        visitor.VisitInt = _VisitIntToSimplifyKineticLaw;
-        visitor.VisitReal = _VisitRealToSimplifyKineticLaw;
-        visitor.VisitSpecies = _VisitSpeciesToSimplifyKineticLaw;
-        visitor.VisitCompartment = _VisitCompartmentToSimplifyKineticLaw;
-        visitor.VisitSymbol = _VisitSymbolToSimplifyKineticLaw;
+        visitor.VisitInt = _VisitIntToSimplify;
+        visitor.VisitReal = _VisitRealToSimplify;
+        visitor.VisitSpecies = _VisitSpeciesToSimplify;
+        visitor.VisitCompartment = _VisitCompartmentToSimplify;
+        visitor.VisitSymbol = _VisitSymbolToSimplify;
     }    
 
     if( IS_FAILED( ( ret = kineticLaw->Accept( kineticLaw, &visitor ) ) ) ) {    
@@ -1079,4 +1084,94 @@ static RET_VAL _VisitFunctionSymbolToSimplifyKineticLaw( KINETIC_LAW_VISITOR *vi
     return ret;
 }
 
+static RET_VAL _VisitIntToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;        
+    double result;
+
+    START_FUNCTION("_VisitIntToSimplify");
+
+    result = (double)GetIntValueFromKineticLaw( kineticLaw );
+    
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitIntToSimplify", ret );
+        return ret;
+    } 
+    END_FUNCTION("_VisitIntToSimplify", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitRealToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    double result;
+
+    START_FUNCTION("_VisitRealToSimplify");
+
+    result = (double)GetRealValueFromKineticLaw( kineticLaw );
+    
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitRealToSimplify", ret );
+        return ret;
+    } 
+    END_FUNCTION("_VisitRealToSimplify", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitSpeciesToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;    
+    double result;
+    SPECIES *species;
+
+    START_FUNCTION("_VisitSpeciesToSimplify");
+
+    species = GetSpeciesFromKineticLaw( kineticLaw );
+    if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+      result = GetInitialAmountInSpeciesNode( species );
+    } else {
+      result = GetInitialConcentrationInSpeciesNode( species );
+    }
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitSpeciesToSimplify", ret );
+        return ret;
+    } 
+    END_FUNCTION("_VisitSpeciesToSimplify", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitCompartmentToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;    
+    double result;
+    COMPARTMENT *compartment;
+
+    START_FUNCTION("_VisitCompartmentToSimplify");
+
+    compartment = GetCompartmentFromKineticLaw( kineticLaw );
+    result = GetSizeInCompartment( compartment );
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitCompartmentToSimplify", ret );
+        return ret;
+    } 
+    END_FUNCTION("_VisitCompartmentToSimplify", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitSymbolToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;    
+    double result;
+    REB2SAC_SYMBOL *sym = NULL;    
+
+    START_FUNCTION("_VisitSymbolToSimplify");
+
+    sym = GetSymbolFromKineticLaw( kineticLaw );
+    if( !IsRealValueSymbol( sym ) ) {
+      END_FUNCTION("_VisitSymbolToSimplify", SUCCESS );
+      return ret;
+    }
+    result = GetRealValueInSymbol( sym );
+    if( IS_FAILED( ( ret = SetRealValueKineticLaw( kineticLaw, result ) ) ) ) {
+        END_FUNCTION("_VisitSymbolToSimplify", ret );
+        return ret;
+    } 
+    END_FUNCTION("_VisitSymbolToSimplify", SUCCESS );
+    return ret;
+}
 
