@@ -98,6 +98,7 @@ RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     
     sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
     sym->value.realValue = value;
+    sym->currentRealValue = value;
     
     END_FUNCTION("SetRealValueInSymbol", SUCCESS );
     return SUCCESS;

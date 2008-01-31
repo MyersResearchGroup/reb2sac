@@ -143,6 +143,7 @@ RET_VAL SetSizeInCompartment( COMPARTMENT *compartment, double size ) {
     }
     
     compartment->size = size;
+    compartment->currentSize = size;
     END_FUNCTION("SetSizeInCompartment", SUCCESS );
     return SUCCESS;
 }

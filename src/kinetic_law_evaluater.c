@@ -542,7 +542,7 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
     }
     
     visitor->_internal2 = (CADDR_T)result;
-    
+
     END_FUNCTION("_VisitUnaryOpToEvaluate", SUCCESS );
     return ret;
 }
@@ -592,7 +592,7 @@ static RET_VAL _VisitSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     result = (double*)(visitor->_internal2);
     value = GetCurrentRealValueInSymbol( sym );
     *result = value; 
-    
+
     END_FUNCTION("_VisitSymbolToEvaluate", SUCCESS );
     return SUCCESS;
 }
