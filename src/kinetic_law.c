@@ -477,7 +477,7 @@ RET_VAL SetIntValueKineticLaw( KINETIC_LAW *law, long value ) {
         FreeKineticLaw( &(law->value.op.right) );        
     } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
         FreeKineticLaw( &(law->value.unaryOp.child) );
-    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
         DeleteLinkedList( &(law->value.pw.children) );        
     }
     
@@ -504,7 +504,7 @@ RET_VAL SetRealValueKineticLaw( KINETIC_LAW *law, double value ) {
         FreeKineticLaw( &(law->value.op.right) );        
     } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
         FreeKineticLaw( &(law->value.unaryOp.child) );
-    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
         DeleteLinkedList( &(law->value.pw.children) );        
     }
     
@@ -531,7 +531,7 @@ RET_VAL SetSpeciesKineticLaw( KINETIC_LAW *law, SPECIES *species ) {
         FreeKineticLaw( &(law->value.op.right) );        
     } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
         FreeKineticLaw( &(law->value.unaryOp.child) );
-    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
         DeleteLinkedList( &(law->value.pw.children) );        
     }
     
@@ -559,7 +559,7 @@ RET_VAL SetCompartmentKineticLaw( KINETIC_LAW *law, COMPARTMENT *compartment ) {
         FreeKineticLaw( &(law->value.op.right) );        
     } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
         FreeKineticLaw( &(law->value.unaryOp.child) );
-    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
         DeleteLinkedList( &(law->value.pw.children) );        
     }
     
@@ -588,7 +588,7 @@ RET_VAL SetSymbolKineticLaw( KINETIC_LAW *law, REB2SAC_SYMBOL *symbol ) {
         FreeKineticLaw( &(law->value.op.right) );        
     } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
         FreeKineticLaw( &(law->value.unaryOp.child) );
-    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
         DeleteLinkedList( &(law->value.pw.children) );        
     }
     
@@ -616,7 +616,7 @@ RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol ) {
         FreeKineticLaw( &(law->value.op.right) );        
     } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
         FreeKineticLaw( &(law->value.unaryOp.child) );
-    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_UNARY_OP ) {
+    } else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
         DeleteLinkedList( &(law->value.pw.children) );        
     }
     
@@ -803,7 +803,7 @@ BOOL IsCompartmentKineticLaw(KINETIC_LAW *law) {
     }
         
     END_FUNCTION("IsCompartmentKineticLaw", SUCCESS );        
-    return ( law->valueType == KINETIC_LAW_VALUE_TYPE_SPECIES ? TRUE : FALSE );
+    return ( law->valueType == KINETIC_LAW_VALUE_TYPE_COMPARTMENT ? TRUE : FALSE );
 }
 
 
