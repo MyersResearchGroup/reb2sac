@@ -23,7 +23,7 @@
 static UNIT_MANAGER manager;
 
 
-static UNIT_DEFINITION * _CreateUnitDefinition( UNIT_MANAGER *manager, char *id );
+static UNIT_DEFINITION * _CreateUnitDefinition( UNIT_MANAGER *manager, char *id, BOOL builtIn );
 static UNIT_DEFINITION * _LookupUnitDefinition( UNIT_MANAGER *manager, char *id );
 static LINKED_LIST *_CreateListOfUnitDefinitions( UNIT_MANAGER *manager );                  
 
@@ -41,44 +41,44 @@ UNIT_MANAGER *GetUnitManagerInstance( COMPILER_RECORD_T *record ) {
         manager.CreateUnitDefinition = _CreateUnitDefinition;
         manager.LookupUnitDefinition = _LookupUnitDefinition;
         manager.CreateListOfUnitDefinitions = _CreateListOfUnitDefinitions;
-	_CreateUnitDefinition(&manager,"substance");
-	_CreateUnitDefinition(&manager,"volume");
-	_CreateUnitDefinition(&manager,"area");
-	_CreateUnitDefinition(&manager,"length");
-	_CreateUnitDefinition(&manager,"time");
-	_CreateUnitDefinition(&manager,"ampere");
-	_CreateUnitDefinition(&manager,"becquerel");
-	_CreateUnitDefinition(&manager,"candela");
-	_CreateUnitDefinition(&manager,"celsius");
-	_CreateUnitDefinition(&manager,"coulomb");
-	_CreateUnitDefinition(&manager,"dimensionless");
-	_CreateUnitDefinition(&manager,"farad");
-	_CreateUnitDefinition(&manager,"gram");
-	_CreateUnitDefinition(&manager,"gray");
-	_CreateUnitDefinition(&manager,"henry");
-	_CreateUnitDefinition(&manager,"hertz");
-	_CreateUnitDefinition(&manager,"item");
-	_CreateUnitDefinition(&manager,"joule");
-	_CreateUnitDefinition(&manager,"katal");
-	_CreateUnitDefinition(&manager,"kelvin");
-	_CreateUnitDefinition(&manager,"kilogram");
-	_CreateUnitDefinition(&manager,"litre");
-	_CreateUnitDefinition(&manager,"lumen");
-	_CreateUnitDefinition(&manager,"lux");
-	_CreateUnitDefinition(&manager,"metre");
-	_CreateUnitDefinition(&manager,"mole");
-	_CreateUnitDefinition(&manager,"newton");
-	_CreateUnitDefinition(&manager,"ohm");
-	_CreateUnitDefinition(&manager,"pascal");
-	_CreateUnitDefinition(&manager,"radian");
-	_CreateUnitDefinition(&manager,"second");
-	_CreateUnitDefinition(&manager,"siemens");
-	_CreateUnitDefinition(&manager,"sievert");
-	_CreateUnitDefinition(&manager,"steradian");
-	_CreateUnitDefinition(&manager,"tesla");
-	_CreateUnitDefinition(&manager,"volt");
-	_CreateUnitDefinition(&manager,"watt");
-	_CreateUnitDefinition(&manager,"weber");
+	_CreateUnitDefinition(&manager,"substance",TRUE);
+	_CreateUnitDefinition(&manager,"volume",TRUE);
+	_CreateUnitDefinition(&manager,"area",TRUE);
+	_CreateUnitDefinition(&manager,"length",TRUE);
+	_CreateUnitDefinition(&manager,"time",TRUE);
+	_CreateUnitDefinition(&manager,"ampere",TRUE);
+	_CreateUnitDefinition(&manager,"becquerel",TRUE);
+	_CreateUnitDefinition(&manager,"candela",TRUE);
+	_CreateUnitDefinition(&manager,"celsius",TRUE);
+	_CreateUnitDefinition(&manager,"coulomb",TRUE);
+	_CreateUnitDefinition(&manager,"dimensionless",TRUE);
+	_CreateUnitDefinition(&manager,"farad",TRUE);
+	_CreateUnitDefinition(&manager,"gram",TRUE);
+	_CreateUnitDefinition(&manager,"gray",TRUE);
+	_CreateUnitDefinition(&manager,"henry",TRUE);
+	_CreateUnitDefinition(&manager,"hertz",TRUE);
+	_CreateUnitDefinition(&manager,"item",TRUE);
+	_CreateUnitDefinition(&manager,"joule",TRUE);
+	_CreateUnitDefinition(&manager,"katal",TRUE);
+	_CreateUnitDefinition(&manager,"kelvin",TRUE);
+	_CreateUnitDefinition(&manager,"kilogram",TRUE);
+	_CreateUnitDefinition(&manager,"litre",TRUE);
+	_CreateUnitDefinition(&manager,"lumen",TRUE);
+	_CreateUnitDefinition(&manager,"lux",TRUE);
+	_CreateUnitDefinition(&manager,"metre",TRUE);
+	_CreateUnitDefinition(&manager,"mole",TRUE);
+	_CreateUnitDefinition(&manager,"newton",TRUE);
+	_CreateUnitDefinition(&manager,"ohm",TRUE);
+	_CreateUnitDefinition(&manager,"pascal",TRUE);
+	_CreateUnitDefinition(&manager,"radian",TRUE);
+	_CreateUnitDefinition(&manager,"second",TRUE);
+	_CreateUnitDefinition(&manager,"siemens",TRUE);
+	_CreateUnitDefinition(&manager,"sievert",TRUE);
+	_CreateUnitDefinition(&manager,"steradian",TRUE);
+	_CreateUnitDefinition(&manager,"tesla",TRUE);
+	_CreateUnitDefinition(&manager,"volt",TRUE);
+	_CreateUnitDefinition(&manager,"watt",TRUE);
+	_CreateUnitDefinition(&manager,"weber",TRUE);
     }
         
     END_FUNCTION("GetUnitManagerInstance", SUCCESS );
@@ -133,6 +133,13 @@ STRING *GetUnitDefinitionID( UNIT_DEFINITION *unitDef ) {
     return (unitDef == NULL ? NULL : unitDef->id);
 }
 
+BOOL IsBuiltInUnitDefinition( UNIT_DEFINITION *unitDef ) {
+    START_FUNCTION("IsBuiltInUnitDefinition");
+            
+    END_FUNCTION("IsBuiltInUnitDefinition", SUCCESS );
+    return unitDef->builtIn;
+}
+
 
 LINKED_LIST *GetUnitsInUnitDefinition( UNIT_DEFINITION *unitDef ) {
     START_FUNCTION("GetUnitsInUnitDefinition");
@@ -152,7 +159,7 @@ RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int expon
         return ErrorReport( FAILING, "AddUnitsInUnitDefinition", "allocatation failed for unit %s", kind ); 
     }
     
-    if( IS_FAILED( ( ret = AddElementInLinkedList( unit, unitDef->units ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)unit, unitDef->units ) ) ) ) {
         END_FUNCTION("AddUnitsInUnitDefinition", ret );
         return ret;
     }
@@ -173,7 +180,7 @@ RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int expon
 
 
 
-static UNIT_DEFINITION * _CreateUnitDefinition( UNIT_MANAGER *manager, char *id ) {
+static UNIT_DEFINITION * _CreateUnitDefinition( UNIT_MANAGER *manager, char *id, BOOL builtIn ) {
     UNIT_DEFINITION *unitDef = NULL;
     
     START_FUNCTION("_CreateUnitDefinition");
@@ -189,10 +196,11 @@ static UNIT_DEFINITION * _CreateUnitDefinition( UNIT_MANAGER *manager, char *id 
     }
     
     if( ( unitDef->units = CreateLinkedList() ) == NULL ) {
-        return ErrorReport( FAILING, "_CreateUnitDefinition", "could not create a unit list for %s", id );
+      return NULL;
     }
-        
-    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( unitDef->id ), GetStringLength( unitDef->id ), unitDef, manager->table ) ) ) {
+    unitDef->builtIn = builtIn;
+    
+    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( unitDef->id ), GetStringLength( unitDef->id ), (CADDR_T)unitDef, manager->table ) ) ) {
         FREE( unitDef );
         END_FUNCTION("_CreateUnitDefinition", FAILING );
         return NULL;
@@ -207,7 +215,7 @@ static UNIT_DEFINITION * _LookupUnitDefinition( UNIT_MANAGER *manager, char *id 
         
     START_FUNCTION("_LookupUnitDefinition");
     
-    if( ( unitDef = GetValueFromHashTable( id, strlen(id), manager->table ) ) == NULL ) {
+    if( ( unitDef = (UNIT_DEFINITION*)GetValueFromHashTable( id, strlen(id), manager->table ) ) == NULL ) {
         END_FUNCTION("_LookupUnitDefinition", FAILING );
         return NULL;
     }

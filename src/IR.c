@@ -87,7 +87,7 @@ static RET_VAL _SetCompartmentManager( IR *ir, COMPARTMENT_MANAGER *compartmentM
 
             
 static RET_VAL _GenerateDotFile( IR *ir, FILE *file );            
-static RET_VAL _GenetateSBML( IR *ir, FILE *file );           
+static RET_VAL _GenerateSBML( IR *ir, FILE *file );           
 static RET_VAL _GenerateXHTML( IR *ir, FILE *file );           
 
 // TODO: create function definition print functions
@@ -221,7 +221,7 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
     ir->GetGlobalSymtab = _GetGlobalSymtab;
     
     ir->GenerateDotFile = _GenerateDotFile;
-    ir->GenerateSBML = _GenetateSBML; 
+    ir->GenerateSBML = _GenerateSBML; 
     ir->GenerateXHTML = _GenerateXHTML;                    
     
     record->ir = ir; 
@@ -1233,10 +1233,10 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
     
 
 
-static RET_VAL _GenetateSBML( IR *ir, FILE *file ) {
+static RET_VAL _GenerateSBML( IR *ir, FILE *file ) {
     RET_VAL ret = SUCCESS;
     
-    START_FUNCTION("_GenetateSBML");
+    START_FUNCTION("_GenerateSBML");
     
     fprintf( file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>%s"
                    "<sbml xmlns=\"http://www.sbml.org/sbml/level2\" level=\"2\" version=\"1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">%s", 
@@ -1245,31 +1245,31 @@ static RET_VAL _GenetateSBML( IR *ir, FILE *file ) {
     fprintf( file, "<model>%s", NEW_LINE );
 
     if( IS_FAILED( ( ret = _PrintListOfUnitDefinitionsForSBML( ir, file, 2 ) ) ) ) {
-        END_FUNCTION("_GenetateSBML", ret );
+        END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
     fprintf( file, NEW_LINE );
 
     if( IS_FAILED( ( ret = _PrintListOfCompartmentsForSBML( ir, file, 2 ) ) ) ) {
-        END_FUNCTION("_GenetateSBML", ret );
+        END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
     fprintf( file, NEW_LINE );
         
     if( IS_FAILED( ( ret = _PrintListOfSpeciesForSBML( ir, file, 2 ) ) ) ) {
-        END_FUNCTION("_GenetateSBML", ret );
+        END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
     fprintf( file, NEW_LINE );
     
     if( IS_FAILED( ( ret = _PrintListOfParametersForSBML( ir, file, 2 ) ) ) ) {
-        END_FUNCTION("_GenetateSBML", ret );
+        END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
     fprintf( file, NEW_LINE );
     
     if( IS_FAILED( ( ret = _PrintListOfReactionsForSBML( ir, file, 2 ) ) ) ) {
-        END_FUNCTION("_GenetateSBML", ret );
+        END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
     
@@ -1277,7 +1277,7 @@ static RET_VAL _GenetateSBML( IR *ir, FILE *file ) {
     fprintf( file, "</model>%s", NEW_LINE );
     fprintf( file, "</sbml>%s", NEW_LINE );
 
-    END_FUNCTION("_GenetateSBML", SUCCESS );
+    END_FUNCTION("_GenerateSBML", SUCCESS );
     return ret;    
 }          
 
@@ -1295,7 +1295,8 @@ static RET_VAL _PrintListOfUnitDefinitionsForSBML( IR *ir, FILE *file, UINT32 ta
     UNIT_MANAGER *unitManager = NULL;
     UNIT_DEFINITION *unitDef = NULL;
     LINKED_LIST *unitDefList = NULL;
-     
+    int count = 0;
+ 
     START_FUNCTION("_PrintListOfUnitDefinitionsForSBML");
        
     unitManager = ir->unitManager;
@@ -1306,16 +1307,28 @@ static RET_VAL _PrintListOfUnitDefinitionsForSBML( IR *ir, FILE *file, UINT32 ta
         END_FUNCTION("_PrintListOfUnitDefinitionsForSBML", SUCCESS );    
         return ret;
     }
-    
+    count = 0;
+    ResetCurrentElement( unitDefList );
+    while( ( unitDef = (UNIT_DEFINITION*)GetNextFromLinkedList( unitDefList ) ) != NULL ) {
+      if (IsBuiltInUnitDefinition( unitDef )) continue;
+      count++;
+    }    
+    if (count == 0) {
+        DeleteLinkedList( &unitDefList );
+        END_FUNCTION("_PrintListOfUnitDefinitionsForSBML", SUCCESS );    
+        return ret;
+    }
+
     _PrintTab( file, tabCount );
     fprintf( file, "<listOfUnitDefinitions>%s", NEW_LINE );
     
     ResetCurrentElement( unitDefList );
     while( ( unitDef = (UNIT_DEFINITION*)GetNextFromLinkedList( unitDefList ) ) != NULL ) {
-        if( IS_FAILED( ( ret = _PrintUnitDefinitionForSBML( unitDef, file, tabCount + 1 ) ) ) ) {
-            END_FUNCTION("_PrintListOfUnitDefinitionsForSBML", ret );    
-            return ret;        
-        }                        
+      if (IsBuiltInUnitDefinition( unitDef )) continue;
+      if( IS_FAILED( ( ret = _PrintUnitDefinitionForSBML( unitDef, file, tabCount + 1 ) ) ) ) {
+	END_FUNCTION("_PrintListOfUnitDefinitionsForSBML", ret );    
+	return ret;        
+      }                        
     }    
     _PrintTab( file, tabCount );
     fprintf( file, "</listOfUnitDefinitions>%s", NEW_LINE );
@@ -1592,7 +1605,7 @@ static RET_VAL _PrintListOfParametersForSBML( IR *ir, FILE *file, UINT32 tabCoun
         return ErrorReport( FAILING, "_PrintListOfParametersForSBML", "could not generate a list of symbols" );
     }
     
-    if( GetLinkedListSize( list ) == 0 ) {
+    if( GetLinkedListSize( list ) <=  1 ) {
         END_FUNCTION("_PrintListOfParametersForSBML", SUCCESS );    
         return ret;
     }    
@@ -1602,10 +1615,11 @@ static RET_VAL _PrintListOfParametersForSBML( IR *ir, FILE *file, UINT32 tabCoun
 
     ResetCurrentElement( list );
     while( ( sym = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
-        if( IS_FAILED( ( ret = _PrintParameterForSBML( sym, file, tabCount + 1 ) ) ) ) {
-            END_FUNCTION("_PrintListOfParametersForSBML", ret );    
-            return ret;
-        }
+      if ( strcmp(GetCharArrayOfString ( GetSymbolID( sym ) ),"t")==0) continue;
+      if( IS_FAILED( ( ret = _PrintParameterForSBML( sym, file, tabCount + 1 ) ) ) ) {
+	END_FUNCTION("_PrintListOfParametersForSBML", ret );    
+	return ret;
+      }
     }
         
     _PrintTab( file, tabCount );

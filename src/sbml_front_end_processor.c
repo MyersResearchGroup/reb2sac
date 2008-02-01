@@ -663,7 +663,7 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
     
     id = (char *)UnitDefinition_getId( source );
     TRACE_1("creating unit definition %s", id );
-    if( ( unitDef = unitManager->CreateUnitDefinition( unitManager, id ) ) == NULL ) {
+    if( ( unitDef = unitManager->CreateUnitDefinition( unitManager, id, FALSE ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleUnitDefinition", "could not allocate unit def %s", id );
     }
     

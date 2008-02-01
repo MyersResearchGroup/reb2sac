@@ -1506,7 +1506,7 @@ yyreduce:
 #line 94 "analysis_def_parser.y"
     {        
         _astEnv = GetSadAstEnv();
-        if( IS_FAILED( AddElementInLinkedList( (yyvsp[(2) - (2)].ast), _astEnv->termList->terms ) ) ) {
+        if( IS_FAILED( AddElementInLinkedList( (CADDR_T)(yyvsp[(2) - (2)].ast), _astEnv->termList->terms ) ) ) {
             PrintSadAstErrorMessage( "Error adding term %s in the list", ((SAD_AST_TERM*)(yyvsp[(2) - (2)].ast))->id );
             return 1;
         }
@@ -1516,7 +1516,7 @@ yyreduce:
   case 6:
 #line 104 "analysis_def_parser.y"
     {
-        ast = (SAD_AST*)CreateSadAstTerm( (yyvsp[(2) - (6)].string), (yyvsp[(4) - (6)].string), (yyvsp[(5) - (6)].ast) );
+      ast = (SAD_AST*)CreateSadAstTerm( (yyvsp[(2) - (6)].string), (yyvsp[(4) - (6)].string), (SAD_AST_EXP*)(yyvsp[(5) - (6)].ast) );
         if( ast == NULL ) {
             PrintSadAstErrorMessage( "Error creating term %s", (yyvsp[(2) - (6)].string) );
             yyerror(NULL); return 1;
