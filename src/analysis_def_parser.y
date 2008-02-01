@@ -93,7 +93,7 @@ opt_term_list :
     /* empty */  
     | opt_term_list term_dec {        
         _astEnv = GetSadAstEnv();
-        if( IS_FAILED( AddElementInLinkedList( $<ast>2, _astEnv->termList->terms ) ) ) {
+        if( IS_FAILED( AddElementInLinkedList( (CADDR_T)$<ast>2, _astEnv->termList->terms ) ) ) {
             PrintSadAstErrorMessage( "Error adding term %s in the list", ((SAD_AST_TERM*)$<ast>2)->id );
             return 1;
         }
@@ -102,7 +102,7 @@ opt_term_list :
 
 term_dec :
     SAD_TERM SAD_IDENTIFIER SAD_LCURLY desc_statement cond_statement SAD_RCURLY {
-        ast = (SAD_AST*)CreateSadAstTerm( $2, $<string>4, $<ast>5 );
+      ast = (SAD_AST*)CreateSadAstTerm( $2, $<string>4, (SAD_AST_EXP*)$<ast>5 );
         if( ast == NULL ) {
             PrintSadAstErrorMessage( "Error creating term %s", $2 );
             yyerror(NULL); return 1;

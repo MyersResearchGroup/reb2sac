@@ -38,6 +38,7 @@ typedef struct {
 
 typedef struct {
     STRING *id;
+    BOOL builtIn;
     LINKED_LIST *units;
 } UNIT_DEFINITION;
 
@@ -49,7 +50,7 @@ struct _UNIT_MANAGER {
     HASH_TABLE *table;   
     COMPILER_RECORD_T *record;
     
-    UNIT_DEFINITION * (*CreateUnitDefinition)( UNIT_MANAGER *manager, char *id );
+    UNIT_DEFINITION * (*CreateUnitDefinition)( UNIT_MANAGER *manager, char *id, BOOL builtIn );
     UNIT_DEFINITION * (*LookupUnitDefinition)( UNIT_MANAGER *manager, char *id );
     LINKED_LIST *(*CreateListOfUnitDefinitions)( UNIT_MANAGER *manager );                  
 };
@@ -59,6 +60,7 @@ struct _UNIT_MANAGER {
 STRING *GetUnitDefinitionID( UNIT_DEFINITION *unitDef );
 LINKED_LIST *GetUnitsInUnitDefinition( UNIT_DEFINITION *unitDef );
 RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier );
+BOOL IsBuiltInUnitDefinition( UNIT_DEFINITION *unitDef );
 
 STRING *GetKindInUnit( UNIT *unit );
 int GetExponentInUnit( UNIT *unit );

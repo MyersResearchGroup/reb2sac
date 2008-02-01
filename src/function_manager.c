@@ -161,12 +161,12 @@ static FUNCTION_DEFINITION * _CreateFunctionDefinition( FUNCTION_MANAGER *manage
     }
     
     if( ( functionDef->arguments = CreateLinkedList() ) == NULL ) {
-        return ErrorReport( FAILING, "_CreateFunctionDefinition", "could not create a function list for %s", id );
+      return NULL;
     }
     
     functionDef->function = NULL;
     
-    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( functionDef->id ), GetStringLength( functionDef->id ), functionDef, manager->table ) ) ) {
+    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( functionDef->id ), GetStringLength( functionDef->id ), (CADDR_T)functionDef, manager->table ) ) ) {
         FREE( functionDef );
         END_FUNCTION("_CreateFunctionDefinition", FAILING );
         return NULL;
@@ -181,7 +181,7 @@ static FUNCTION_DEFINITION * _LookupFunctionDefinition( FUNCTION_MANAGER *manage
         
     START_FUNCTION("_LookupFunctionDefinition");
     
-    if( ( functionDef = GetValueFromHashTable( id, strlen(id), manager->table ) ) == NULL ) {
+    if( ( functionDef = (FUNCTION_DEFINITION*)GetValueFromHashTable( id, strlen(id), manager->table ) ) == NULL ) {
         END_FUNCTION("_LookupFunctionDefinition", FAILING );
         return NULL;
     }
