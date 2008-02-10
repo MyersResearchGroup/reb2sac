@@ -572,6 +572,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     double nextEventTime;
     BOOL triggerEnabled;
 
+    /* Update values from y[] */
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
 	if (f[i] != 0.0) {
@@ -602,56 +603,41 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	  f[speciesSize + compartmentsSize + i] = 1.0;
 	}
     }
+
+    /* Update values using assignments */
     for (i = 0; i < rec->rulesSize; i++) {
-      if (GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
+      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
 	for (j = 0; j < rec->speciesSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
 		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	      break;
-	    } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	      f[j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      break;
-	    }
+	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	    break;
 	  }
 	}
 	for (j = 0; j < rec->compartmentsSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
 		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
-	      break;
-	    } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	      f[speciesSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      break;
-	    }
+	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	    break;
 	  }
 	}
 	for (j = 0; j < rec->symbolsSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
 		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
-	      break;
-	    } else if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	      f[speciesSize + compartmentsSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      break;
-	    }
+	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	    break;
 	  }
 	}
       }
     }
 
+    /* Fire events */
     for (i = 0; i < rec->eventsSize; i++) {
       nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
       triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
@@ -683,11 +669,41 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	}
       }
     }
+
+    /* Update rates using rate rules */
+    for (i = 0; i < rec->rulesSize; i++) {
+      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    f[j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								      (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    f[speciesSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+										    (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    f[speciesSize + compartmentsSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+												       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	    break;
+	  }
+	}
+      }
+    }
     
+    /* Update rates using kinetic laws from the reactions */
     if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
         return GSL_FAILURE;            
     }
-    
     for( i = 0; i < speciesSize; i++ ) {    
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
