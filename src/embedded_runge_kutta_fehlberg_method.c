@@ -517,12 +517,12 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
     for (j = 0; j < rec->speciesSize; j++) {
       if ( strcmp( GetCharArrayOfString(eventAssignment->var),
 		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
 	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-	printf("conc = %g\n",concentration);
+	//printf("conc = %g\n",concentration);
 	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
 	break;
       } 
@@ -531,7 +531,7 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
       if ( strcmp( GetCharArrayOfString(eventAssignment->var),
 		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
 	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );  
-	printf("conc = %g\n",concentration);
+	//printf("conc = %g\n",concentration);
 	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
 	break;
       }
@@ -540,7 +540,7 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
       if ( strcmp( GetCharArrayOfString(eventAssignment->var),
 		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
 	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );   
-	printf("conc = %g\n",concentration);
+	//printf("conc = %g\n",concentration);
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
 	break;
       } 

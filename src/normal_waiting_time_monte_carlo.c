@@ -797,12 +797,12 @@ static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
     for (j = 0; j < rec->speciesSize; j++) {
       if ( strcmp( GetCharArrayOfString(eventAssignment->var),
 		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
 	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
-	printf("conc = %g\n",amount);
+	//printf("conc = %g\n",amount);
 	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
 	break;
       } 
@@ -811,7 +811,7 @@ static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
       if ( strcmp( GetCharArrayOfString(eventAssignment->var),
 		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
 	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
-	printf("conc = %g\n",amount);
+	//printf("conc = %g\n",amount);
 	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
 	break;
       }
@@ -820,7 +820,7 @@ static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
       if ( strcmp( GetCharArrayOfString(eventAssignment->var),
 		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
 	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
-	printf("conc = %g\n",amount);
+	//printf("conc = %g\n",amount);
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
 	break;
       } 
@@ -941,10 +941,12 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
 	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
 	    break;
 	  } 
-	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
-	  }
 	}
+      }
+    }
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
       }
     }
     for (i = 0; i < rec->eventsSize; i++) {
