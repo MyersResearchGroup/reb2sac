@@ -591,6 +591,7 @@ static RET_VAL _VisitSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     
     result = (double*)(visitor->_internal2);
     value = GetCurrentRealValueInSymbol( sym );
+    
     *result = value; 
 
     END_FUNCTION("_VisitSymbolToEvaluate", SUCCESS );
