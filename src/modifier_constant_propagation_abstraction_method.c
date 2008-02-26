@@ -71,6 +71,14 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
     KINETIC_LAW *symKineticLaw = NULL;
     LINKED_LIST *speciesList = NULL;
     LINKED_LIST *edges = NULL;
+    LINKED_LIST *list = NULL;
+    LINKED_LIST *list2 = NULL;
+    EVENT_MANAGER *eventManager;
+    EVENT *event;
+    EVENT_ASSIGNMENT *eventAssignment;
+    RULE_MANAGER *ruleManager;
+    RULE *rule = NULL;
+    BOOL foundIt;
 #ifdef DEBUG
     STRING *kineticLawString = NULL;
 #endif        
@@ -84,14 +92,54 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
             continue;
         }
         
-        edges = GetReactantEdges( species );
+        edges = GetReactantEdges( (IR_NODE*)species );
         if( GetLinkedListSize( edges ) > 0 ) {
             continue;
         }
-        edges = GetProductEdges( species );
+        edges = GetProductEdges( (IR_NODE*)species );
         if( GetLinkedListSize( edges ) > 0 ) {
             continue;
         }
+
+	/* Check if species used in an event */
+	foundIt = FALSE;
+	if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
+	}
+	list = eventManager->CreateListOfEvents( eventManager );
+	ResetCurrentElement( list );
+	while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  list2 = GetEventAssignments( event );
+	  ResetCurrentElement( list2 );
+	  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list2 ) ) != NULL ) {
+	    if ( strcmp( GetCharArrayOfString(eventAssignment->var), 
+			 GetCharArrayOfString(GetSpeciesNodeID( species ) ) ) == 0 ) {
+	      foundIt = TRUE;
+	      break;
+	    }
+	  }
+	  if (foundIt) break;
+	}
+	if (foundIt) continue;
+
+	/* Check if species used in a rule */
+	if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+	}
+	list = ruleManager->CreateListOfRules( ruleManager );
+	ResetCurrentElement( list );
+	while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  if ( ( GetRuleType( rule ) == RULE_TYPE_ASSIGNMENT ) ||
+	       ( GetRuleType( rule ) == RULE_TYPE_RATE ) ) {
+	    if ( strcmp( GetCharArrayOfString(GetRuleVar( rule )),
+			 GetCharArrayOfString(GetSpeciesNodeID( species ) ) ) == 0 ) {
+	      foundIt = TRUE;
+	      break;
+	    }
+	  }
+	}
+	if (foundIt) continue;
+
         /*
             now conditions are satisfied, so propagate constant
         */
@@ -101,7 +149,7 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
             return ret;
         } 
         TRACE_1( "species %s satisfies constant propagation condition", GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
-        edges = GetModifierEdges( species );
+        edges = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             reaction = GetReactionInIREdge( edge );
