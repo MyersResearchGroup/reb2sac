@@ -82,8 +82,10 @@ extern ABSTRACTION_METHOD *EnzymeKineticRapidEquilibrium2MethodConstructor(  ABS
 extern ABSTRACTION_METHOD *OpSiteBindingAbstractionMethod2Constructor(  ABSTRACTION_METHOD_MANAGER *manager );
 extern ABSTRACTION_METHOD *PowKineticLawTransformationMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
 extern ABSTRACTION_METHOD *DimerizationReductionLevelAssignmentConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
+extern ABSTRACTION_METHOD *PPTAMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
 
 static AbstractionMethodConstructorType __abstractionMethodConstrcutorTable[] = {
+    PPTAMethodConstructor,
     DimerizationReductionLevelAssignmentConstructor,
     PowKineticLawTransformationMethodConstructor,
     OpSiteBindingAbstractionMethod2Constructor,

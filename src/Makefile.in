@@ -99,6 +99,7 @@ am_reb2sac_OBJECTS =  \
 	embedded_runge_kutta_prince_dormand_method.$(OBJEXT) \
 	emc_leaked_stationary_analyzer.$(OBJEXT) \
 	emc_simulation.$(OBJEXT) emc_stationary_analyzer.$(OBJEXT) \
+	ppta_method.$(OBJEXT) \
 	enzyme_kinetic_qssa_method.$(OBJEXT) \
 	enzyme_kinetic_rapid_equilibrium_method2.$(OBJEXT) \
 	enzyme_kinetic_rapid_equilibrium_method.$(OBJEXT) \
@@ -245,6 +246,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/emc_leaked_stationary_analyzer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/emc_simulation.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/emc_stationary_analyzer.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/ppta_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/enzyme_kinetic_qssa_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method2.Po \
@@ -503,7 +505,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	dimerization_reduction_level_assignment.c dimerization_reduction_method.c dimer_to_monomer_substitution_method.c \
 	dot_back_end_processor.c embedded_runge_kutta_fehlberg_method.c \
 	embedded_runge_kutta_prince_dormand_method.c emc_leaked_stationary_analyzer.c emc_simulation.c \
-	emc_stationary_analyzer.c enzyme_kinetic_qssa_method.c enzyme_kinetic_rapid_equilibrium_method2.c \
+	emc_stationary_analyzer.c ppta_method.c enzyme_kinetic_qssa_method.c enzyme_kinetic_rapid_equilibrium_method2.c \
 	enzyme_kinetic_rapid_equilibrium_method.c erlang_distributed_random_generator.c euler_method.c \
 	exponentially_distributed_random_generator.c final_state_generation_method.c \
 	flat_phage_lambda2_simulation_run_termination_decider.c flat_phage_lambda_simulation_run_termination_decider.c \
@@ -662,6 +664,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc_leaked_stationary_analyzer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc_simulation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc_stationary_analyzer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ppta_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enzyme_kinetic_qssa_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method2.Po@am__quote@
