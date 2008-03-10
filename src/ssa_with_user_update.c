@@ -438,6 +438,7 @@ static RET_VAL _RunSimulation( SSA_WITH_USER_UPDATE_RECORD *rec ) {
                 reaction = NULL;
             } 
             else {
+	      if ( rec->time < rec->timeLimit ) {
                 if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
                     return ret;
                 }
@@ -445,6 +446,7 @@ static RET_VAL _RunSimulation( SSA_WITH_USER_UPDATE_RECORD *rec ) {
                     return ret;
                 }
                 reaction = rec->nextReaction;
+	      }
             }
         }
     }
@@ -651,7 +653,7 @@ static RET_VAL _FindNextReactionTime( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     
     random = _GetUniformRandom();
     t = log( 1.0 / random ) / rec->totalPropensities;
-    rec->time += t;            
+    rec->time += t;  
     if( rec->time > rec->timeLimit ) {
         rec->time = rec->timeLimit;
     }
