@@ -489,12 +489,14 @@ static RET_VAL _RunSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
 	      fireEvent( rec->eventArray[nextEvent], rec );
 	      SetNextEventTimeInEvent( rec->eventArray[nextEvent], -1.0 );
 	    } else {
-	      if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
-                return ret;
-	      }
-	      reaction = rec->nextReaction;
-	      if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
-                return ret;
+	      if (rec->time < timeLimit) {
+		if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
+		  return ret;
+		}
+		reaction = rec->nextReaction;
+		if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+		  return ret;
+		}
 	      }
 	    }
         }
