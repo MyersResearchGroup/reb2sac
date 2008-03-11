@@ -446,6 +446,10 @@ static RET_VAL _RunSimulation( SSA_WITH_USER_UPDATE_RECORD *rec ) {
                     return ret;
                 }
                 reaction = rec->nextReaction;
+	      } else {
+		if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		  return ret;            
+		}
 	      }
             }
         }
