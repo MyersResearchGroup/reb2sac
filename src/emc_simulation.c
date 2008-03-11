@@ -491,6 +491,10 @@ static RET_VAL _RunSimulation( EMC_SIMULATION_RECORD *rec ) {
 		if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
 		  return ret;
 		}
+	      } else {
+		if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		  return ret;            
+		}
 	      }
 	    }
         }

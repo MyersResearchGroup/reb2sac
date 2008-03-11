@@ -497,6 +497,10 @@ static RET_VAL _RunSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
 		if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
 		  return ret;
 		}
+	      } else {
+		if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		  return ret;            
+		}
 	      }
 	    }
         }
