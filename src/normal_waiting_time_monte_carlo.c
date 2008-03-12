@@ -770,7 +770,7 @@ static RET_VAL _Print( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
 
-    while( nextPrintTime < time ) {
+    while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
         if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
             return ret;
         }
