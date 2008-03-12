@@ -715,7 +715,7 @@ static RET_VAL _Print( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
 
-    while( nextPrintTime < time ) {
+    while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
         if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
             return ret;
         }
