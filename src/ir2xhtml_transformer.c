@@ -29,6 +29,7 @@ static RET_VAL _PrintListOfReactantsInXHTML( LINKED_LIST *list, FILE *file );
 static RET_VAL _PrintListOfProductsInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ); 
+static RET_VAL _PrintCompartmentListInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
 
@@ -37,6 +38,7 @@ static void _PrintTab( FILE *file, int tabCount );
 static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitIntToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
@@ -171,6 +173,12 @@ RET_VAL PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     START_FUNCTION("PrintListOfSpeciesInXHTML");
     END_FUNCTION("PrintListOfSpeciesInXHTML", SUCCESS );
     return _PrintListOfSpeciesInXHTML( list, file );
+}
+
+RET_VAL PrintCompartmentListInXHTML( LINKED_LIST *list, FILE *file ) {
+    START_FUNCTION("PrintCompartmentListInXHTML");
+    END_FUNCTION("PrintCompartmentListInXHTML", SUCCESS );
+    return _PrintCompartmentListInXHTML( list, file );
 }
 
 RET_VAL PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ) {
@@ -341,6 +349,48 @@ static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     return ret;
 }
 
+static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_PrintCompartmentForXHTML");
+
+    fprintf( file, REB2SAC_XHTML_COMPARTMENT_ENTRY_FORMAT,
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ),
+	     GetSizeInCompartment( compartment ) );
+
+    fprintf( file, NEW_LINE );
+            
+    END_FUNCTION("_PrintCompartmentForXHTML", SUCCESS );
+    
+    return ret;
+}
+
+static RET_VAL _PrintCompartmentListInXHTML( LINKED_LIST *list, FILE *file ) {
+    RET_VAL ret = SUCCESS;
+    COMPARTMENT *compartment = NULL;
+
+    fprintf( file, REB2SAC_XHTML_START_COMPARTMENT_FORMAT );
+    
+    START_FUNCTION("_PrintCompartmentListInXHTML");
+    if( ( list == NULL ) || ( GetLinkedListSize( list ) == 0 ) ) {
+        END_FUNCTION("_PrintListOfCompartmentsForSBML", SUCCESS );    
+        return ret;
+    }    
+    ResetCurrentElement( list );
+    while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        if( IS_FAILED( ( ret = _PrintCompartmentForXHTML( compartment, file ) ) ) ) {
+            END_FUNCTION("_PrintCompartmentListInXHTML", ret );    
+            return ret;
+        }
+    }
+    
+    fprintf( file, REB2SAC_XHTML_END_COMPARTMENT_FORMAT );
+    fprintf( file, NEW_LINE );
+    
+    END_FUNCTION("_PrintCompartmentListInXHTML", SUCCESS );
+    return ret;
+}
+
 static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
     RET_VAL ret = SUCCESS;
     double initialQuantity = 0.0;
@@ -408,6 +458,7 @@ static RET_VAL _PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ) {
         visitor.VisitOp = _VisitOpToPrintInXHTML;
         visitor.VisitInt = _VisitIntToPrintInXHTML;
         visitor.VisitReal = _VisitRealToPrintInXHTML;
+        visitor.VisitCompartment = _VisitCompartmentToPrintInXHTML;
         visitor.VisitSpecies = _VisitSpeciesToPrintInXHTML;
         visitor.VisitSymbol = _VisitSymbolToPrintInXHTML;
     }
@@ -880,6 +931,26 @@ static RET_VAL _VisitRealToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_L
     fprintf( file, NEW_LINE );
     
     END_FUNCTION("_VisitRealToPrintInXHTML", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitCompartmentToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    int *tabCount = NULL;
+    COMPARTMENT *compartment = NULL;
+    FILE *file = NULL;
+    
+    START_FUNCTION("_VisitCompartmentToPrintInXHTML");
+
+    file = (FILE*)(visitor->_internal1);
+    tabCount = (int*)(visitor->_internal2);
+    compartment = GetCompartmentFromKineticLaw( kineticLaw );
+    
+    _PrintTab( file, *tabCount );
+    fprintf( file, REB2SAC_XHTML_MATHML_COMPARTMENT_FORMAT, GetCharArrayOfString( GetCompartmentID( compartment ) ) );
+    fprintf( file, NEW_LINE );
+    
+    END_FUNCTION("_VisitCompartmentToPrintInXHTML", SUCCESS );
     return ret;
 }
 

@@ -51,6 +51,7 @@
 #define REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT "<mrow>"
 #define REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT "</mrow>"
 
+#define REB2SAC_XHTML_MATHML_COMPARTMENT_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_SPECIES_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_SYMBOL_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_REAL_VALUE_FORMAT "<mi>%g</mi>"
@@ -75,6 +76,15 @@
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_CONSTANT_ENTRY_FORMAT \
+"<tr><td>%s</td><td>%g</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_COMPARTMENT_FORMAT \
+"<table border=\"2\"><tr><th>Compartment ID</th><th>Initial Size</th></tr>" NEW_LINE
+ 
+#define REB2SAC_XHTML_END_COMPARTMENT_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_COMPARTMENT_ENTRY_FORMAT \
 "<tr><td>%s</td><td>%g</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_SPECIES_FORMAT \
@@ -137,6 +147,7 @@ RET_VAL PrintListOfReactantsInXHTML( LINKED_LIST *list, FILE *file );
 RET_VAL PrintListOfProductsInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ); 
+RET_VAL PrintCompartmentListInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
 

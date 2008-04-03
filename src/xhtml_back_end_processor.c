@@ -76,12 +76,24 @@ static RET_VAL _HandleIR( BACK_END_PROCESSOR *backend, IR *ir, FILE *file ) {
     RET_VAL ret = SUCCESS;
     REACTION *reaction = NULL;
     LINKED_LIST *list = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
     
     START_FUNCTION("_HandleIR");
 
     fprintf( file, REB2SAC_XHTML_START_FORMAT_ON_LINE );
     fprintf( file, NEW_LINE );
     fprintf( file, NEW_LINE );
+
+    if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
+    }
+    list = compartmentManager->CreateListOfCompartments( compartmentManager );
+    if( IS_FAILED( ( ret = PrintCompartmentListInXHTML( list, file ) ) ) ) {
+        END_FUNCTION("GenerateXHTMLFromIR", ret );
+        return ret;
+    }
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
         
     list = ir->GetListOfSpeciesNodes( ir );
     if( IS_FAILED( ( ret = PrintSpeciesListInXHTML( list, file ) ) ) ) {
