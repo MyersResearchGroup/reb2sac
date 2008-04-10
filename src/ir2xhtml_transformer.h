@@ -51,12 +51,57 @@
 #define REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT "<mrow>"
 #define REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT "</mrow>"
 
+#define REB2SAC_XHTML_MATHML_FUNCTION_SYMBOL_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_COMPARTMENT_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_SPECIES_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_SYMBOL_FORMAT "<mi>%s</mi>"
 #define REB2SAC_XHTML_MATHML_REAL_VALUE_FORMAT "<mi>%g</mi>"
 #define REB2SAC_XHTML_MATHML_INT_VALUE_FORMAT "<mi>%li</mi>"
 
+#define REB2SAC_XHTML_MATHML_OP_PW_FORMAT "<mo>piecewise</mo>"
+#define REB2SAC_XHTML_MATHML_OP_EXP_FORMAT "<mo>e</mo>"
+#define REB2SAC_XHTML_MATHML_OP_LOG_FORMAT "<mo>log</mo>"
+#define REB2SAC_XHTML_MATHML_OP_LN_FORMAT "<mo>ln</mo>"
+#define REB2SAC_XHTML_MATHML_OP_FACT_FORMAT "<mo>!</mo>"
+
+#define REB2SAC_XHTML_MATHML_OP_COS_FORMAT "<mo>cos</mo>"
+#define REB2SAC_XHTML_MATHML_OP_SIN_FORMAT "<mo>sin</mo>"
+#define REB2SAC_XHTML_MATHML_OP_COSH_FORMAT "<mo>cosh</mo>"
+#define REB2SAC_XHTML_MATHML_OP_SINH_FORMAT "<mo>sinh</mo>"
+#define REB2SAC_XHTML_MATHML_OP_TAN_FORMAT "<mo>tan</mo>"
+#define REB2SAC_XHTML_MATHML_OP_TANH_FORMAT "<mo>tanh</mo>"
+
+#define REB2SAC_XHTML_MATHML_OP_COT_FORMAT "<mo>cot</mo>"
+#define REB2SAC_XHTML_MATHML_OP_COTH_FORMAT "<mo>coth</mo>"
+#define REB2SAC_XHTML_MATHML_OP_CSC_FORMAT "<mo>csc</mo>"
+#define REB2SAC_XHTML_MATHML_OP_CSCH_FORMAT "<mo>csch</mo>"
+#define REB2SAC_XHTML_MATHML_OP_SEC_FORMAT "<mo>sec</mo>"
+#define REB2SAC_XHTML_MATHML_OP_SECH_FORMAT "<mo>sech</mo>"
+
+#define REB2SAC_XHTML_MATHML_OP_ARCCOS_FORMAT "<mo>arccos</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCSIN_FORMAT "<mo>arcsin</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCCOSH_FORMAT "<mo>arccosh</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCSINH_FORMAT "<mo>arcsinh</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCTAN_FORMAT "<mo>arctan</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCTANH_FORMAT "<mo>arctanh</mo>"
+
+#define REB2SAC_XHTML_MATHML_OP_ARCCOT_FORMAT "<mo>arccot</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCCOTH_FORMAT "<mo>arccoth</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCCSC_FORMAT "<mo>arccsc</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCCSCH_FORMAT "<mo>arccsch</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCSEC_FORMAT "<mo>arcsec</mo>"
+#define REB2SAC_XHTML_MATHML_OP_ARCSECH_FORMAT "<mo>arcsech</mo>"
+
+#define REB2SAC_XHTML_MATHML_OP_NOT_FORMAT "<mo>&not;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_AND_FORMAT "<mo>&and;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_OR_FORMAT "<mo>&or;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_XOR_FORMAT "<mo>&oplus;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_EQ_FORMAT "<mo>=</mo>"
+#define REB2SAC_XHTML_MATHML_OP_NEQ_FORMAT "<mo>&ne;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_GT_FORMAT "<mo>&gt;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_LT_FORMAT "<mo>&lt;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_GEQ_FORMAT "<mo>&ge;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_LEQ_FORMAT "<mo>&le;</mo>"
 #define REB2SAC_XHTML_MATHML_OP_PLUS_FORMAT "<mo>+</mo>"
 #define REB2SAC_XHTML_MATHML_OP_MINUS_FORMAT "<mo>-</mo>"
 //#define REB2SAC_XHTML_MATHML_OP_TIMES_FORMAT "<mo><mchar name=\"InvisibleTimes\"/></mo>"
@@ -65,18 +110,90 @@
 #define REB2SAC_XHTML_MATHML_END_FRAC_FORMAT "</mfrac>"
 #define REB2SAC_XHTML_MATHML_START_POWER_FORMAT "<msup>"
 #define REB2SAC_XHTML_MATHML_END_POWER_FORMAT "</msup>"
+#define REB2SAC_XHTML_MATHML_SUP_INT_FORMAT "<sup>%d</sup>"
 
+#define REB2SAC_XHTML_MATHML_ROOT_FORMAT "<mo>1&frasl;</mo>"
+
+#define REB2SAC_XHTML_MATHML_BULLET_FORMAT "<mo>&bull;</mo>"
+#define REB2SAC_XHTML_MATHML_COMMA_FORMAT "<mo>,</mo>"
 #define REB2SAC_XHTML_MATHML_L_PAREN_FORMAT "<mo>(</mo>"
 #define REB2SAC_XHTML_MATHML_R_PAREN_FORMAT "<mo>)</mo>"
+#define REB2SAC_XHTML_MATHML_ABS_FORMAT "<mo>|</mo>"
+#define REB2SAC_XHTML_MATHML_L_FLOOR_FORMAT "<mo>&lfloor;</mo>"
+#define REB2SAC_XHTML_MATHML_R_FLOOR_FORMAT "<mo>&rfloor;</mo>"
+#define REB2SAC_XHTML_MATHML_L_CEILING_FORMAT "<mo>&lceil;</mo>"
+#define REB2SAC_XHTML_MATHML_R_CEILING_FORMAT "<mo>&rceil;</mo>"
 
 #define REB2SAC_XHTML_START_CONSTANTS_FORMAT \
-"<table border=\"2\"><tr><th>Constant ID</th><th>Value</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Parameter ID</th><th>Value</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_CONSTANTS_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_CONSTANT_ENTRY_FORMAT \
 "<tr><td>%s</td><td>%g</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_FUNCTION_FORMAT \
+"<table border=\"2\"><tr><th>Function ID</th><th>Arguments</th><th>Function Body</th></tr>" NEW_LINE
+ 
+#define REB2SAC_XHTML_END_FUNCTION_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_START_FUNCTION_ENTRY_FORMAT \
+"<tr><td>%s</td>"
+
+#define REB2SAC_XHTML_END_FUNCTION_ENTRY_FORMAT \
+"</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_FUNCTION_ARGUMENT_FORMAT \
+"<td>"
+
+#define REB2SAC_XHTML_END_FUNCTION_ARGUMENT_FORMAT \
+"</td><td>"
+
+#define REB2SAC_XHTML_START_UNITDEF_FORMAT \
+"<table border=\"2\"><tr><th>Unit ID</th><th>Definition</th></tr>" NEW_LINE
+ 
+#define REB2SAC_XHTML_END_UNITDEF_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_START_UNITDEF_ENTRY_FORMAT \
+"<tr><td>%s</td><td>"
+ 
+#define REB2SAC_XHTML_END_UNITDEF_ENTRY_FORMAT \
+"</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_RULE_FORMAT \
+"<table border=\"2\"><tr><th>Rule LHS</th><th>Rule RHS</th></tr>" NEW_LINE
+ 
+#define REB2SAC_XHTML_END_RULE_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_START_ALGRULE_ENTRY_FORMAT \
+"<tr><td>0</td><td>"
+
+#define REB2SAC_XHTML_START_ASSIGNRULE_ENTRY_FORMAT \
+"<tr><td>%s</td><td>"
+
+#define REB2SAC_XHTML_START_RATERULE_ENTRY_FORMAT \
+"<tr><td>d(%s)/dt</td><td>"
+
+#define REB2SAC_XHTML_END_RULE_ENTRY_FORMAT \
+"</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_CONSTRAINT_FORMAT \
+"<table border=\"2\"><tr><th>Constraint ID</th><th>Constraint</th></tr>" NEW_LINE
+/*"<table border=\"2\"><tr><th>Constraint ID</th><th>Message</th><th>Constraint</th></tr>" NEW_LINE*/
+ 
+#define REB2SAC_XHTML_END_CONSTRAINT_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_START_CONSTRAINT_ENTRY_FORMAT \
+"<tr><td>%s</td><td>"
+/*"<tr><td>%s</td><td>%s</td><td>"*/
+
+#define REB2SAC_XHTML_END_CONSTRAINT_ENTRY_FORMAT \
+"</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_FORMAT \
 "<table border=\"2\"><tr><th>Compartment ID</th><th>Initial Size</th></tr>" NEW_LINE
@@ -95,6 +212,36 @@
 
 #define REB2SAC_XHTML_SPECIES_ENTRY_FORMAT \
 "<tr><td>%s</td><td>%s</td><td>%g</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_EVENT_FORMAT \
+"<table border=\"2\"><tr><th>Event ID</th><td>%s</td></tr>" NEW_LINE
+ 
+#define REB2SAC_XHTML_END_EVENT_FORMAT \
+"</table>" NEW_LINE
+
+#define REB2SAC_XHTML_START_TRIGGER_FORMAT \
+"<tr><th>Trigger</th><td>"
+
+#define REB2SAC_XHTML_END_TRIGGER_FORMAT \
+"</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_DELAY_FORMAT \
+"<tr><th>Delay</th><td>" NEW_LINE
+
+#define REB2SAC_XHTML_END_DELAY_FORMAT \
+"</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_ASSIGNMENTS_FORMAT \
+"<tr><th>Assignments</th><td>"
+
+#define REB2SAC_XHTML_END_ASSIGNMENTS_FORMAT \
+"</td></tr>" NEW_LINE
+
+#define REB2SAC_XHTML_START_ASSIGN_FORMAT \
+"<mo>%s=</mo>"
+
+#define REB2SAC_XHTML_END_ASSIGN_FORMAT \
+"" 
 
 #define REB2SAC_XHTML_START_REACTION_FORMAT \
 "<table border=\"2\"><tr><th>Reaction Name</th><td>%s</td></tr>" NEW_LINE
@@ -140,6 +287,7 @@ BEGIN_C_NAMESPACE
 
 RET_VAL GenerateXHTMLFromIR( IR *ir, FILE *file );
 
+RET_VAL PrintEventsInXHTML( IR *ir, FILE *file ); 
 RET_VAL PrintConstantsInXHTML( IR *ir, FILE *file ); 
 RET_VAL PrintListOfReactionsInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintReactionInXHTML( REACTION *reaction, FILE *file ); 
@@ -148,6 +296,9 @@ RET_VAL PrintListOfProductsInXHTML( LINKED_LIST *list, FILE *file );
 RET_VAL PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintCompartmentListInXHTML( LINKED_LIST *list, FILE *file ); 
+RET_VAL PrintFunctionListInXHTML( LINKED_LIST *list, FILE *file ); 
+RET_VAL PrintUnitListInXHTML( LINKED_LIST *list, FILE *file ); 
+RET_VAL PrintRuleListInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ); 
 RET_VAL PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
 

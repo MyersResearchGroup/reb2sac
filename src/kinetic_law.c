@@ -273,7 +273,7 @@ KINETIC_LAW *CreateFunctionKineticLaw( char *funcId, KINETIC_LAW *function, LINK
         return NULL;
     }
 
-    law = function;
+    law = CloneKineticLaw(function);
     for (i = 0; i < num; i++) {
       argument = (char*)GetElementByIndex(i,arguments);
       if (ReplaceFunctionSymbolWithKineticLawInKineticLaw( law, argument, children[i])!=SUCCESS) {
@@ -1555,11 +1555,11 @@ static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR 
 
     if( strcmp(kineticLaw->value.funcSymbol,funcSymbol)==0 ) {
         replacement = (KINETIC_LAW*)(visitor->_internal1);
-    #if DEBUG
+#if DEBUG
         string = ToStringKineticLaw( replacement );
         printf( "replacing %s with %s" NEW_LINE, funcSymbol, GetCharArrayOfString( string ) );
         FreeString( &string );
-    #endif
+#endif
         if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_OP ) {
             if( IS_FAILED( ( ret = SetOpKineticLaw( kineticLaw, replacement->value.op.opType, 
                 CloneKineticLaw( replacement->value.op.left ), CloneKineticLaw( replacement->value.op.right ) ) ) ) ) {
