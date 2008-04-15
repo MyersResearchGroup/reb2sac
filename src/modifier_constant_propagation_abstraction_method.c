@@ -72,11 +72,15 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
     LINKED_LIST *speciesList = NULL;
     LINKED_LIST *edges = NULL;
     LINKED_LIST *list = NULL;
+    LINKED_LIST *ruleList = NULL;
+    LINKED_LIST *eventList = NULL;
     LINKED_LIST *list2 = NULL;
     EVENT_MANAGER *eventManager;
     EVENT *event;
     EVENT_ASSIGNMENT *eventAssignment;
     RULE_MANAGER *ruleManager;
+    CONSTRAINT_MANAGER *constraintManager;
+    CONSTRAINT *constraint;
     RULE *rule = NULL;
     BOOL foundIt;
 #ifdef DEBUG
@@ -106,9 +110,9 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
 	}
-	list = eventManager->CreateListOfEvents( eventManager );
-	ResetCurrentElement( list );
-	while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	eventList = eventManager->CreateListOfEvents( eventManager );
+	ResetCurrentElement( eventList );
+	while( ( event = (EVENT*)GetNextFromLinkedList( eventList ) ) != NULL ) {
 	  list2 = GetEventAssignments( event );
 	  ResetCurrentElement( list2 );
 	  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list2 ) ) != NULL ) {
@@ -126,9 +130,9 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
 	}
-	list = ruleManager->CreateListOfRules( ruleManager );
-	ResetCurrentElement( list );
-	while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+	ruleList = ruleManager->CreateListOfRules( ruleManager );
+	ResetCurrentElement( ruleList );
+	while( ( rule = (RULE*)GetNextFromLinkedList( ruleList ) ) != NULL ) {
 	  if ( ( GetRuleType( rule ) == RULE_TYPE_ASSIGNMENT ) ||
 	       ( GetRuleType( rule ) == RULE_TYPE_RATE ) ) {
 	    if ( strcmp( GetCharArrayOfString(GetRuleVar( rule )),
@@ -170,6 +174,51 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
             FreeString( &kineticLawString );
 #endif             
         }
+
+	ResetCurrentElement( ruleList );
+	while( ( rule = (RULE*)GetNextFromLinkedList( ruleList ) ) != NULL ) {
+	  kineticLaw = GetMathInRule( rule );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	}
+	ResetCurrentElement( eventList );
+	while( ( event = (EVENT*)GetNextFromLinkedList( eventList ) ) != NULL ) {
+	  kineticLaw = GetTriggerInEvent( event );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	  kineticLaw = GetDelayInEvent( event );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	  list2 = GetEventAssignments( event );
+	  ResetCurrentElement( list2 );
+	  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list2 ) ) != NULL ) {
+	    kineticLaw = eventAssignment->assignment;
+	    if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	      END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	      return ret;
+	    }
+	  }
+	}
+
+	if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_ApplyModifierConstantPropagationMethod", "could not get the constraint manager" );
+	}
+	list = constraintManager->CreateListOfConstraints( constraintManager );
+	ResetCurrentElement( list );
+	while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  kineticLaw = GetMathInConstraint( constraint );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	}
+
         FreeKineticLaw( &symKineticLaw );
         if( IS_FAILED( ( ret = ir->RemoveSpecies( ir, species ) ) ) ) {
             END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
@@ -225,9 +274,11 @@ static RET_VAL _DoConstantPropagation( ABSTRACTION_METHOD *method, KINETIC_LAW *
     
     START_FUNCTION("_DoConstantPropagation");
     
-    if( IS_FAILED( ( ret = ReplaceSpeciesWithKineticLawInKineticLaw( kineticLaw, modifier, symKineticLaw ) ) ) ) {
+    if (kineticLaw) {
+      if( IS_FAILED( ( ret = ReplaceSpeciesWithKineticLawInKineticLaw( kineticLaw, modifier, symKineticLaw ) ) ) ) {
         END_FUNCTION("_DoConstantPropagation", ret );
         return ret;
+      }
     }
     END_FUNCTION("_DoConstantPropagation", SUCCESS );
     return ret;
