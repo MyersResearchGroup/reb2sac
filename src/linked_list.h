@@ -40,8 +40,8 @@ Interface for linked list API
     
 		DLLSCOPE LINKED_LIST * STDCALL CreateLinkedList();
 		DLLSCOPE LINKED_LIST * STDCALL CloneLinkedList( LINKED_LIST *list );
-		DLLSCOPE RET_VAL  STDCALL AddElementInLinkedList( CADDR_T element, LINKED_LIST *list );				
-		DLLSCOPE RET_VAL  STDCALL InsertHeadInLinkedList( CADDR_T element, LINKED_LIST *list );				
+		DLLSCOPE RET_VAL  STDCALL AddElementInLinkedList( CADDR_T element, LINKED_LIST *list );
+		DLLSCOPE RET_VAL  STDCALL InsertHeadInLinkedList( CADDR_T element, LINKED_LIST *list );
 		DLLSCOPE RET_VAL  STDCALL RemoveElementFromLinkedListByIndex( UINT32 index, LINKED_LIST *list );
 		DLLSCOPE RET_VAL  STDCALL RemoveElementFromLinkedList( CADDR_T element, LINKED_LIST *list );
 		DLLSCOPE RET_VAL  STDCALL RemoveCurrentFromLinkedList( LINKED_LIST *list );

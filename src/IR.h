@@ -118,7 +118,7 @@ struct _IR {
         
     
     RET_VAL (*GenerateDotFile)( IR *ir, FILE *file ); 
-    RET_VAL (*GenerateSBML)( IR *ir, FILE *file );           
+    RET_VAL (*GenerateSBML)( IR *ir, FILE *file, char *filename );           
     RET_VAL (*GenerateXHTML)( IR *ir, FILE *file );           
 };
 
