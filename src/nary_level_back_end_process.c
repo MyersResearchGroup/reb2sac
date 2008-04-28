@@ -76,7 +76,7 @@ static RET_VAL _GenerateSBMLForAbstractedModel(  BACK_END_PROCESSOR *backend, IR
     if( ( file = fopen( filename, "w" ) ) == NULL ) {
         return FAILING;
     }
-    if( IS_FAILED( ( ret = ir->GenerateSBML( ir, file ) ) ) ) {
+    if( IS_FAILED( ( ret = ir->GenerateSBML( ir, file, filename ) ) ) ) {
         return ret;
     }
     fclose( file );
@@ -165,16 +165,16 @@ static RET_VAL _GenerateNaryLevelsForSpecies(  BACK_END_PROCESSOR *backend, SPEC
      * species S must be either produced or consumed 
      */  
     
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     if( GetLinkedListSize( edges ) == 0 ) {
-        edges = GetProductEdges( species );
+        edges = GetProductEdges( (IR_NODE*)species );
         if( GetLinkedListSize( edges ) == 0 ) {
             ret = _PrintNoLevelFound( backend, file, species );            
             return ret;
         }
     }
     
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         /*
@@ -182,7 +182,7 @@ static RET_VAL _GenerateNaryLevelsForSpecies(  BACK_END_PROCESSOR *backend, SPEC
         *  S is the only reactant in r
         */  
         reaction = GetReactionInIREdge( edge );
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 1 ) {
             ret = _PrintNoLevelFound( backend, file, species );            
             return ret;
@@ -191,14 +191,14 @@ static RET_VAL _GenerateNaryLevelsForSpecies(  BACK_END_PROCESSOR *backend, SPEC
         * for each r in { reactions which use S as a reactant }
         *  there is no product in r
         */  
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             ret = _PrintNoLevelFound( backend, file, species );            
             return ret;
         }    
     }        
     
-    edges = GetProductEdges( species );
+    edges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         /*
@@ -206,7 +206,7 @@ static RET_VAL _GenerateNaryLevelsForSpecies(  BACK_END_PROCESSOR *backend, SPEC
         *  there is no reactant in r
         */  
         reaction = GetReactionInIREdge( edge );
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             ret = _PrintNoLevelFound( backend, file, species );            
             return ret;
@@ -215,7 +215,7 @@ static RET_VAL _GenerateNaryLevelsForSpecies(  BACK_END_PROCESSOR *backend, SPEC
         * for each r in { reactions which use S as a product }
         *  S is the only product in r
         */  
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 1 ) {
             ret = _PrintNoLevelFound( backend, file, species );            
             return ret;
@@ -227,7 +227,7 @@ static RET_VAL _GenerateNaryLevelsForSpecies(  BACK_END_PROCESSOR *backend, SPEC
         return FAILING;
     } 
     
-    list = GetModifierEdges( species );
+    list = GetModifierEdges( (IR_NODE*)species );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );    

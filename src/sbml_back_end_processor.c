@@ -33,7 +33,7 @@ RET_VAL ProcessSBMLBackend( BACK_END_PROCESSOR *backend, IR *ir ) {
     if( ( file = fopen( filename, "w" ) ) == NULL ) {
         return ErrorReport( FAILING, "ProcessSBMLBackend", "sbml file open error" ); 
     }
-    if( IS_FAILED( ( ret = ir->GenerateSBML( ir, file ) ) ) ) {
+    if( IS_FAILED( ( ret = ir->GenerateSBML( ir, file, filename ) ) ) ) {
         END_FUNCTION("ProcessSBMLBackend", ret );
         return ret;
     }
