@@ -53,15 +53,12 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
 static RET_VAL _HandleCompartments( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model, Compartment_t *compartment );
 
-static RET_VAL _HandleReactionLaws( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model );
-static RET_VAL _HandleReactionLaw( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model, Reaction_t *reaction );
-static RET_VAL _HandleKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION_LAW *reactionLaw, Model_t *model, Reaction_t *reaction );
 static RET_VAL _CreateSpeciesNodes(  FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model );
 static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model, Species_t *species );
 
 static RET_VAL _CreateReactionNodes( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model );
 static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model, Reaction_t *reaction );
-static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *reactionNode, Model_t *model, Reaction_t *reaction );
+static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *reactionNode, REACTION_LAW *reactionLaw, Model_t *model, Reaction_t *reaction );
 static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformOpKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
@@ -253,19 +250,15 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         return ret;
     }
     
-    if( IS_FAILED( ( ret = _HandleReactionLaws( frontend, ir, model ) ) ) ) {
+    if( IS_FAILED( ( ret = _CreateReactionNodes( frontend, ir, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
-    } 
+    }
+
     if( ( reactionLawManager = GetReactionLawManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_GenerateIR", "could not get an instance of reactionLaw manager" );
     } 
     if( IS_FAILED( ( ret = ir->SetReactionLawManager( ir, reactionLawManager ) ) ) ) {
-        END_FUNCTION("_GenerateIR", ret );
-        return ret;
-    }
-    
-    if( IS_FAILED( ( ret = _CreateReactionNodes( frontend, ir, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     }
@@ -1322,103 +1315,6 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
 }
 
 
-static RET_VAL _HandleReactionLaws( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model ) {
-    RET_VAL ret = SUCCESS;
-    UINT i = 0;
-    UINT size = 0;
-    ListOf_t *list = NULL;
-    Reaction_t *reaction = NULL;
-    
-    START_FUNCTION("_HandleReactionLaws");
-            
-    list = Model_getListOfReactions( model );
-    size = Model_getNumReactions( model );
-    for( i = 0; i < size; i++ ) {
-        reaction = (Reaction_t*)ListOf_get( list, i );
-        if( IS_FAILED( ( ret = _HandleReactionLaw( frontend, ir, model, reaction ) ) ) ) {
-            END_FUNCTION("_HandleReactionLaws", ret );
-            return ret;
-        } 
-    }
-    
-    END_FUNCTION("_HandleReactionLaws", SUCCESS );
-    return ret;
-}
-
-
-static RET_VAL _HandleReactionLaw( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model, Reaction_t *reaction ) {
-    RET_VAL ret = SUCCESS;
-    char *id = NULL;
-    REACTION_LAW *reactionLaw = NULL; 
-    REACTION_LAW_MANAGER *manager = NULL;
-
-    START_FUNCTION("_HandleReactionLaw");
-            
-    if( ( manager = GetReactionLawManagerInstance( frontend->record ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleReactionLaw", "could not get an instance of reactionLaw manager" );
-    }
-
-    id = (char*)Reaction_getId( reaction );
-    TRACE_1("reaction id = %s", id);
-    
-    if( ( reactionLaw = manager->CreateReactionLaw( manager, id ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleReactionLaw", "could not allocate reactionLaw %s", id );
-    }
-
-    if( IS_FAILED( ( ret = _HandleKineticLaw( frontend, reactionLaw, model, reaction ) ) ) ) {
-        END_FUNCTION("_CreateReactionNode", ret );
-        return ret;
-    }
-                               
-    END_FUNCTION("_HandleReactionLaw", SUCCESS );
-    return ret;   
-}
-
-static RET_VAL _HandleKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION_LAW *reactionLaw, Model_t *model, Reaction_t *reaction ) {
-    RET_VAL ret = SUCCESS;
-    SBML_SYMTAB_MANAGER *manager = NULL;
-    KineticLaw_t *source =NULL;
-    ASTNode_t *node = NULL;
-    ListOf_t *list = NULL;
-    HASH_TABLE *table = NULL;
-    KINETIC_LAW *law = NULL;
-#ifdef DEBUG
-    STRING *kineticLawString = NULL;
-#endif        
-    
-    START_FUNCTION("_CreateKineticLaw");
-               
-    table = (HASH_TABLE*)frontend->_internal2;    
-    
-    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CreateKineticLaw", "error on getting symtab manager" ); 
-    }
-    source = Reaction_getKineticLaw( reaction );
-    
-    list = KineticLaw_getListOfParameters( source );
-    if( IS_FAILED( ( ret = manager->SetLocal( manager, list ) ) ) ) {
-        return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
-    }     
-        
-    node = (ASTNode_t*)KineticLaw_getMath( source );
-    if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CreateKineticLaw", "failed to create kinetic law for %s", Reaction_getId( reaction ) );        
-    }
-#ifdef DEBUG
-    kineticLawString = ToStringKineticLaw( law );
-    printf( "\thandle kinetic law: %s%s", GetCharArrayOfString( kineticLawString ), NEW_LINE );
-    FreeString( &kineticLawString );
-#endif             
-     
-    if( IS_FAILED( ( ret = SetKineticLawInReactionLaw( reactionLaw, law ) ) ) ) {
-        END_FUNCTION("_CreateKineticLaw", ret );
-        return ret;   
-    }   
-                                            
-    END_FUNCTION("_CreateKineticLaw", SUCCESS );
-    return ret;   
-}
-
 static RET_VAL _CreateReactionNodes( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model ) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
@@ -1445,23 +1341,34 @@ static RET_VAL _CreateReactionNodes( FRONT_END_PROCESSOR *frontend, IR *ir, Mode
 
 static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model_t *model, Reaction_t *reaction ) {
     RET_VAL ret = SUCCESS;
-    char *name = NULL;
+    char *id = NULL;
     REACTION *reactionNode = NULL; 
+    REACTION_LAW *reactionLaw = NULL; 
+    REACTION_LAW_MANAGER *manager = NULL;
 
     START_FUNCTION("_CreateReactionNode");
             
+            
+    if( ( manager = GetReactionLawManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CreateReactionNode", "could not get an instance of reactionLaw manager" );
+    }
+
     /*if( ( name = Reaction_getName( reaction ) ) == NULL ) {    
         name = Reaction_getId( reaction );
 	}*/
-    name = (char*)Reaction_getId( reaction );
-    TRACE_1("reaction name = %s", name);
+    id = (char*)Reaction_getId( reaction );
+    TRACE_1("reaction id = %s", id);
     
-    if( ( reactionNode = ir->CreateReaction( ir, name ) ) == NULL ) {
+    if( ( reactionLaw = manager->CreateReactionLaw( manager, id ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CreateReactionNode", "could not allocate reactionLaw %s", id );
+    }
+    
+    if( ( reactionNode = ir->CreateReaction( ir, id ) ) == NULL ) {
         END_FUNCTION("_CreateReactionNode", ret );
         return ret;   
     }    
 
-    if( IS_FAILED( ( ret = _CreateKineticLaw( frontend, reactionNode, model, reaction ) ) ) ) {
+    if( IS_FAILED( ( ret = _CreateKineticLaw( frontend, reactionNode, reactionLaw, model, reaction ) ) ) ) {
         END_FUNCTION("_CreateReactionNode", ret );
         return ret;
     }
@@ -1493,7 +1400,7 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
 
 
 
-static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *reactionNode, Model_t *model, Reaction_t *reaction ) {
+static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *reactionNode, REACTION_LAW *reactionLaw, Model_t *model, Reaction_t *reaction ) {
     RET_VAL ret = SUCCESS;
     SBML_SYMTAB_MANAGER *manager = NULL;
     KineticLaw_t *source =NULL;
@@ -1530,6 +1437,11 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
 #endif             
      
     if( IS_FAILED( ( ret = SetKineticLawInReactionNode( reactionNode, law ) ) ) ) {
+        END_FUNCTION("_CreateKineticLaw", ret );
+        return ret;   
+    }   
+
+    if( IS_FAILED( ( ret = SetKineticLawInReactionLaw( reactionLaw, law ) ) ) ) {
         END_FUNCTION("_CreateKineticLaw", ret );
         return ret;   
     }   
