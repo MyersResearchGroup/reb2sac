@@ -76,6 +76,7 @@ static RULE_MANAGER *_GetRuleManager( IR *ir );
 static CONSTRAINT_MANAGER *_GetConstraintManager( IR *ir );
 static EVENT_MANAGER *_GetEventManager( IR *ir );
 static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir );
+static REACTION_LAW_MANAGER *_GetReactionLawManager( IR *ir );
 static REB2SAC_SYMTAB *_GetGlobalSymtab( IR *ir );
 
 static RET_VAL _SetUnitManager( IR *ir, UNIT_MANAGER *unitManager );
@@ -84,6 +85,7 @@ static RET_VAL _SetRuleManager( IR *ir, RULE_MANAGER *ruleManager );
 static RET_VAL _SetConstraintManager( IR *ir, CONSTRAINT_MANAGER *constraintManager );
 static RET_VAL _SetEventManager( IR *ir, EVENT_MANAGER *eventManager );
 static RET_VAL _SetCompartmentManager( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
+static RET_VAL _SetReactionLawManager( IR *ir, REACTION_LAW_MANAGER *reactionLawManager );
 
             
 static RET_VAL _GenerateDotFile( IR *ir, FILE *file );            
@@ -230,6 +232,8 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
     
     ir->GetCompartmentManager = _GetCompartmentManager;
     ir->SetCompartmentManager = _SetCompartmentManager;    
+    ir->GetReactionLawManager = _GetReactionLawManager;
+    ir->SetReactionLawManager = _SetReactionLawManager;    
     ir->GetGlobalSymtab = _GetGlobalSymtab;
     
     ir->GenerateDotFile = _GenerateDotFile;
@@ -947,6 +951,18 @@ static COMPARTMENT_MANAGER *_GetCompartmentManager( IR *ir ) {
     return ir->compartmentManager;
 }
 
+static REACTION_LAW_MANAGER *_GetReactionLawManager( IR *ir ) {
+    START_FUNCTION("_GetReactionLawManager");
+            
+    if( ir == NULL ) {
+        END_FUNCTION("_GetReactionLawManager", FAILING );
+        return NULL;    
+    }
+        
+    END_FUNCTION("_GetReactionLawManager", SUCCESS );
+    return ir->reactionLawManager;
+}
+
 static REB2SAC_SYMTAB *_GetGlobalSymtab( IR *ir ) {
     START_FUNCTION("_GetGlobalSymtab");
             
@@ -1029,6 +1045,18 @@ static RET_VAL _SetCompartmentManager( IR *ir, COMPARTMENT_MANAGER *compartmentM
     ir->compartmentManager = compartmentManager;
             
     END_FUNCTION("_SetCompartmentManager", SUCCESS );
+    return SUCCESS;;
+}
+
+static RET_VAL _SetReactionLawManager( IR *ir, REACTION_LAW_MANAGER *reactionLawManager ) {
+    START_FUNCTION("_SetReactionLawManager");
+            
+    if( ir == NULL ) {
+        return ErrorReport( FAILING, "_SetReactionLawManager", "input ir is null" );
+    }
+    ir->reactionLawManager = reactionLawManager;
+            
+    END_FUNCTION("_SetReactionLawManager", SUCCESS );
     return SUCCESS;;
 }
 
