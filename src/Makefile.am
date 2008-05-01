@@ -10,7 +10,7 @@ reb2sac_LDFLAGS = $(all_libraries)
 noinst_HEADERS = \
 	abs_phage_lambda2_simulation_run_termination_decider.h	abs_phage_lambda_simulation_run_termination_decider.h	abstraction_engine.h abstraction_method_constructor.h	abstraction_method_manager.h \
 				abstraction_method_properties.h	abstraction_reporter.h back_end_processor.h biospice_tsd_printer.h	bunker_monte_carlo2.h \
-				bunker_monte_carlo.h common.h	compartment_manager.h compiler_def.h \
+				bunker_monte_carlo.h common.h	compartment_manager.h reaction_manager.h compiler_def.h \
 				confidence_interval_stop_rule.h	critical_concentration_finder.h critical_level_finder.h	critical_level_order_decider.h \
 				csv_simulation_printer.h	ctmc_analysis_back_end_processor.h ctmc_analyzer.h	ctmc_stationary_analysis_back_end_processor.h \
 				ctmc_stationary_analyzer.h	ctmc_transformation_checker.h \
@@ -39,7 +39,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	abstraction_reporter.c back_end_processor.c birth_death_generation_method2.c \
 	birth_death_generation_method3.c birth_death_generation_method4.c birth_death_generation_method5.c \
 	birth_death_generation_method6.c birth_death_generation_method7.c birth_death_generation_method.c \
-	bunker_monte_carlo2.c bunker_monte_carlo.c compartment_manager.c \
+	bunker_monte_carlo2.c bunker_monte_carlo.c compartment_manager.c reaction_manager.c \
 	confidence_interval_stop_rule.c critical_concentration_finder.c critical_level_finder.c \
 	critical_level_order_decider.c csv_simulation_printer.c ctmc_analysis_back_end_processor.c \
 	ctmc_analyzer.c ctmc_stationary_analysis_back_end_processor.c \

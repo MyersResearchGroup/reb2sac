@@ -32,6 +32,7 @@
 #include "rule_manager.h"
 #include "constraint_manager.h"
 #include "event_manager.h"
+#include "reaction_manager.h"
 
 BEGIN_C_NAMESPACE
 
@@ -56,6 +57,7 @@ struct _IR {
     CONSTRAINT_MANAGER *constraintManager;
     EVENT_MANAGER *eventManager;
     COMPARTMENT_MANAGER *compartmentManager;
+    REACTION_LAW_MANAGER *reactionLawManager;
     REB2SAC_SYMTAB *globalSymtab;
     
     LINKED_LIST * (*GetListOfSpeciesNodes)( IR *ir );    
@@ -107,6 +109,7 @@ struct _IR {
     CONSTRAINT_MANAGER * (*GetConstraintManager)( IR *ir );
     EVENT_MANAGER * (*GetEventManager)( IR *ir );
     COMPARTMENT_MANAGER * (*GetCompartmentManager)( IR *ir );
+    REACTION_LAW_MANAGER * (*GetReactionLawManager)( IR *ir );
     REB2SAC_SYMTAB *(*GetGlobalSymtab)( IR *ir );
     
     RET_VAL (*SetUnitManager)( IR *ir, UNIT_MANAGER *unitManager );
@@ -115,6 +118,7 @@ struct _IR {
     RET_VAL (*SetConstraintManager)( IR *ir, CONSTRAINT_MANAGER *constraintManager );
     RET_VAL (*SetEventManager)( IR *ir, EVENT_MANAGER *eventManager );
     RET_VAL (*SetCompartmentManager)( IR *ir, COMPARTMENT_MANAGER *compartmentManager );
+    RET_VAL (*SetReactionLawManager)( IR *ir, REACTION_LAW_MANAGER *reactionLawManager );
         
     
     RET_VAL (*GenerateDotFile)( IR *ir, FILE *file ); 
