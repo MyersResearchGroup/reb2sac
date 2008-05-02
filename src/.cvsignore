@@ -2,3 +2,4 @@
 .libs
 Makefile
 reb2sac
+analysis_def_parser.output
