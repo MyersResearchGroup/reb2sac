@@ -27,7 +27,11 @@ static RET_VAL _PrintEnd( SIMULATION_PRINTER *printer );
 static RET_VAL _Destroy( SIMULATION_PRINTER *printer );
 
  
-DLLSCOPE SIMULATION_PRINTER * STDCALL CreateTsdSimulationPrinter( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, BOOL isAmount ) {
+DLLSCOPE SIMULATION_PRINTER * STDCALL CreateTsdSimulationPrinter( BACK_END_PROCESSOR *backend, 
+								  COMPARTMENT **compartmentArray, int compSize,
+								  SPECIES **speciesArray, int size, 
+								  REB2SAC_SYMBOL **symbolArray, int symSize,
+								  BOOL isAmount ) {
     SIMULATION_PRINTER *printer = NULL;
     
     START_FUNCTION("CreateTsdSimulationPrinter");
@@ -37,8 +41,12 @@ DLLSCOPE SIMULATION_PRINTER * STDCALL CreateTsdSimulationPrinter( BACK_END_PROCE
         return NULL;
     }
     
+    printer->compartmentArray = compartmentArray;
+    printer->compSize = compSize;
     printer->speciesArray = speciesArray;
     printer->size = size;
+    printer->symbolArray = symbolArray;
+    printer->symSize = symSize;
     printer->PrintStart = _PrintStart;
     printer->PrintHeader = _PrintHeader;
     if( isAmount ) {
@@ -75,13 +83,28 @@ static RET_VAL _PrintHeader( SIMULATION_PRINTER *printer ) {
     RET_VAL ret = SUCCESS;
     FILE *out = printer->out;
     int i = 0;
+    int compSize = printer->compSize;
+    COMPARTMENT **compartmentArray = printer->compartmentArray;
     int size = printer->size;
     SPECIES **speciesArray = printer->speciesArray;
+    int symSize = printer->symSize;
+    REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
 
     fprintf( out, "(\"time\"" );    
+    for( i = 0; i < compSize; i++ ) {
+      if (!IsCompartmentConstant( compartmentArray[i] )) {
+        fprintf( out, ",\"%s\"", GetCharArrayOfString(GetCompartmentID( compartmentArray[i] )) );
+      }
+    }
     for( i = 0; i < size; i++ ) {
         fprintf( out, ",\"%s\"", GetCharArrayOfString(GetSpeciesNodeName( speciesArray[i] )) );
     }                 
+    for( i = 0; i < symSize; i++ ) {
+      if (!IsSymbolConstant( symbolArray[i] ) && 
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0) {
+        fprintf( out, ",\"%s\"", GetCharArrayOfString(GetSymbolID( symbolArray[i] )) );
+      }
+    }
     fprintf( out, ")" );
     fflush(out);
     
@@ -92,12 +115,27 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     RET_VAL ret = SUCCESS;
     FILE *out = printer->out;
     int i = 0;
+    int compSize = printer->compSize;
+    COMPARTMENT **compartmentArray = printer->compartmentArray;
     int size = printer->size;
     SPECIES **speciesArray = printer->speciesArray;
+    int symSize = printer->symSize;
+    REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
     
     fprintf( out, ",(%g", time );
+    for( i = 0; i < compSize; i++ ) {
+      if (!IsCompartmentConstant( compartmentArray[i] )) {
+        fprintf( out, ",%g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
+      }
+    }                 
     for( i = 0; i < size; i++ ) {
         fprintf( out, ",%g", GetAmountInSpeciesNode( speciesArray[i] ) );
+    }                 
+    for( i = 0; i < symSize; i++ ) {
+      if (!IsSymbolConstant( symbolArray[i] ) && 
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0) {
+        fprintf( out, ",%g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
+      }
     }                 
     fprintf( out, ")" );
     fflush(out);
@@ -109,12 +147,27 @@ static RET_VAL _PrintConcentrationValues( SIMULATION_PRINTER *printer, double ti
     RET_VAL ret = SUCCESS;
     FILE *out = printer->out;
     int i = 0;
+    int compSize = printer->compSize;
+    COMPARTMENT **compartmentArray = printer->compartmentArray;
     int size = printer->size;
     SPECIES **speciesArray = printer->speciesArray;
+    int symSize = printer->symSize;
+    REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
     
     fprintf( out, ",(%g", time );
+    for( i = 0; i < compSize; i++ ) {
+      if (!IsCompartmentConstant( compartmentArray[i] )) {
+        fprintf( out, ",%g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
+      }
+    }                 
     for( i = 0; i < size; i++ ) {
         fprintf( out, ",%g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
+    }                 
+    for( i = 0; i < symSize; i++ ) {
+      if (!IsSymbolConstant( symbolArray[i] ) && 
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0) {
+        fprintf( out, ",%g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
+      }
     }                 
     fprintf( out, ")" );
     fflush(out);

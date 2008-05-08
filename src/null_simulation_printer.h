@@ -27,7 +27,12 @@ BEGIN_C_NAMESPACE
 #define NULL_SIMULATION_PRINTER "null.printer"
 
 
-DLLSCOPE SIMULATION_PRINTER * STDCALL CreateNullSimulationPrinter( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, BOOL isAmount );
+DLLSCOPE SIMULATION_PRINTER * STDCALL CreateNullSimulationPrinter( BACK_END_PROCESSOR *backend, 
+								   COMPARTMENT **compartmentArray, int compSize,
+								   SPECIES **speciesArray, int size, 
+								   REB2SAC_SYMBOL **symbolArray, int symSize,
+								   BOOL isAmount );
+
 
 END_C_NAMESPACE
 

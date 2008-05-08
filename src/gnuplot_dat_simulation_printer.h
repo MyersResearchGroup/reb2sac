@@ -27,7 +27,11 @@ BEGIN_C_NAMESPACE
 #define GNUPLOT_DAT_SIMULATION_PRINTER "dat.printer"
 
 
-DLLSCOPE SIMULATION_PRINTER * STDCALL CreateGnuplotDatSimulationPrinter( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, BOOL isAmount );
+DLLSCOPE SIMULATION_PRINTER * STDCALL CreateGnuplotDatSimulationPrinter( BACK_END_PROCESSOR *backend, 
+									 COMPARTMENT **compartmentArray, int compSize,
+									 SPECIES **speciesArray, int size, 
+									 REB2SAC_SYMBOL **symbolArray, int symSize,
+									 BOOL isAmount );
 
 END_C_NAMESPACE
 

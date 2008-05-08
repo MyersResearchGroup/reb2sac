@@ -302,7 +302,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
         rec->outDir = DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE;
     }
     
-    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
+    if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+						  speciesArray, rec->speciesSize,
+						  symbolArray, rec->symbolsSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
 
@@ -963,8 +965,10 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
 	  }
 	  if (deltaTime > 0) { 
 	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
-	  } else {
+	  } else if (deltaTime == 0) {
 	    fireEvent( rec->eventArray[i], rec );
+	  } else {
+	    return ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
 	  }
 	}
       } else {

@@ -284,7 +284,9 @@ static RET_VAL _InitializeRecord( TYPE1PILI_GILLESPIE_CI_RECORD *rec, BACK_END_P
         rec->outDir = DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE;
     }
     
-    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
+    if( ( rec->printer = CreateSimulationPrinter( backend, NULL, 0,
+						  speciesArray, rec->speciesSize,
+						  NULL, 0 ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
     

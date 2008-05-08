@@ -209,8 +209,10 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
-    if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
+    if ( rec->speciesSize > 0 ) {
+      if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
+      }
     }
     i = 0;
     ResetCurrentElement( list );
@@ -256,7 +258,9 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
         rec->outDir = DEFAULT_ODE_SIMULATION_OUT_DIR_VALUE;
     }
     
-    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
+    if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+						  speciesArray, rec->speciesSize,
+						  symbolArray, rec->symbolsSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
 
@@ -720,8 +724,10 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
 	  }
 	  if (deltaTime > 0) { 
 	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
-	  } else {
+	  } else if (deltaTime == 0) {
 	    fireEvent( rec->eventArray[i], rec );
+	  } else {
+	    return ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
 	  }
 	}
       } else {

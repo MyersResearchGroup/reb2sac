@@ -582,9 +582,11 @@ static RET_VAL _VisitSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     START_FUNCTION("_VisitSymbolToEvaluate");
     
     sym = GetSymbolFromKineticLaw( kineticLaw );
+    /*
     if( !IsSymbolConstant( sym ) ) {
         return ErrorReport( FAILING, "_VisitSymbolToEvaluate", "symbol %s is not a constant real", GetCharArrayOfString( GetSymbolID( sym ) ) );
     }
+    */
     if( !IsRealValueSymbol( sym ) ) {
         return ErrorReport( FAILING, "_VisitSymbolToEvaluate", "symbol %s is not a constant real", GetCharArrayOfString( GetSymbolID( sym ) ) );
     } 
