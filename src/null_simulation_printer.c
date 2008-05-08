@@ -26,7 +26,11 @@ static RET_VAL _PrintEnd( SIMULATION_PRINTER *printer );
 static RET_VAL _Destroy( SIMULATION_PRINTER *printer );
 
  
-DLLSCOPE SIMULATION_PRINTER * STDCALL CreateNullSimulationPrinter( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, int size, BOOL isAmount  ) {
+DLLSCOPE SIMULATION_PRINTER * STDCALL CreateNullSimulationPrinter( BACK_END_PROCESSOR *backend, 
+								   COMPARTMENT **compartmentArray, int compSize,
+								   SPECIES **speciesArray, int size, 
+								   REB2SAC_SYMBOL **symbolArray, int symSize,
+								   BOOL isAmount ) {
     SIMULATION_PRINTER *printer = NULL;
     
     START_FUNCTION("CreateNullSimulationPrinter");
@@ -36,8 +40,12 @@ DLLSCOPE SIMULATION_PRINTER * STDCALL CreateNullSimulationPrinter( BACK_END_PROC
         return NULL;
     }
     
+    printer->compartmentArray = compartmentArray;
+    printer->compSize = compSize;
     printer->speciesArray = speciesArray;
     printer->size = size;
+    printer->symbolArray = symbolArray;
+    printer->symSize = symSize;
     printer->PrintStart = _PrintStart;
     printer->PrintHeader = _PrintHeader;
     printer->PrintValues = _PrintValues;

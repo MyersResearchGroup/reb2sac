@@ -294,10 +294,9 @@ static RET_VAL _InitializeRecord( SSA_WITH_USER_UPDATE_RECORD *rec, BACK_END_PRO
         rec->outDir = DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE;
     }
     
-    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
-    }                
-    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
+    if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+						  speciesArray, rec->speciesSize,
+						  symbolArray, rec->symbolsSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
 

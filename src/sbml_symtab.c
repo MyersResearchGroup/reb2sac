@@ -194,12 +194,13 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
     UINT num = 0;
     Parameter_t *param = NULL;
     ListOf_t *globalParams = NULL;
-    
+    BOOL constant = TRUE;
+
     START_FUNCTION("_PutParametersInGlobalSymtab");
 
     globalParams = manager->global;
     if( globalParams != NULL ) {
-      if( ( globalSymtab->AddRealValueSymbol( globalSymtab, "t", 0, TRUE ) ) == NULL ) {
+      if( ( globalSymtab->AddRealValueSymbol( globalSymtab, "t", 0, FALSE ) ) == NULL ) {
 	return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
 			    "failed to put parameter %s in global symtab", id );
       }     
@@ -208,7 +209,11 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
 	param = (Parameter_t*)ListOf_get( globalParams, i );
 	id = Parameter_getId( param );
 	value = Parameter_getValue( param );
-	if( ( globalSymtab->AddRealValueSymbol( globalSymtab, id, value, TRUE ) ) == NULL ) {
+	constant = TRUE;
+	if (!Parameter_getConstant( param )) {
+	  constant = FALSE;
+	} 
+	if( ( globalSymtab->AddRealValueSymbol( globalSymtab, id, value, constant ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
 			      "failed to put parameter %s in global symtab", id );
 	}     

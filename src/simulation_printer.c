@@ -25,7 +25,10 @@
 
 #define DEFAULT_SIMULATION_PRINTER TSD_SIMULATION_PRINTER
 
-DLLSCOPE SIMULATION_PRINTER * STDCALL CreateSimulationPrinter( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, UINT32 size ) {
+DLLSCOPE SIMULATION_PRINTER * STDCALL CreateSimulationPrinter( BACK_END_PROCESSOR *backend, 
+							       COMPARTMENT **compartmentArray, UINT32 compSize,
+							       SPECIES **speciesArray, UINT32 size, 
+							       REB2SAC_SYMBOL **symbolArray, UINT32 symSize ) {
     int i = 0;
     SPECIES *species = NULL;
     SIMULATION_PRINTER *printer = NULL;
@@ -57,25 +60,33 @@ DLLSCOPE SIMULATION_PRINTER * STDCALL CreateSimulationPrinter( BACK_END_PROCESSO
     switch( valueString[0] ) {
         case 'c':
             if( strcmp( valueString, CSV_SIMULATION_PRINTER ) == 0 ) {
-                printer = CreateCsvSimulationPrinter( backend, speciesArray, size, isAmount );
+	      printer = CreateCsvSimulationPrinter( backend, compartmentArray, compSize,
+						    speciesArray, size, 
+						    symbolArray, symSize, isAmount );
             }
         break;
         
         case 'd':
             if( strcmp( valueString, GNUPLOT_DAT_SIMULATION_PRINTER ) == 0 ) {
-                printer = CreateGnuplotDatSimulationPrinter( backend, speciesArray, size, isAmount );
+	      printer = CreateGnuplotDatSimulationPrinter( backend, compartmentArray, compSize,
+							   speciesArray, size, 
+							   symbolArray, symSize, isAmount );
             }
         break;
         
         case 'n':
             if( strcmp( valueString, NULL_SIMULATION_PRINTER ) == 0 ) {
-                printer = CreateNullSimulationPrinter( backend, speciesArray, size, isAmount );
+	      printer = CreateNullSimulationPrinter( backend, compartmentArray, compSize,
+						     speciesArray, size, 
+						     symbolArray, symSize, isAmount );
             }
         break;
         
         case 't':
             if( strcmp( valueString, TSD_SIMULATION_PRINTER ) == 0 ) {
-                printer = CreateTsdSimulationPrinter( backend, speciesArray, size, isAmount );
+	      printer = CreateTsdSimulationPrinter( backend, compartmentArray, compSize,
+						    speciesArray, size, 
+						    symbolArray, symSize, isAmount );
             }
         break;
         

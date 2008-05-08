@@ -198,8 +198,10 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
-    if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
+    if ( rec->speciesSize > 0 ) {
+      if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
+      }
     }
     i = 0;
     ResetCurrentElement( list );
@@ -249,7 +251,9 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
         rec->outDir = DEFAULT_ODE_SIMULATION_OUT_DIR_VALUE;
     }
     
-    if( ( rec->printer = CreateSimulationPrinter( backend, speciesArray, rec->speciesSize ) ) == NULL ) {
+    if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+						  speciesArray, rec->speciesSize,
+						  symbolArray, rec->symbolsSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }                
 
@@ -673,8 +677,11 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR1_SIMUL
 	  }
 	  if (deltaTime > 0) { 
 	    SetNextEventTimeInEvent( rec->eventArray[i], t + deltaTime );
-	  } else {
+	  } else if (deltaTime == 0) {
 	    fireEvent( rec->eventArray[i], rec );
+	  } else {
+	    ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	    return GSL_FAILURE;
 	  }
 	}
       } else {

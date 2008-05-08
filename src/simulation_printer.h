@@ -37,8 +37,12 @@ struct _SIMULATION_PRINTER;
 typedef struct _SIMULATION_PRINTER SIMULATION_PRINTER;
 
 struct _SIMULATION_PRINTER {
+    COMPARTMENT **compartmentArray;
+    int compSize;
     SPECIES **speciesArray;
     int size;
+    REB2SAC_SYMBOL **symbolArray;
+    int symSize;
     FILE *out;
     RET_VAL (*PrintStart)( SIMULATION_PRINTER *printer, char *filenameStem );
     RET_VAL (*PrintHeader)( SIMULATION_PRINTER *printer );
@@ -47,7 +51,11 @@ struct _SIMULATION_PRINTER {
     RET_VAL (*Destroy)( SIMULATION_PRINTER *printer );
 };
 
-DLLSCOPE SIMULATION_PRINTER * STDCALL CreateSimulationPrinter( BACK_END_PROCESSOR *backend, SPECIES **speciesArray, UINT32 size );
+DLLSCOPE SIMULATION_PRINTER * STDCALL CreateSimulationPrinter( BACK_END_PROCESSOR *backend, 
+							       COMPARTMENT **compartmentArray, UINT32 compSize,
+							       SPECIES **speciesArray, UINT32 size, 
+							       REB2SAC_SYMBOL **symbolArray, UINT32 symSize );
+
 DLLSCOPE RET_VAL STDCALL DestroySimulationPrinter( SIMULATION_PRINTER *printer );
 
 END_C_NAMESPACE
