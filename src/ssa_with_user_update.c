@@ -53,6 +53,7 @@ static RET_VAL _UpdateByUserInput( SSA_WITH_USER_UPDATE_RECORD *rec );
 static int _ComparePropensity( REACTION *a, REACTION *b );
 static BOOL _IsTerminationConditionMet( SSA_WITH_USER_UPDATE_RECORD *rec );
 
+static void fireEvent( EVENT *event, SSA_WITH_USER_UPDATE_RECORD *rec );
 
 static double _GetUniformRandom();
 
@@ -145,6 +146,9 @@ static RET_VAL _InitializeRecord( SSA_WITH_USER_UPDATE_RECORD *rec, BACK_END_PRO
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = NULL;
     REB2SAC_SYMTAB *symTab;
+    EVENT *event = NULL;
+    EVENT **eventArray = NULL;
+    EVENT_MANAGER *eventManager;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -317,6 +321,24 @@ static RET_VAL _InitializeRecord( SSA_WITH_USER_UPDATE_RECORD *rec, BACK_END_PRO
         i++;        
     }
     rec->constraintArray = constraintArray;    
+
+    if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
+    }
+    list = eventManager->CreateListOfEvents( eventManager );
+    rec->eventsSize = GetLinkedListSize( list );
+    if ( rec->eventsSize > 0 ) {
+      if( ( eventArray = (EVENT**)MALLOC( rec->eventsSize * sizeof(EVENT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for events array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        eventArray[i] = event;
+        i++;        
+    }
+    rec->eventArray = eventArray;    
     
     if( ( rec->decider = 
         CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, 
@@ -383,6 +405,15 @@ static RET_VAL _InitializeSimulation( SSA_WITH_USER_UPDATE_RECORD *rec, int runN
             return ret;
         }
     }
+
+    for (i = 0; i < rec->eventsSize; i++) {
+      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+      } else {
+	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      }
+    }
     
     if( IS_FAILED( ( ret = timeSeriesSpeciesLevelUpdater->Initialize( timeSeriesSpeciesLevelUpdater ) ) ) ) {
         return ret;
@@ -396,9 +427,12 @@ static RET_VAL _InitializeSimulation( SSA_WITH_USER_UPDATE_RECORD *rec, int runN
 static RET_VAL _RunSimulation( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     int i = 0;
+    int j = 0;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
+    int nextEvent = 0;
+    double nextEventTime = 0;
 
     printer = rec->printer;
     decider = rec->decider;
@@ -437,20 +471,33 @@ static RET_VAL _RunSimulation( SSA_WITH_USER_UPDATE_RECORD *rec ) {
                 reaction = NULL;
             } 
             else {
-	      if ( rec->time < rec->timeLimit ) {
-                if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
-                    return ret;
-                }
-                if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
-                    return ret;
-                }
-                reaction = rec->nextReaction;
-	      } else {
-		if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-		  return ret;            
+	      nextEvent = -1;
+	      for (j = 0; j < rec->eventsSize; j++) {
+		nextEventTime = GetNextEventTimeInEvent( rec->eventArray[j] );
+		if ( nextEventTime > 0 && nextEventTime < rec->time ) {
+		  nextEvent = j;
+		  rec->time = GetNextEventTimeInEvent( rec->eventArray[j] );
 		}
 	      }
-            }
+	      if ( nextEvent >= 0) {
+		fireEvent( rec->eventArray[nextEvent], rec );
+		SetNextEventTimeInEvent( rec->eventArray[nextEvent], -1.0 );
+	      } else {
+		if ( rec->time < rec->timeLimit ) {
+		  if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
+                    return ret;
+		  }
+		  if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+                    return ret;
+		  }
+		  reaction = rec->nextReaction;
+		} else {
+		  if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		  return ret;            
+		  }
+		}
+	      }
+	    }
         }
     }
     if( rec->time >= rec->timeLimit ) {
@@ -738,6 +785,47 @@ static RET_VAL _UpdateNodeValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
 }
 
 
+static void fireEvent( EVENT *event, SSA_WITH_USER_UPDATE_RECORD *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double amount = 0.0;    
+  UINT j;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    for (j = 0; j < rec->speciesSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+	//printf("conc = %g\n",amount);
+	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	break;
+      } 
+    }
+    for (j = 0; j < rec->compartmentsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
+	//printf("conc = %g\n",amount);
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	break;
+      }
+    }
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
+	//printf("conc = %g\n",amount);
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	break;
+      } 
+    }
+  }
+}
+
+
 static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
@@ -750,6 +838,8 @@ static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     UINT i = 0;
     UINT j = 0;
+    double deltaTime;
+    BOOL triggerEnabled;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
@@ -852,6 +942,34 @@ static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec ) {
 	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
 	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
 	  }
+	}
+      }
+    }
+    for (i = 0; i < rec->eventsSize; i++) {
+      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+      if (!triggerEnabled) {
+	if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	    deltaTime = 0; 
+	  } 
+	  else {
+	    deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								    (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	  }
+	  if (deltaTime > 0) { 
+	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
+	  } else if (deltaTime == 0) {
+	    fireEvent( rec->eventArray[i], rec );
+	  } else {
+	    return ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	  }
+	}
+      } else {
+	if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	}
       }
     }
