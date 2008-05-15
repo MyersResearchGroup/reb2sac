@@ -101,7 +101,8 @@ static RET_VAL _PrintHeader( SIMULATION_PRINTER *printer ) {
     }                 
     for( i = 0; i < symSize; i++ ) {
       if (!IsSymbolConstant( symbolArray[i] ) && 
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0) {
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0 &&
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"time")==0) {
         fprintf( out, ",\"%s\"", GetCharArrayOfString(GetSymbolID( symbolArray[i] )) );
       }
     }
@@ -133,7 +134,8 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     }                 
     for( i = 0; i < symSize; i++ ) {
       if (!IsSymbolConstant( symbolArray[i] ) && 
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0) {
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0 &&
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"time")==0) {
         fprintf( out, ",%g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
       }
     }                 
@@ -165,7 +167,8 @@ static RET_VAL _PrintConcentrationValues( SIMULATION_PRINTER *printer, double ti
     }                 
     for( i = 0; i < symSize; i++ ) {
       if (!IsSymbolConstant( symbolArray[i] ) && 
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0) {
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0 &&
+	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"time")==0) {
         fprintf( out, ",%g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
       }
     }                 

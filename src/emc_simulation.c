@@ -931,7 +931,8 @@ static RET_VAL _UpdateSpeciesValues( EMC_SIMULATION_RECORD *rec ) {
       }
     }
     for (j = 0; j < rec->symbolsSize; j++) {
-      if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
+      if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
+	  (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
       }
     }

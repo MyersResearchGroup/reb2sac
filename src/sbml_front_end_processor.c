@@ -2239,7 +2239,8 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
         END_FUNCTION("_TransformSymKineticLaw", SUCCESS );
         return law;
     }
-    else if( strcmp(sym,"t")==0 || manager->LookupGlobalValue( manager, sym, &realValue ) ) {
+    else if( strcmp(sym,"t")==0 || strcmp(sym,"time")==0 || 
+	     manager->LookupGlobalValue( manager, sym, &realValue ) ) {
         symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
         if( ( symbol = symtab->Lookup( symtab, sym ) ) == NULL ) {
             END_FUNCTION("_TransformSymKineticLaw", FAILING );
@@ -2292,7 +2293,8 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
       //FreeString( &kineticLawString );
       return law;
     }
-     
+    printf("cannot find symbol %s\n",sym);
+    
     END_FUNCTION("_TransformSymKineticLaw", FAILING );
     return NULL;
 }

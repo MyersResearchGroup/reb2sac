@@ -40,7 +40,8 @@ static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_
 static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
 static RET_VAL _Print( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time );
 
-
+static int fireEvents( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
+static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
 
 
 DLLSCOPE RET_VAL STDCALL DoEmbeddedRungeKuttaFehlbergSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
@@ -414,9 +415,10 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
         }
         nextPrintTime += printInterval;
         while( time < nextPrintTime ) {
-            status = gsl_odeiv_evolve_apply( evolve, control, step, 
-                                            &system, &time, nextPrintTime,
-                                            &h, y ); 
+	  fireEvents( rec );
+	  status = gsl_odeiv_evolve_apply( evolve, control, step, 
+					   &system, &time, nextPrintTime,
+					   &h, y ); 
         }
         if( status != GSL_SUCCESS ) {
             return FAILING;
@@ -512,6 +514,48 @@ static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_
     return ret;         
 }
 
+static int fireEvents( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+    int i;
+    double nextEventTime;
+    BOOL triggerEnabled;
+    double deltaTime;
+
+    for (i = 0; i < rec->eventsSize; i++) {
+      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+      if ((nextEventTime != -1.0) && (rec->time >= nextEventTime)) {
+	fireEvent( rec->eventArray[i], rec );
+	SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+      }
+      if (!triggerEnabled) {
+	if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+							       (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	    deltaTime = 0; 
+	  } 
+	  else {
+	    deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									   (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	  }
+	  if (deltaTime > 0) { 
+	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
+	  } else if (deltaTime == 0) {
+	    fireEvent( rec->eventArray[i], rec );
+	  } else {
+	    ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	    return GSL_FAILURE;
+	  }
+	}
+      } else {
+	if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	}
+      }
+    }
+}
+
 static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
@@ -528,6 +572,7 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
 	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
 	//printf("conc = %g\n",concentration);
 	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	rec->concentrations[j] = concentration;
 	break;
       } 
     }
@@ -537,6 +582,7 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
 	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );  
 	//printf("conc = %g\n",concentration);
 	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	rec->concentrations[rec->speciesSize + j] = concentration;
 	break;
       }
     }
@@ -546,6 +592,7 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
 	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );   
 	//printf("conc = %g\n",concentration);
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	rec->concentrations[rec->speciesSize + rec->compartmentsSize + j] = concentration;
 	break;
       } 
     }
@@ -603,7 +650,8 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	  }
 	}
 	f[speciesSize + compartmentsSize + i] = 0.0;
-	if (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0) {
+	if ((strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"time")==0) ||
+	    (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0)) {
 	  f[speciesSize + compartmentsSize + i] = 1.0;
 	}
     }
@@ -637,42 +685,6 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	    SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
 	    break;
 	  }
-	}
-      }
-    }
-
-    /* Fire events */
-    for (i = 0; i < rec->eventsSize; i++) {
-      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
-      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
-      if ((nextEventTime != -1.0) && (t >= nextEventTime)) {
-	fireEvent( rec->eventArray[i], rec );
-	SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
-      }
-      if (!triggerEnabled) {
-	if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-							       (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
-	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
-	    deltaTime = 0; 
-	  } 
-	  else {
-	    deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									   (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
-	  }
-	  if (deltaTime > 0) { 
-	    SetNextEventTimeInEvent( rec->eventArray[i], t + deltaTime );
-	  } else if (deltaTime == 0) {
-	    fireEvent( rec->eventArray[i], rec );
-	  } else {
-	    ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
-	    return GSL_FAILURE;
-	  }
-	}
-      } else {
-	if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-								(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	}
       }
     }

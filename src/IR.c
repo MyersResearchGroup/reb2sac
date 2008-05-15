@@ -1674,6 +1674,7 @@ static RET_VAL _PrintListOfParametersForSBML( IR *ir, FILE *file, UINT32 tabCoun
     ResetCurrentElement( list );
     while( ( sym = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
       if ( strcmp(GetCharArrayOfString ( GetSymbolID( sym ) ),"t")==0) continue;
+      if ( strcmp(GetCharArrayOfString ( GetSymbolID( sym ) ),"time")==0) continue;
       if( IS_FAILED( ( ret = _PrintParameterForSBML( sym, file, tabCount + 1 ) ) ) ) {
 	END_FUNCTION("_PrintListOfParametersForSBML", ret );    
 	return ret;
