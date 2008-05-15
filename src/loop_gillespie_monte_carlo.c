@@ -807,7 +807,8 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
 	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
 	    break;
 	  } 
-	  if (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) {
+	  if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
+	      (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
 	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
 	  }
 	}
