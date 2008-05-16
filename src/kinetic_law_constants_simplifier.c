@@ -650,7 +650,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
-        childValue = GetCurrentRealValueInSymbol( sym );
+        childValue = GetRealValueInSymbol( sym );
 #endif
       }
       else if( IsIntValueKineticLaw( child ) ) {
@@ -659,14 +659,14 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       else if( IsSpeciesKineticLaw( child ) ) {
 	species = GetSpeciesFromKineticLaw( child );
 	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
-	  childValue = GetAmountInSpeciesNode( species );
+	  childValue = GetInitialAmountInSpeciesNode( species );
 	} else {
-	  childValue = GetConcentrationInSpeciesNode( species );
+	  childValue = GetInitialConcentrationInSpeciesNode( species );
 	}
       }
       else if( IsCompartmentKineticLaw( child ) ) {
 	compartment = GetCompartmentFromKineticLaw( child );
-	childValue = GetCurrentSizeInCompartment( compartment );
+	childValue = GetSizeInCompartment( compartment );
       }
       if (childValue) {
 	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
@@ -684,7 +684,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
-	  childValue = GetCurrentRealValueInSymbol( sym );
+	  childValue = GetRealValueInSymbol( sym );
 #endif
 	}
 	else if( IsIntValueKineticLaw( child ) ) {
@@ -693,14 +693,14 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 	else if( IsSpeciesKineticLaw( child ) ) {
 	  species = GetSpeciesFromKineticLaw( child );
 	  if (IsInitialQuantityInAmountInSpeciesNode( species )) {
-	    childValue = GetAmountInSpeciesNode( species );
+	    childValue = GetInitialAmountInSpeciesNode( species );
 	  } else {
-	    childValue = GetConcentrationInSpeciesNode( species );
+	    childValue = GetInitialConcentrationInSpeciesNode( species );
 	  }
 	}
 	else if( IsCompartmentKineticLaw( child ) ) {
 	  compartment = GetCompartmentFromKineticLaw( child );
-	  childValue = GetCurrentSizeInCompartment( compartment );
+	  childValue = GetSizeInCompartment( compartment );
 	}
 	result = childValue;
 	break;
@@ -722,7 +722,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 	  END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
 	  return ret;
 	}
-	childValue = GetCurrentRealValueInSymbol( sym );
+	childValue = GetRealValueInSymbol( sym );
 #endif
       }
       else if( IsIntValueKineticLaw( child ) ) {
@@ -731,14 +731,14 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       else if( IsSpeciesKineticLaw( child ) ) {
 	species = GetSpeciesFromKineticLaw( child );
 	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
-	  childValue = GetAmountInSpeciesNode( species );
+	  childValue = GetInitialAmountInSpeciesNode( species );
 	} else {
-	  childValue = GetConcentrationInSpeciesNode( species );
+	  childValue = GetInitialConcentrationInSpeciesNode( species );
 	}
       }
       else if( IsCompartmentKineticLaw( child ) ) {
 	compartment = GetCompartmentFromKineticLaw( child );
-	childValue = GetCurrentSizeInCompartment( compartment );
+	childValue = GetSizeInCompartment( compartment );
       }
       result = childValue;
     }
@@ -794,7 +794,7 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
-        leftValue = GetCurrentRealValueInSymbol( sym );
+        leftValue = GetRealValueInSymbol( sym );
 #endif
     }
     else if( IsIntValueKineticLaw( left ) ) {
@@ -811,7 +811,7 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
-        rightValue = GetCurrentRealValueInSymbol( sym );
+        rightValue = GetRealValueInSymbol( sym );
 #endif
     }
     else if( IsIntValueKineticLaw( right ) ) {
@@ -923,7 +923,7 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
-        childValue = GetCurrentRealValueInSymbol( sym );
+        childValue = GetRealValueInSymbol( sym );
 #endif
     }
     else if( IsIntValueKineticLaw( child ) ) {

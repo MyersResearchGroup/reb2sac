@@ -530,10 +530,13 @@ static RET_VAL _RunSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
         if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {            
             TRACE_1( "the total propensity is 0 at iteration %i", i );
             rec->time += rec->printInterval; 
+            reaction = NULL;
+	    if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	      return ret;
+	    }
             if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
                 return ret;            
             }
-            reaction = NULL;
         }
         else { 
             if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
@@ -950,36 +953,38 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
       }
     }
 
-    edges = GetReactantEdges( (IR_NODE*)reaction );
-    ResetCurrentElement( edges );
-    while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+    if (reaction) {
+      edges = GetReactantEdges( (IR_NODE*)reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) - (double)stoichiometry;
         TRACE_3( "the amount of %s decreases from %g to %g", 
-            GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
-            GetAmountInSpeciesNode( species ),
-            amount );
+		 GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
+		 GetAmountInSpeciesNode( species ),
+		 amount );
         SetAmountInSpeciesNode( species, amount );
         if( IS_FAILED( ( ret = evaluator->SetSpeciesValue( evaluator, species, amount ) ) ) ) {
             return ret;
         }        
-    }    
+      }    
         
-    edges = GetProductEdges( (IR_NODE*)reaction );
-    ResetCurrentElement( edges );
-    while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+      edges = GetProductEdges( (IR_NODE*)reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) + (double)stoichiometry;
         TRACE_3( "the amount of %s increases from %g to %g", 
-            GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
-            GetAmountInSpeciesNode( species ),
-            amount );
+		 GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
+		 GetAmountInSpeciesNode( species ),
+		 amount );
         SetAmountInSpeciesNode( species, amount );
-    }    
+      }    
+    }
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {

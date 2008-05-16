@@ -40,7 +40,7 @@ static RET_VAL _CalculateReactionRate( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, RE
 static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR2_SIMULATION_RECORD *rec );
 static RET_VAL _Print( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, double time );
 
-static int fireEvents( IMPLICIT_GEAR2_SIMULATION_RECORD *rec );
+static double fireEvents( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, double time );
 static void fireEvent( EVENT *event, IMPLICIT_GEAR2_SIMULATION_RECORD *rec );
 
 
@@ -238,6 +238,15 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, BACK_EN
             rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
         }
     }    
+
+    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_STEP ) ) == NULL ) {
+        rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->timeStep), valueString ) ) ) ) {
+            rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
+        }
+    }    
     
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
         rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
@@ -386,6 +395,9 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR2_SIMULATION_RECORD *rec ) {
     double printInterval = rec->printInterval;
     double nextPrintTime = rec->time;
     double time = rec->time;
+    double timeStep = rec->timeStep;
+    double nextEventTime;
+    double maxTime;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     gsl_odeiv_step_type *stepType = gsl_odeiv_step_gear2;
@@ -410,19 +422,29 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR2_SIMULATION_RECORD *rec ) {
     while( !(decider->IsTerminationConditionMet( decider, NULL, time )) ) {
       if (time > 0.0) printf("Time = %.2f\n",time);
       fflush(stdout);
-        if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
-            return ret;            
-        }
-        nextPrintTime += printInterval;
-        while( time < nextPrintTime ) {
-	    fireEvents( rec );
-            status = gsl_odeiv_evolve_apply( evolve, control, step, 
-                                            &system, &time, nextPrintTime,
-                                            &h, y ); 
-        }
-        if( status != GSL_SUCCESS ) {
-            return FAILING;
-        }
+      if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
+	return ret;            
+      }
+      nextPrintTime += printInterval;
+      while( time < nextPrintTime ) {
+	maxTime = maxTime + timeStep;
+	if (maxTime > nextPrintTime) {
+	  maxTime = nextPrintTime;
+	}
+	nextEventTime = fireEvents( rec, time );
+	if (nextEventTime==-2.0) {
+	  return FAILING;
+	}
+	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+	  maxTime = nextEventTime;
+	}
+	status = gsl_odeiv_evolve_apply( evolve, control, step, 
+					 &system, &time, maxTime,
+					 &h, y ); 
+	if( status != GSL_SUCCESS ) {
+	  return FAILING;
+	}
+      }
     }
     if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
         return ret;
@@ -514,46 +536,60 @@ static RET_VAL _CalculateReactionRate( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, RE
     return ret;         
 }
 
-static int fireEvents( IMPLICIT_GEAR2_SIMULATION_RECORD *rec ) {
+static double fireEvents( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, double time ) {
     int i;
     double nextEventTime;
     BOOL triggerEnabled;
     double deltaTime;
+    BOOL eventFired = FALSE;
+    double firstEventTime = -1.0;
 
-    for (i = 0; i < rec->eventsSize; i++) {
-      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
-      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
-      if ((nextEventTime != -1.0) && (rec->time >= nextEventTime)) {
-	fireEvent( rec->eventArray[i], rec );
-	SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
-      }
-      if (!triggerEnabled) {
-	if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-							       (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
-	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
-	    deltaTime = 0; 
-	  } 
-	  else {
-	    deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									   (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+    do {
+      eventFired = FALSE;
+      for (i = 0; i < rec->eventsSize; i++) {
+	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
+	}
+	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+	if ((nextEventTime != -1.0) && (time >= nextEventTime)) {
+	  fireEvent( rec->eventArray[i], rec );
+	  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	  eventFired = TRUE;
+	}
+	if (!triggerEnabled) {
+	  if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	      deltaTime = 0; 
+	    } 
+	    else {
+	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									     (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	    }
+	    if (deltaTime > 0) { 
+	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+		firstEventTime = time + deltaTime;
+	      }
+	    } else if (deltaTime == 0) {
+	      fireEvent( rec->eventArray[i], rec );
+	      eventFired = TRUE;
+	    } else {
+	      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	      return -2;
+	    }
 	  }
-	  if (deltaTime > 0) { 
-	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
-	  } else if (deltaTime == 0) {
-	    fireEvent( rec->eventArray[i], rec );
-	  } else {
-	    ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
-	    return GSL_FAILURE;
+	} else {
+	  if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								  (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	  }
 	}
-      } else {
-	if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-								(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-	}
       }
-    }
+    } while (eventFired);
+    return firstEventTime;
 }
 
 static void fireEvent( EVENT *event, IMPLICIT_GEAR2_SIMULATION_RECORD *rec ) {
