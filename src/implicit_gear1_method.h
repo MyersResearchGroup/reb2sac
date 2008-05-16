@@ -54,6 +54,7 @@ typedef struct {
     double printInterval;
     double nextPrintTime;    
     double timeLimit;
+    double timeStep;
     double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
     char *outDir; 
