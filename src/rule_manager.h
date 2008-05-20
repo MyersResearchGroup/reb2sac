@@ -34,10 +34,17 @@ BEGIN_C_NAMESPACE
 #define RULE_TYPE_ASSIGNMENT ((BYTE)2)
 #define RULE_TYPE_RATE ((BYTE)3)   
 
+#define SPECIES_RULE ((BYTE)1)
+#define COMPARTMENT_RULE ((BYTE)2)
+#define PARAMETER_RULE ((BYTE)3)   
+
 typedef struct {
     BYTE type;
     STRING *var;
     KINETIC_LAW *math;
+    BYTE varType;
+    UINT32 index;
+    double curValue;
 } RULE;
 
 struct _RULE_MANAGER;
@@ -54,7 +61,13 @@ struct _RULE_MANAGER {
 BYTE GetRuleType( RULE *ruleDef );
 STRING *GetRuleVar( RULE *ruleDef );
 KINETIC_LAW *GetMathInRule( RULE *ruleDef );
+BYTE GetRuleVarType( RULE *ruleDef );
+UINT32 GetRuleIndex( RULE *ruleDef );
+double GetRuleCurValue( RULE *ruleDef );
 RET_VAL AddMathInRule( RULE *ruleDef, KINETIC_LAW *math );
+RET_VAL SetRuleVarType( RULE *ruleDef, BYTE varType );
+RET_VAL SetRuleIndex( RULE *ruleDef, UINT32 index );
+RET_VAL SetRuleCurValue( RULE *ruleDef, double curValue );
 
 RULE_MANAGER *GetRuleManagerInstance( COMPILER_RECORD_T *record );
 RET_VAL CloseRuleManager( );

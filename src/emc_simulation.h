@@ -52,6 +52,7 @@ typedef struct {
     SIMULATION_PRINTER *printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double time;
+    double timeStep;
     double t;
     double printInterval;
     double nextPrintTime;    

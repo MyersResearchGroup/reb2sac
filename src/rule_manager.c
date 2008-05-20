@@ -91,6 +91,27 @@ KINETIC_LAW *GetMathInRule( RULE *ruleDef ) {
     return (ruleDef == NULL ? NULL : ruleDef->math);
 }
 
+BYTE GetRuleVarType( RULE *ruleDef ) {
+    START_FUNCTION("GetRuleVarType");
+            
+    END_FUNCTION("GetRuleVarType", SUCCESS );
+    return ruleDef->varType;
+}
+
+UINT32 GetRuleIndex( RULE *ruleDef ) {
+    START_FUNCTION("GetRuleIndex");
+            
+    END_FUNCTION("GetRuleIndex", SUCCESS );
+    return ruleDef->index;
+}
+
+double GetRuleCurValue( RULE *ruleDef ) {
+    START_FUNCTION("GetRuleCurValue");
+            
+    END_FUNCTION("GetRuleCurValue", SUCCESS );
+    return ruleDef->curValue;
+}
+
 RET_VAL AddMathInRule( RULE *ruleDef, KINETIC_LAW *math ) {
     RET_VAL ret = SUCCESS;
     
@@ -99,6 +120,39 @@ RET_VAL AddMathInRule( RULE *ruleDef, KINETIC_LAW *math ) {
     ruleDef->math = math;
 
     END_FUNCTION("AddMathInRule", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetRuleVarType( RULE *ruleDef, BYTE varType ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetRuleVarType");
+
+    ruleDef->varType = varType;
+
+    END_FUNCTION("SetRuleVarType", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetRuleIndex( RULE *ruleDef, UINT32 index ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetRuleIndex");
+
+    ruleDef->index = index;
+
+    END_FUNCTION("SetRuleIndex", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetRuleCurValue( RULE *ruleDef, double curValue ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetRuleCurValue");
+
+    ruleDef->curValue = curValue;
+
+    END_FUNCTION("SetRuleCurValue", SUCCESS );
     return ret;
 }
 

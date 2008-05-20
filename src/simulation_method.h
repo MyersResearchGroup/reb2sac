@@ -53,6 +53,9 @@
 #define MONTE_CARLO_SIMULATION_PRINT_INTERVAL "monte.carlo.simulation.print.interval"
 #define DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE 20.0
 
+#define MONTE_CARLO_SIMULATION_TIME_STEP "monte.carlo.simulation.time.step"
+#define DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP 1.0
+
 #define MONTE_CARLO_SIMULATION_OUT_DIR "monte.carlo.simulation.out.dir"
 #define DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE "."
 
