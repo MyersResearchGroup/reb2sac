@@ -39,8 +39,9 @@ static RET_VAL _Print( EULER_SIMULATION_RECORD *rec );
 static RET_VAL _UpdateNodeValues( EULER_SIMULATION_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec );
 
-
-
+static double fireEvents( EULER_SIMULATION_RECORD *rec, double time );
+static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec );
+static void ExecuteAssignments( EULER_SIMULATION_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -108,6 +109,7 @@ static BOOL _IsModelConditionSatisfied( IR *ir ) {
 static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
+    UINT32 j = 0;
     UINT32 size = 0;
     char buf[512];
     char *valueString = NULL;
@@ -221,6 +223,36 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
         i++;        
     }
     rec->speciesArray = speciesArray;    
+
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], SPECIES_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], COMPARTMENT_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], PARAMETER_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+      }
+    }
     
     if( ( rec->evaluator = CreateKineticLawEvaluater() ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
@@ -382,21 +414,27 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
 
 static RET_VAL _RunSimulation( EULER_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
-    int i = 0;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
-/*        
-    while( rec->time < rec->timeLimit ) {
-*/  printer = rec->printer;
+    double nextEventTime;
+
+    printer = rec->printer;
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, NULL, rec->time )) ) {
-        i++;
+	nextEventTime = fireEvents( rec, rec->time );
+	if (nextEventTime==-2.0) {
+	  return FAILING;
+	}
         if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
             return ret;
         }
         if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
             return ret;
         }
+	rec->time += rec->timeStep;
+	if ((nextEventTime > 0) && (nextEventTime < rec->time)) {
+	  rec->time = nextEventTime;
+	}
     }
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
         return ret;
@@ -484,8 +522,6 @@ static RET_VAL _Update( EULER_SIMULATION_RECORD *rec ) {
         return ret;            
     }         
     
-    rec->time += rec->timeStep;
-    
     return ret;            
 }
 
@@ -518,6 +554,64 @@ static RET_VAL _UpdateNodeValues( EULER_SIMULATION_RECORD *rec ) {
     return ret;            
 }
 
+static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
+    int i;
+    double nextEventTime;
+    BOOL triggerEnabled;
+    double deltaTime;
+    BOOL eventFired = FALSE;
+    double firstEventTime = -1.0;
+
+    do {
+      eventFired = FALSE;
+      for (i = 0; i < rec->eventsSize; i++) {
+	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
+	}
+	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+	if ((nextEventTime != -1.0) && (time >= nextEventTime)) {
+	  fireEvent( rec->eventArray[i], rec );
+	  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	  eventFired = TRUE;
+	}
+	if (!triggerEnabled) {
+	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	      deltaTime = 0; 
+	    } 
+	    else {
+	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	    }
+	    if (deltaTime > 0) { 
+	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+		firstEventTime = time + deltaTime;
+	      }
+	    } else if (deltaTime == 0) {
+	      fireEvent( rec->eventArray[i], rec );
+	      eventFired = TRUE;
+	    } else {
+	      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	      return -2;
+	    }
+	  }
+	} else {
+	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	  }
+	}
+      }
+      if (eventFired) {
+	ExecuteAssignments( rec );
+      }
+    } while (eventFired);
+    return firstEventTime;
+}
 
 static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
@@ -559,6 +653,29 @@ static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
   }
 }
 
+/* Update values using assignments rules */
+static void ExecuteAssignments( EULER_SIMULATION_RECORD *rec ) {
+  UINT32 i = 0;
+  UINT32 j = 0;
+  double concentration = 0.0;    
+  BYTE varType;
+
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      varType = GetRuleVarType( rec->ruleArray[i] );
+      j = GetRuleIndex( rec->ruleArray[i] );
+      if ( varType == SPECIES_RULE ) {
+	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+      } else if ( varType == COMPARTMENT_RULE ) {
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+      } else {
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+      }
+    }
+  }
+}
 
 static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
@@ -578,53 +695,44 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     double nextEventTime;
     BOOL triggerEnabled;
-    
+    BYTE varType;
+
     for (i = 0; i < rec->rulesSize; i++) {
-      if ( GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	      /* Not technically correct as rates calculated using new concentrations */
-	      change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      concentration = GetConcentrationInSpeciesNode( rec->speciesArray[j] );
-	      concentration += (change * deltaTime);
-	      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	      break;
-	    }
-	  }
-	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	      /* Not technically correct as rates calculated using new concentrations */
-	      change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      concentration = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
-	      concentration += (change * deltaTime);
-	      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
-	      break;
-	    }
-	  }
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	      /* Not technically correct as rates calculated using new concentrations */
-	      change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      concentration = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
-	      concentration += (change * deltaTime);
-	      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
-	      break;
-	    }
-	  }
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								    (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  concentration = GetConcentrationInSpeciesNode( rec->speciesArray[j] );
+	  concentration += (change * deltaTime);
+	  SetRuleCurValue( rec->ruleArray[i], concentration );
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  concentration = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
+	  concentration += (change * deltaTime);
+	  SetRuleCurValue( rec->ruleArray[i], concentration );
+	} else {
+	  concentration = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
+	  concentration += (change * deltaTime);
+	  SetRuleCurValue( rec->ruleArray[i], concentration );
 	}
       }
     }
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	concentration = GetRuleCurValue( rec->ruleArray[i] );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+	} else {
+	  SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+	}
+      }
+    }
+
     for( i = 0; i < speciesSize; i++ ) {    
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
@@ -662,81 +770,16 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
             concentration );
         SetConcentrationInSpeciesNode( species, concentration );
     }
-    for (i = 0; i < rec->rulesSize; i++) {
-      if ( GetRuleType( rec->ruleArray[i] ) != RULE_TYPE_ALGEBRAIC ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	      break;
-	    } 
-	  }
-	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
-	      break;
-	    } 
-	  }
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
-	      break;
-	    } 
-	  }
-	}
-      }
-    }
+
+
     for (j = 0; j < rec->symbolsSize; j++) {
       if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
 	  (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
       }
     }
-    for (i = 0; i < rec->eventsSize; i++) {
-      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
-      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
-      if ((nextEventTime != -1.0) && (rec->time >= nextEventTime)) {
-	fireEvent( rec->eventArray[i], rec );
-	SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
-      }
-      if (!triggerEnabled) {
-	if (rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-							       (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
-	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
-	    deltaTime = 0; 
-	  } 
-	  else {
-	    deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									   (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
-	  }
-	  if (deltaTime > 0) { 
-	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
-	  } else if (deltaTime == 0) {
-	    fireEvent( rec->eventArray[i], rec );
-	  } else {
-	    return ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
-	  }
-	}
-      } else {
-	if (!rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-								(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-	}
-      }
-    }
+
+    ExecuteAssignments( rec );
+
     return ret;            
 }

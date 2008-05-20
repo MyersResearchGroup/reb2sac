@@ -42,6 +42,7 @@ static RET_VAL _Print( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, double time );
 
 static double fireEvents( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, double time );
 static void fireEvent( EVENT *event, IMPLICIT_GEAR1_SIMULATION_RECORD *rec );
+static void ExecuteAssignments( IMPLICIT_GEAR1_SIMULATION_RECORD *rec );
 
 
 DLLSCOPE RET_VAL STDCALL DoImplicitGear1Simulation( BACK_END_PROCESSOR *backend, IR *ir ) {
@@ -99,6 +100,7 @@ static BOOL _IsModelConditionSatisfied( IR *ir ) {
 static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
+    UINT32 j = 0;
     char buf[512];
     char *valueString = NULL;
     SPECIES *species = NULL;
@@ -212,6 +214,36 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
     }
     rec->speciesArray = speciesArray;    
 
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], SPECIES_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], COMPARTMENT_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], PARAMETER_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+      }
+    }
+
     if( ( rec->concentrations = (double*)MALLOC( (rec->symbolsSize + rec->compartmentsSize + rec->speciesSize) * sizeof( double ) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for concentrations" );
     }
@@ -243,9 +275,11 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
         rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
     }
     else {
-        if( IS_FAILED( ( ret = StrToFloat( &(rec->timeStep), valueString ) ) ) ) {
-            rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
-        }
+      if (strcmp(valueString,"inf")==0) {
+	rec->timeStep = DBL_MAX;
+      } else if( IS_FAILED( ( ret = StrToFloat( &(rec->timeStep), valueString ) ) ) ) {
+	rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
+      }
     }    
     
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
@@ -427,9 +461,10 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
       }
       nextPrintTime += printInterval;
       while( time < nextPrintTime ) {
-	maxTime = maxTime + timeStep;
-	if (maxTime > nextPrintTime) {
+	if ((timeStep == DBL_MAX) || (maxTime + timeStep > nextPrintTime)) {
 	  maxTime = nextPrintTime;
+	} else {
+	  maxTime = maxTime + timeStep;
 	}
 	nextEventTime = fireEvents( rec, time );
 	if (nextEventTime==-2.0) {
@@ -589,6 +624,9 @@ static double fireEvents( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, double time ) {
 	  }
 	}
       }
+      if (eventFired) {
+	ExecuteAssignments( rec );
+      }
     } while (eventFired);
     return firstEventTime;
 }
@@ -636,6 +674,30 @@ static void fireEvent( EVENT *event, IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
   }
 }
 
+/* Update values using assignments rules */
+static void ExecuteAssignments( IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
+  UINT32 i = 0;
+  UINT32 j = 0;
+  double concentration = 0.0;    
+  BYTE varType;
+
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+									 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      varType = GetRuleVarType( rec->ruleArray[i] );
+      j = GetRuleIndex( rec->ruleArray[i] );
+      if ( varType == SPECIES_RULE ) {
+	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+      } else if ( varType == COMPARTMENT_RULE ) {
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+      } else {
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+      }
+    }
+  }
+}
+
 static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
@@ -659,6 +721,7 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR1_SIMUL
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     double nextEventTime;
     BOOL triggerEnabled;
+    BYTE varType;
 
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
@@ -692,65 +755,21 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR1_SIMUL
 	}
     }
 
-    /* Update values using assignments */
-    for (i = 0; i < rec->rulesSize; i++) {
-      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	    break;
-	  }
-	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
-	    break;
-	  }
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-									       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
-	    break;
-	  }
-	}
-      }
-    }
+    ExecuteAssignments( rec );
 
     /* Update rates using rate rules */
     for (i = 0; i < rec->rulesSize; i++) {
       if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    f[j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-								      (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    break;
-	  }
-	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    f[speciesSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-										    (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    break;
-	  }
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    f[speciesSize + compartmentsSize + j] = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
-												       (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    break;
-	  }
+	rate = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, 
+								  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  f[j] = rate;
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  f[speciesSize + j] = rate;
+	} else {
+	  f[speciesSize + compartmentsSize + j] = rate;
 	}
       }
     }

@@ -48,7 +48,9 @@ static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec 
 static int _ComparePropensity( REACTION *a, REACTION *b );
 static BOOL _IsTerminationConditionMet( GILLESPIE_MONTE_CARLO_RECORD *rec );
 
+static double fireEvents( GILLESPIE_MONTE_CARLO_RECORD *rec, double time );
 static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec );
+static void ExecuteAssignments( GILLESPIE_MONTE_CARLO_RECORD *rec );
 
 static double _GetUniformRandom();
 
@@ -123,6 +125,7 @@ static BOOL _IsModelConditionSatisfied( IR *ir ) {
 static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
+    UINT32 j = 0;
     UINT32 size = 0;
     char buf[512];
     char *valueString = NULL;
@@ -155,20 +158,22 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
             
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
-    if (rec->reactionsSize==0) {
-        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
-    }
-    if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
+    //    if (rec->reactionsSize==0) {
+    //        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
+    //}
+    if (rec->reactionsSize > 0) {
+      if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
+      }
     }
     i = 0;
     ResetCurrentElement( list );
     while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
-        reactions[i] = reaction;
-        i++;        
+      reactions[i] = reaction;
+      i++;        
     }
     rec->reactionArray = reactions;    
-
+    
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
     }
@@ -225,11 +230,13 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
-    if (rec->speciesSize==0) {
-        return ErrorReport( FAILING, "_InitializeRecord", "no species remaining in the model" );
-    }
-    if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
+    //    if (rec->speciesSize==0) {
+    //    return ErrorReport( FAILING, "_InitializeRecord", "no species remaining in the model" );
+    //}
+    if (rec->speciesSize > 0) {
+      if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
+      }
     }
 
     properties = compRec->properties;
@@ -294,6 +301,36 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     }
     rec->speciesArray = speciesArray;    
 
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], SPECIES_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], COMPARTMENT_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], PARAMETER_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+      }
+    }
+
     if( ( rec->evaluator = CreateKineticLawEvaluater() ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
     }                
@@ -313,6 +350,15 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     else {
         if( IS_FAILED( ( ret = StrToFloat( &(rec->timeLimit), valueString ) ) ) ) {
             rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
+        }
+    }    
+        
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_STEP ) ) == NULL ) {
+        rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->timeStep), valueString ) ) ) ) {
+            rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
         }
     }    
     
@@ -511,6 +557,9 @@ static RET_VAL _RunSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     int i = 0;
     int j = 0;
     double timeLimit = rec->timeLimit;
+    double timeStep = rec->timeStep;
+    double maxTime = 0.0;
+    double nextPrintTime = 0.0;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
@@ -521,54 +570,71 @@ static RET_VAL _RunSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
         i++;
-        if( IS_FAILED( ( ret = _CalculatePropensities( rec ) ) ) ) {
-            return ret;
-        }
-        if( IS_FAILED( ( ret = _CalculateTotalPropensities( rec ) ) ) ) {
-            return ret;
-        }
-        if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {            
-            TRACE_1( "the total propensity is 0 at iteration %i", i );
-            rec->time += rec->printInterval; 
-            reaction = NULL;
+	if (timeStep == DBL_MAX) {
+	  maxTime = DBL_MAX;
+	} else {
+	  maxTime = maxTime + timeStep;
+	}
+	nextEventTime = fireEvents( rec, rec->time );
+	if (nextEventTime==-2.0) {
+	  return FAILING;
+	}
+	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+	  maxTime = nextEventTime;
+	}
+	
+	if( IS_FAILED( ( ret = _CalculatePropensities( rec ) ) ) ) {
+	  return ret;
+	}
+	if( IS_FAILED( ( ret = _CalculateTotalPropensities( rec ) ) ) ) {
+	  return ret;
+	}
+	if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {            
+	  TRACE_1( "the total propensity is 0 at iteration %i", i );
+	  rec->t = maxTime - rec->time;
+	  rec->time = maxTime;
+	  reaction = NULL;
+	  rec->nextReaction = NULL;
+	  if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	    return ret;
+	  }
+	  if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	    return ret;            
+	  }
+	}
+	else { 
+	  if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
+	    return ret;
+	  }
+	  if ( maxTime < rec->time ) {
+	    rec->time -= rec->t;
+	    rec->t = maxTime - rec->time;
+	    rec->time = maxTime;
+	    reaction = NULL;
+	    rec->nextReaction = NULL;
 	    if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
 	      return ret;
 	    }
-            if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-                return ret;            
-            }
-        }
-        else { 
-            if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
-                return ret;
-            }
-	    nextEvent = -1;
-	    for (j = 0; j < rec->eventsSize; j++) {
-	      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[j] );
-	      if ( nextEventTime > 0 && nextEventTime < rec->time ) {
-		nextEvent = j;
-		rec->time = GetNextEventTimeInEvent( rec->eventArray[j] );
-	      }
+	    if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	      return ret;            
 	    }
-	    if ( nextEvent >= 0) {
-	      fireEvent( rec->eventArray[nextEvent], rec );
-	      SetNextEventTimeInEvent( rec->eventArray[nextEvent], -1.0 );
+	  } else {
+	    maxTime = rec->time;
+	    if ( rec->time < timeLimit ) {
+	      if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
+		return ret;
+	      }
+	      reaction = rec->nextReaction;
+	      if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+		return ret;
+	      } 
 	    } else {
-	      if ( rec->time < timeLimit ) {
-		if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
-		  return ret;
-		}
-		reaction = rec->nextReaction;
-		if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
-		  return ret;
-		}
-	      } else {
-		if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-		  return ret;            
-		}
+	      if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		return ret;            
 	      }
 	    }
-        }
+	  }
+	}
     }
     if( rec->time >= timeLimit ) {
         rec->time = timeLimit;
@@ -650,11 +716,13 @@ static RET_VAL _CalculateTotalPropensities( GILLESPIE_MONTE_CARLO_RECORD *rec ) 
     UINT32 size = rec->reactionsSize;
     double total = 0.0;
     REACTION **reactionArray = rec->reactionArray;    
-    
-    total = GetReactionRate( reactionArray[0] );
-    for( i = 1; i < size; i++ ) {
+
+    if (size > 0) {
+      total = GetReactionRate( reactionArray[0] );
+      for( i = 1; i < size; i++ ) {
         total += GetReactionRate( reactionArray[i] );     
-    }         
+      }   
+    }      
     rec->totalPropensities = total;        
     TRACE_1( "the total propensity is %f", total );
     return ret;            
@@ -776,6 +844,7 @@ static RET_VAL _FindNextReactionTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     rec->time += t;     
     rec->t = t;
     if( rec->time > rec->timeLimit ) {
+        rec->t -= rec->time - rec->timeLimit; 
         rec->time = rec->timeLimit;
     }
     TRACE_1( "time to next reaction is %f", t );
@@ -855,6 +924,64 @@ static RET_VAL _UpdateNodeValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     return ret;            
 }
 
+static double fireEvents( GILLESPIE_MONTE_CARLO_RECORD *rec, double time ) {
+    int i;
+    double nextEventTime;
+    BOOL triggerEnabled;
+    double deltaTime;
+    BOOL eventFired = FALSE;
+    double firstEventTime = -1.0;
+
+    do {
+      eventFired = FALSE;
+      for (i = 0; i < rec->eventsSize; i++) {
+	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
+	}
+	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+	if ((nextEventTime != -1.0) && (time >= nextEventTime)) {
+	  fireEvent( rec->eventArray[i], rec );
+	  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	  eventFired = TRUE;
+	}
+	if (!triggerEnabled) {
+	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	      deltaTime = 0; 
+	    } 
+	    else {
+	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	    }
+	    if (deltaTime > 0) { 
+	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+		firstEventTime = time + deltaTime;
+	      }
+	    } else if (deltaTime == 0) {
+	      fireEvent( rec->eventArray[i], rec );
+	      eventFired = TRUE;
+	    } else {
+	      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	      return -2;
+	    }
+	  }
+	} else {
+	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	  }
+	}
+      }
+      if (eventFired) {
+	ExecuteAssignments( rec );
+      }
+    } while (eventFired);
+    return firstEventTime;
+}
 
 static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec ) {
   LINKED_LIST *list = NULL;
@@ -896,6 +1023,29 @@ static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec ) {
   }
 }
 
+/* Update values using assignments rules */
+static void ExecuteAssignments( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
+  UINT32 i = 0;
+  UINT32 j = 0;
+  double amount = 0.0;
+  BYTE varType;
+
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      varType = GetRuleVarType( rec->ruleArray[i] );
+      j = GetRuleIndex( rec->ruleArray[i] );
+      if ( varType == SPECIES_RULE ) {
+	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+      } else if ( varType == COMPARTMENT_RULE ) {
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+      } else {
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+      }
+    }
+  }
+}
 
 static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
@@ -911,44 +1061,40 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     UINT j = 0;
     double deltaTime;
     BOOL triggerEnabled;
+    BYTE varType;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    /* Not technically correct as only calculated when a reaction fires */
-	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    amount = GetAmountInSpeciesNode( rec->speciesArray[j] );
-	    amount += (change * rec->t);
-	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
-	    break;
-	  }
+	change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							     (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  amount = GetAmountInSpeciesNode( rec->speciesArray[j] );
+	  amount += (change * rec->t);
+	  SetRuleCurValue( rec->ruleArray[i], amount );
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  amount = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
+	  amount += (change * rec->t);
+	  SetRuleCurValue( rec->ruleArray[i], amount );
+	} else {
+	  amount = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
+	  amount += (change * rec->t);
+	  SetRuleCurValue( rec->ruleArray[i], amount );
 	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    /* Not technically correct as only calculated when a reaction fires */
-	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    amount = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
-	    amount += (change * rec->t);
-	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
-	    break;
-	  }
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    /* Not technically correct as only calculated when a reaction fires */
-	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    amount = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
-	    amount += (change * rec->t);
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
-	    break;
-	  }
+      }
+    }
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	amount = GetRuleCurValue( rec->ruleArray[i] );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	} else {
+	  SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
 	}
       }
     }
@@ -970,7 +1116,6 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
             return ret;
         }        
       }    
-        
       edges = GetProductEdges( (IR_NODE*)reaction );
       ResetCurrentElement( edges );
       while( ( edge = GetNextEdge( edges ) ) != NULL ) {
@@ -986,71 +1131,15 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
       }    
     }
 
-    for (i = 0; i < rec->rulesSize; i++) {
-      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
-	    break;
-	  } 
-	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
-	    break;
-	  } 
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
-	    break;
-	  } 
-	}
-      }
-    }
     for (j = 0; j < rec->symbolsSize; j++) {
       if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
 	  (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
       }
     }
-    for (i = 0; i < rec->eventsSize; i++) {
-      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
-      if (!triggerEnabled) {
-	if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-							(KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
-	  if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
-	    deltaTime = 0; 
-	  } 
-	  else {
-	    deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								    (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
-	  }
-	  if (deltaTime > 0) { 
-	    SetNextEventTimeInEvent( rec->eventArray[i], rec->time + deltaTime );
-	  } else if (deltaTime == 0) {
-	    fireEvent( rec->eventArray[i], rec );
-	  } else {
-	    return ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
-	  }
-	}
-      } else {
-	if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-							 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-	}
-      }
-    }
+
+    ExecuteAssignments( rec );
+
     return ret;            
 }
 
@@ -1065,6 +1154,9 @@ static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec 
     LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
 
+    if (rec->nextReaction == NULL) {
+      return ret;
+    }
     edges = GetReactantEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {

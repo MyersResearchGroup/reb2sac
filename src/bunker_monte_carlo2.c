@@ -121,6 +121,7 @@ static BOOL _IsModelConditionSatisfied( IR *ir ) {
 static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD2 *rec, BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
+    UINT32 j = 0;
     UINT32 size = 0;
     char buf[512];
     char *valueString = NULL;
@@ -230,6 +231,36 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD2 *rec, BACK_END_PROC
         i++;        
     }
     rec->speciesArray = speciesArray;    
+
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], SPECIES_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], COMPARTMENT_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    SetRuleVarType( ruleArray[i], PARAMETER_RULE );
+	    SetRuleIndex( ruleArray[i], j );
+	    break;
+	  } 
+	}
+      }
+    }
     
     if( ( rec->evaluator = CreateKineticLawEvaluater() ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
@@ -608,7 +639,8 @@ static RET_VAL _FindNextReactionTime( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     random = _GetUniformRandom();
     /* in bunker's method, just use mean value for time */
     t = 1.0 / rec->totalPropensities;
-    rec->time += t;            
+    rec->time += t;
+    rec->t = t;
     if( rec->time > rec->timeLimit ) {
         rec->time = rec->timeLimit;
     }
@@ -688,6 +720,30 @@ static RET_VAL _UpdateNodeValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
 }
 
 
+/* Update values using assignments rules */
+static void ExecuteAssignments( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
+  UINT32 i = 0;
+  UINT32 j = 0;
+  double amount = 0.0;
+  BYTE varType;
+
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      varType = GetRuleVarType( rec->ruleArray[i] );
+      j = GetRuleIndex( rec->ruleArray[i] );
+      if ( varType == SPECIES_RULE ) {
+	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+      } else if ( varType == COMPARTMENT_RULE ) {
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+      } else {
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+      }
+    }
+  }
+}
+
 static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
@@ -700,44 +756,40 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     double change = 0;    
     UINT i = 0;
     UINT j = 0;
+    BYTE varType;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    /* Not technically correct as only calculated when a reaction fires */
-	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    amount = GetAmountInSpeciesNode( rec->speciesArray[j] );
-	    amount += (change * rec->time);
-	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
-	    break;
-	  }
+	change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							     (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  amount = GetAmountInSpeciesNode( rec->speciesArray[j] );
+	  amount += (change * rec->t);
+	  SetRuleCurValue( rec->ruleArray[i], amount );
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  amount = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
+	  amount += (change * rec->t);
+	  SetRuleCurValue( rec->ruleArray[i], amount );
+	} else {
+	  amount = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
+	  amount += (change * rec->t);
+	  SetRuleCurValue( rec->ruleArray[i], amount );
 	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    /* Not technically correct as only calculated when a reaction fires */
-	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    amount = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
-	    amount += (change * rec->time);
-	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
-	    break;
-	  }
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    /* Not technically correct as only calculated when a reaction fires */
-	    change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    amount = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
-	    amount += (change * rec->time);
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
-	    break;
-	  }
+      }
+    }
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	amount = GetRuleCurValue( rec->ruleArray[i] );
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	} else if ( varType == COMPARTMENT_RULE ) {
+	  SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	} else {
+	  SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
 	}
       }
     }
@@ -770,42 +822,16 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
             amount );
         SetAmountInSpeciesNode( species, amount );
     }    
-
-    for (i = 0; i < rec->rulesSize; i++) {
-      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-	for (j = 0; j < rec->speciesSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetAmountInSpeciesNode( rec->speciesArray[j], amount );
-	    break;
-	  } 
-	}
-	for (j = 0; j < rec->compartmentsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
-	    break;
-	  } 
-	}
-	for (j = 0; j < rec->symbolsSize; j++) {
-	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
-		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-								 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
-	    break;
-	  } 
-	  if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
-	      (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
-	    SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
-	  }
-	}
+    
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
+	  (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], rec->time );
       }
     }
+
+    ExecuteAssignments( rec );
+
     return ret;            
 }
 
