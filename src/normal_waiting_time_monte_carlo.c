@@ -141,6 +141,7 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     EVENT *event = NULL;
     EVENT **eventArray = NULL;
     EVENT_MANAGER *eventManager;
+    EVENT_ASSIGNMENT *eventAssignment;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = NULL;
     REB2SAC_SYMTAB *symTab;
@@ -397,6 +398,37 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
         i++;        
     }
     rec->eventArray = eventArray;    
+
+    for (i = 0; i < rec->eventsSize; i++) {
+      list = GetEventAssignments( rec->eventArray[i] );
+      ResetCurrentElement( list );
+      while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    SetEventAssignmentVarType( eventAssignment, SPECIES_EVENT_ASSIGNMENT );
+	    SetEventAssignmentIndex( eventAssignment, j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    SetEventAssignmentVarType( eventAssignment, COMPARTMENT_EVENT_ASSIGNMENT );
+	    SetEventAssignmentIndex( eventAssignment, j );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    SetEventAssignmentVarType( eventAssignment, PARAMETER_EVENT_ASSIGNMENT );
+	    SetEventAssignmentIndex( eventAssignment, j );
+	    break;
+	  } 
+	}
+      }
+    }
     
     backend->_internal1 = (CADDR_T)rec;
     
@@ -925,37 +957,27 @@ static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
   EVENT_ASSIGNMENT *eventAssignment;
   double amount = 0.0;    
   UINT j;
+  BYTE varType;
 
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
-    for (j = 0; j < rec->speciesSize; j++) {
-      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
-		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
-	//printf("conc = %g\n",amount);
-	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
-	break;
-      } 
-    }
-    for (j = 0; j < rec->compartmentsSize; j++) {
-      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
-		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
-	//printf("conc = %g\n",amount);
-	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
-	break;
-      }
-    }
-    for (j = 0; j < rec->symbolsSize; j++) {
-      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
-		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
-	//printf("conc = %g\n",amount);
-	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
-	break;
-      } 
+    varType = GetEventAssignmentVarType( eventAssignment );
+    j = GetEventAssignmentIndex( eventAssignment );
+    //printf("varType = %d j = %d\n",varType,j);
+    if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+      //printf("conc = %g\n",amount);
+      SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+    } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
+      //printf("conc = %g\n",amount);
+      SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+    } else {
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
+      //printf("conc = %g\n",amount);
+      SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
     }
   }
 }

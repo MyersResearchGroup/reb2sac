@@ -122,6 +122,7 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
     EVENT *event = NULL;
     EVENT **eventArray = NULL;
     EVENT_MANAGER *eventManager;
+    EVENT_ASSIGNMENT *eventAssignment;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -342,6 +343,37 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
         i++;        
     }
     rec->eventArray = eventArray;    
+
+    for (i = 0; i < rec->eventsSize; i++) {
+      list = GetEventAssignments( rec->eventArray[i] );
+      ResetCurrentElement( list );
+      while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	for (j = 0; j < rec->speciesSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	    SetEventAssignmentVarType( eventAssignment, SPECIES_EVENT_ASSIGNMENT );
+	    SetEventAssignmentIndex( eventAssignment, j );
+	    break;
+	  } 
+	}
+	for (j = 0; j < rec->compartmentsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		       GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	    SetEventAssignmentVarType( eventAssignment, COMPARTMENT_EVENT_ASSIGNMENT );
+	    SetEventAssignmentIndex( eventAssignment, j );
+	    break;
+	  }
+	}
+	for (j = 0; j < rec->symbolsSize; j++) {
+	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		       GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	    SetEventAssignmentVarType( eventAssignment, PARAMETER_EVENT_ASSIGNMENT );
+	    SetEventAssignmentIndex( eventAssignment, j );
+	    break;
+	  } 
+	}
+      }
+    }
         
     backend->_internal1 = (CADDR_T)rec;
     
@@ -636,40 +668,30 @@ static void fireEvent( EVENT *event, IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
   EVENT_ASSIGNMENT *eventAssignment;
   double concentration = 0.0;    
   UINT j;
+  BYTE varType;
 
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
-    for (j = 0; j < rec->speciesSize; j++) {
-      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
-		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
-	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-	//printf("conc = %g\n",concentration);
-	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	rec->concentrations[j] = concentration;
-	break;
-      } 
-    }
-    for (j = 0; j < rec->compartmentsSize; j++) {
-      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
-		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
-	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );  
-	//printf("conc = %g\n",concentration);
-	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
-	rec->concentrations[rec->speciesSize + j] = concentration;
-	break;
-      }
-    }
-    for (j = 0; j < rec->symbolsSize; j++) {
-      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
-		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
-	concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );   
-	//printf("conc = %g\n",concentration);
-	SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
-	rec->concentrations[rec->speciesSize + rec->compartmentsSize + j] = concentration;
-	break;
-      } 
+    varType = GetEventAssignmentVarType( eventAssignment );
+    j = GetEventAssignmentIndex( eventAssignment );
+    //printf("varType = %d j = %d\n",varType,j);
+    if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
+      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
+      //printf("conc = %g\n",concentration);
+      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+      rec->concentrations[j] = concentration;
+    } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
+      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );  
+      //printf("conc = %g\n",concentration);
+      SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
+      rec->concentrations[rec->speciesSize + j] = concentration;
+    } else {
+      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );   
+      //printf("conc = %g\n",concentration);
+      SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
+      rec->concentrations[rec->speciesSize + rec->compartmentsSize + j] = concentration;
     }
   }
 }

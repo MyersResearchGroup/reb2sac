@@ -48,6 +48,9 @@ static RET_VAL _UpdateReactionRateUpdateTime( BUNKER_MONTE_CARLO_RECORD2 *rec );
 static int _ComparePropensity( REACTION *a, REACTION *b );
 static BOOL _IsTerminationConditionMet( BUNKER_MONTE_CARLO_RECORD2 *rec );
 
+static double fireEvents( BUNKER_MONTE_CARLO_RECORD2 *rec, double time );
+static void fireEvent( EVENT *event, BUNKER_MONTE_CARLO_RECORD2 *rec );
+static void ExecuteAssignments( BUNKER_MONTE_CARLO_RECORD2 *rec );
 
 static double _GetUniformRandom();
 
@@ -141,6 +144,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD2 *rec, BACK_END_PROC
     CONSTRAINT *constraint = NULL;
     CONSTRAINT **constraintArray = NULL;
     CONSTRAINT_MANAGER *constraintManager;
+    EVENT *event = NULL;
+    EVENT **eventArray = NULL;
+    EVENT_MANAGER *eventManager;
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
@@ -267,12 +273,30 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD2 *rec, BACK_END_PROC
     }                
     
     properties = compRec->properties;
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
+        rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
+    }
+    else {
+      if( IS_FAILED( ( ret = StrToUINT32( (UINT32*)&(rec->startIndex), valueString ) ) ) ) {
+	rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
+      }
+    }    
+    
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
     }
     else {
         if( IS_FAILED( ( ret = StrToFloat( &(rec->timeLimit), valueString ) ) ) ) {
             rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
+        }
+    }    
+
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_STEP ) ) == NULL ) {
+        rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->timeStep), valueString ) ) ) ) {
+            rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
         }
     }    
     
@@ -349,6 +373,24 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD2 *rec, BACK_END_PROC
 					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, rec->timeLimit ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
+
+    if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the event manager" );
+    }
+    list = eventManager->CreateListOfEvents( eventManager );
+    rec->eventsSize = GetLinkedListSize( list );
+    if ( rec->eventsSize > 0 ) {
+      if( ( eventArray = (EVENT**)MALLOC( rec->eventsSize * sizeof(EVENT*) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for events array" );
+      }
+    }
+    i = 0;
+    ResetCurrentElement( list );
+    while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+        eventArray[i] = event;
+        i++;        
+    }
+    rec->eventArray = eventArray;    
         
     backend->_internal1 = (CADDR_T)rec;
     
@@ -359,6 +401,7 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec, int runNu
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
     double amount = 0;
+    double param = 0;
     UINT32 i = 0;
     UINT32 size = 0;
     SPECIES *species = NULL;
@@ -367,12 +410,17 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec, int runNu
     REACTION **reactionArray = rec->reactionArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
+    double compSize = 0.0;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = rec->compartmentArray;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     
     srand( rec->seed );
     rec->seed = rand();
     srand( rec->seed );
     
-    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, runNum );        
+    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );        
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
         return ret;            
     }
@@ -406,6 +454,30 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec, int runNu
             return ret;
         }        
     }
+    size = rec->compartmentsSize;        
+    for( i = 0; i < size; i++ ) {
+        compartment = compartmentArray[i];
+	compSize = GetSizeInCompartment( compartment );
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;            
+        }
+    }
+    size = rec->symbolsSize;        
+    for( i = 0; i < size; i++ ) {
+        symbol = symbolArray[i];
+	param = GetRealValueInSymbol( symbol );
+        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
+            return ret;            
+        }
+    }
+    for (i = 0; i < rec->eventsSize; i++) {
+      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+      } else {
+	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      }
+    }
     
     return ret;            
 }
@@ -413,14 +485,34 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec, int runNu
 static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     RET_VAL ret = SUCCESS;
     int i = 0;
+    int j = 0;
+    double timeLimit = rec->timeLimit;
+    double timeStep = rec->timeStep;
+    double maxTime = 0.0;
+    double nextPrintTime = 0.0;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
+    int nextEvent = 0;
+    double nextEventTime = 0;
     
     printer = rec->printer;
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
         i++;
+	if (timeStep == DBL_MAX) {
+	  maxTime = DBL_MAX;
+	} else {
+	  maxTime = maxTime + timeStep;
+	}
+	nextEventTime = fireEvents( rec, rec->time );
+	if (nextEventTime==-2.0) {
+	  return FAILING;
+	}
+	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+	  maxTime = nextEventTime;
+	}
+
         if( IS_FAILED( ( ret = _CalculatePropensities( rec ) ) ) ) {
             return ret;
         }
@@ -428,24 +520,49 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
             return ret;
         }
         if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {            
-            TRACE_1( "the total propensity is 0 at iteration %i", i );
-            rec->time = rec->timeLimit; 
-            if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-                return ret;            
-            }
-            reaction = NULL;
+	  TRACE_1( "the total propensity is 0 at iteration %i", i );
+	  rec->t = maxTime - rec->time;
+	  rec->time = maxTime;
+	  reaction = NULL;
+	  rec->nextReaction = NULL;
+	  if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	    return ret;
+	  }
+	  if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	    return ret;            
+	  }
         }
         else { 
-            if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
-                return ret;
-            }
-            if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
-                return ret;
-            }
-            reaction = rec->nextReaction;
-            if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
-                return ret;
-            }
+	  if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
+	    return ret;
+	  }
+	  if ( maxTime < rec->time ) {
+	    rec->time -= rec->t;
+	    rec->t = maxTime - rec->time;
+	    rec->time = maxTime;
+	    reaction = NULL;
+	    rec->nextReaction = NULL;
+	    if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	      return ret;
+	    }
+	    if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	      return ret;            
+	    }
+	  } else {
+	    if (rec->time < timeLimit) {
+	      if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
+		return ret;
+	      }
+	      reaction = rec->nextReaction;
+	      if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+		return ret;
+	      }
+	    } else {
+	      if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		return ret;            
+	      }
+	    }
+	  }
         }
     }
 /*    
@@ -453,8 +570,11 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
         return ret;
     }
 */
+    if( rec->time >= timeLimit ) {
+        rec->time = timeLimit;
+    } 
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
-        return ret;
+      return ret;
     }
     
     if( IS_FAILED( ( ret = printer->PrintEnd( printer ) ) ) ) {
@@ -484,8 +604,19 @@ static RET_VAL _CleanSimulation( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
 
 static RET_VAL _CleanRecord( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     RET_VAL ret = SUCCESS;
+    char filename[512];
+    FILE *file = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
+    
+    sprintf( filename, "%s%csim-rep.txt", rec->outDir, FILE_SEPARATOR );        
+    if( ( file = fopen( filename, "w" ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CleanRecord", "could not create a report file" );
+    }
+    if( IS_FAILED( ( ret = decider->Report( decider, file ) ) ) ) {
+        return ret;            
+    }    
+    fclose( file );
     
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
@@ -642,6 +773,7 @@ static RET_VAL _FindNextReactionTime( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     rec->time += t;
     rec->t = t;
     if( rec->time > rec->timeLimit ) {
+        rec->t -= rec->time - rec->timeLimit; 
         rec->time = rec->timeLimit;
     }
     TRACE_1( "time to next reaction is %f", t );
@@ -696,7 +828,7 @@ static RET_VAL _Print( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
 
-    while( nextPrintTime < time ) {
+    while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
         if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
             return ret;
         }
@@ -719,6 +851,104 @@ static RET_VAL _UpdateNodeValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     return ret;            
 }
 
+static double fireEvents( BUNKER_MONTE_CARLO_RECORD2 *rec, double time ) {
+    int i;
+    double nextEventTime;
+    BOOL triggerEnabled;
+    double deltaTime;
+    BOOL eventFired = FALSE;
+    double firstEventTime = -1.0;
+
+    do {
+      eventFired = FALSE;
+      for (i = 0; i < rec->eventsSize; i++) {
+	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
+	}
+	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+	if ((nextEventTime != -1.0) && (time >= nextEventTime)) {
+	  fireEvent( rec->eventArray[i], rec );
+	  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	  eventFired = TRUE;
+	}
+	if (!triggerEnabled) {
+	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	      deltaTime = 0; 
+	    } 
+	    else {
+	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
+	    }
+	    if (deltaTime > 0) { 
+	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+		firstEventTime = time + deltaTime;
+	      }
+	    } else if (deltaTime == 0) {
+	      fireEvent( rec->eventArray[i], rec );
+	      eventFired = TRUE;
+	    } else {
+	      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	      return -2;
+	    }
+	  }
+	} else {
+	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	  }
+	}
+      }
+      if (eventFired) {
+	ExecuteAssignments( rec );
+      }
+    } while (eventFired);
+    return firstEventTime;
+}
+
+static void fireEvent( EVENT *event, BUNKER_MONTE_CARLO_RECORD2 *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double amount = 0.0;    
+  UINT j;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    for (j = 0; j < rec->speciesSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+	//printf("conc = %g\n",amount);
+	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	break;
+      } 
+    }
+    for (j = 0; j < rec->compartmentsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetCompartmentID( rec->compartmentArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
+	//printf("conc = %g\n",amount);
+	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	break;
+      }
+    }
+    for (j = 0; j < rec->symbolsSize; j++) {
+      if ( strcmp( GetCharArrayOfString(eventAssignment->var),
+		   GetCharArrayOfString(GetSymbolID( rec->symbolArray[j] ) ) ) == 0 ) {
+	amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
+	//printf("conc = %g\n",amount);
+	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	break;
+      } 
+    }
+  }
+}
 
 /* Update values using assignments rules */
 static void ExecuteAssignments( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
@@ -756,6 +986,8 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     double change = 0;    
     UINT i = 0;
     UINT j = 0;
+    double deltaTime;
+    BOOL triggerEnabled;
     BYTE varType;
 
     for (i = 0; i < rec->rulesSize; i++) {
@@ -794,35 +1026,39 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
       }
     }
 
-    edges = GetReactantEdges( (IR_NODE*)reaction );
-    ResetCurrentElement( edges );
-    while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+    if (reaction) {
+      edges = GetReactantEdges( (IR_NODE*)reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) - (double)stoichiometry;
         TRACE_3( "the amount of %s decreases from %g to %g", 
-            GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
-            GetAmountInSpeciesNode( species ),
-            amount );
+		 GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
+		 GetAmountInSpeciesNode( species ),
+		 amount );
         SetAmountInSpeciesNode( species, amount );
         if( IS_FAILED( ( ret = evaluator->SetSpeciesValue( evaluator, species, amount ) ) ) ) {
             return ret;
         }        
-    }    
+      }    
         
-    edges = GetProductEdges( (IR_NODE*)reaction );
-    ResetCurrentElement( edges );
-    while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+      edges = GetProductEdges( (IR_NODE*)reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) + (double)stoichiometry;
         TRACE_3( "the amount of %s increases from %g to %g", 
-            GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
-            GetAmountInSpeciesNode( species ),
-            amount );
+		 GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
+		 GetAmountInSpeciesNode( species ),
+		 amount );
         SetAmountInSpeciesNode( species, amount );
-    }    
-    
+      }    
+    }
+ 
     for (j = 0; j < rec->symbolsSize; j++) {
       if ((strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"t")==0) ||
 	  (strcmp(GetCharArrayOfString( GetSymbolID(rec->symbolArray[j]) ),"time")==0)) {
@@ -846,6 +1082,9 @@ static RET_VAL _UpdateReactionRateUpdateTime( BUNKER_MONTE_CARLO_RECORD2 *rec ) 
     LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
 
+    if (rec->nextReaction == NULL) {
+      return ret;
+    }
     edges = GetReactantEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
