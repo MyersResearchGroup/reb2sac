@@ -46,10 +46,13 @@ typedef struct {
     UINT32 symbolsSize;
     CONSTRAINT **constraintArray;
     UINT32 constraintsSize;
+    EVENT **eventArray;
+    UINT32 eventsSize;
     REACTION *nextReaction;    
     SIMULATION_PRINTER *printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double time;
+    double timeStep;
     double t;
     double printInterval;
     double nextPrintTime;    
@@ -59,6 +62,7 @@ typedef struct {
     UINT32 seed;
     UINT32 runs; 
     char *outDir; 
+    int startIndex;
 } BUNKER_MONTE_CARLO_RECORD2;
 
 

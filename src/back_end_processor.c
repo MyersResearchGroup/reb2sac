@@ -27,7 +27,7 @@
 #include "xhtml_back_end_processor.h"
 #include "gillespie_monte_carlo.h"
 #include "bunker_monte_carlo.h"
-#include "bunker_monte_carlo2.h"
+/* #include "bunker_monte_carlo2.h" */
 #include "emc_simulation.h"
 #include "euler_method.h"
 #include "nary_level_back_end_process.h"
@@ -141,13 +141,13 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Process = DoBunkerMonteCarloAnalysis;
                 backend->Close = CloseBunkerMonteCarloAnalyzer;
             }
-            else if( strcmp( encoding, "bunker2" ) == 0 ) {
+	    /*            else if( strcmp( encoding, "bunker2" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = DoBunkerMonteCarlo2Analysis;
                 backend->Close = CloseBunkerMonteCarlo2Analyzer;
-            }
+		} */
             else {
                 fprintf( stderr, "target encoding type %s is invalid", encoding ); 
                 return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );

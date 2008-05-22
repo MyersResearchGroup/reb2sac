@@ -123,12 +123,48 @@ double GetNextEventTimeInEvent( EVENT *eventDef ) {
     return eventDef->nextEventTime;
 }
 
+BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef ) {
+    START_FUNCTION("GetEventAssignmentVarType");
+            
+    END_FUNCTION("GetEventAssignmentVarType", SUCCESS );
+    return eventAssignDef->varType;
+}
+
+UINT32 GetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef ) {
+    START_FUNCTION("GetEventAssignmentIndex");
+            
+    END_FUNCTION("GetEventAssignmentIndex", SUCCESS );
+    return eventAssignDef->index;
+}
+
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime ) {
     START_FUNCTION("SetNextEventTimeInEvent");
   
     eventDef->nextEventTime = nextEventTime;
   
     END_FUNCTION("SetNextEventTimeInEvent", SUCCESS );
+}
+
+RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varType ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetEventAssignmentVarType");
+
+    eventAssignDef->varType = varType;
+
+    END_FUNCTION("SetEventAssignmentVarType", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef, UINT32 index ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetEventAssignmentIndex");
+
+    eventAssignDef->index = index;
+
+    END_FUNCTION("SetEventAssignmentIndex", SUCCESS );
+    return ret;
 }
 
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef ) {

@@ -9,7 +9,7 @@ reb2sac_LDFLAGS = $(all_libraries)
 
 noinst_HEADERS = \
 	abs_phage_lambda2_simulation_run_termination_decider.h	abs_phage_lambda_simulation_run_termination_decider.h	abstraction_engine.h abstraction_method_constructor.h	abstraction_method_manager.h \
-				abstraction_method_properties.h	abstraction_reporter.h back_end_processor.h biospice_tsd_printer.h	bunker_monte_carlo2.h \
+				abstraction_method_properties.h	abstraction_reporter.h back_end_processor.h biospice_tsd_printer.h	 \
 				bunker_monte_carlo.h common.h	compartment_manager.h reaction_manager.h compiler_def.h \
 				confidence_interval_stop_rule.h	critical_concentration_finder.h critical_level_finder.h	critical_level_order_decider.h \
 				csv_simulation_printer.h	ctmc_analysis_back_end_processor.h ctmc_analyzer.h	ctmc_stationary_analysis_back_end_processor.h \
@@ -23,7 +23,7 @@ noinst_HEADERS = \
 				hse_logical_statement_handler.h	hse_transformation_checker.h implicit_gear1_method.h	implicit_gear2_method.h \
 				implicit_runge_kutta_4_method.h	ir2ctmc_transformer.h ir2xhtml_transformer.h IR.h ir_node.h	kinetic_law_evaluater.h \
 				kinetic_law.h law_of_mass_action_util.h	linked_list.h log.h logical_species_node.h \
-				loop_gillespie_monte_carlo.h	markov_analysis_result_reporter.h markov_chain_analysis_properties.h	markov_chain.h \
+				markov_analysis_result_reporter.h markov_chain_analysis_properties.h	markov_chain.h \
 				nary_level_back_end_process.h nary_order_decider.h	nary_order_transformation_method.h \
 				next_reaction_simulation.h	normally_distributed_random_generator.h	normal_waiting_time_monte_carlo.h null_simulation_printer.h	random_number_generator.h reaction_node.h \
 				reb2sac.h	sac_phage_lambda_simulation_run_termination_decider.h	sbml_back_end_processor.h sbml_front_end_processor.h sbml_symtab.h	simulation_method.h \
@@ -39,7 +39,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	abstraction_reporter.c back_end_processor.c birth_death_generation_method2.c \
 	birth_death_generation_method3.c birth_death_generation_method4.c birth_death_generation_method5.c \
 	birth_death_generation_method6.c birth_death_generation_method7.c birth_death_generation_method.c \
-	bunker_monte_carlo2.c bunker_monte_carlo.c compartment_manager.c reaction_manager.c \
+	bunker_monte_carlo.c compartment_manager.c reaction_manager.c \
 	confidence_interval_stop_rule.c critical_concentration_finder.c critical_level_finder.c \
 	critical_level_order_decider.c csv_simulation_printer.c ctmc_analysis_back_end_processor.c \
 	ctmc_analyzer.c ctmc_stationary_analysis_back_end_processor.c \
@@ -63,7 +63,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	inducer_structure_transformation_method.c ir2ctmc_transformer.c ir2xhtml_transformer.c IR.c ir_node.c \
 	irrelevant_species_elimination_method.c kinetic_law.c kinetic_law_constants_simplifier.c \
 	kinetic_law_evaluater.c law_of_mass_action_util.c linked_list.c log.c logical_species_node.c \
-	loop_gillespie_monte_carlo.c main.c markov_analysis_result_reporter.c markov_chain.c \
+	main.c markov_analysis_result_reporter.c markov_chain.c \
 	max_concentration_reaction_adder.c modifier_constant_propagation_abstraction_method.c \
 	modifier_structure_transformation_method.c multiple_products_reaction_elimination_method.c \
 	multiple_reactants_reaction_elimination_method.c nary_level_back_end_process2.c nary_level_back_end_process.c \

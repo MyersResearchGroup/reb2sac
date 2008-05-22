@@ -29,6 +29,10 @@
 
 BEGIN_C_NAMESPACE
 
+#define SPECIES_EVENT_ASSIGNMENT ((BYTE)1)
+#define COMPARTMENT_EVENT_ASSIGNMENT ((BYTE)2)
+#define PARAMETER_EVENT_ASSIGNMENT ((BYTE)3)   
+
 typedef struct {
     STRING *id;
     KINETIC_LAW *trigger;
@@ -41,6 +45,8 @@ typedef struct {
 typedef struct {
     STRING *var;
     KINETIC_LAW *assignment;
+    BYTE varType;
+    UINT32 index;
 } EVENT_ASSIGNMENT;
 
 struct _EVENT_MANAGER;
@@ -66,6 +72,12 @@ RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assi
 EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment );
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime );
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
+
+BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef );
+UINT32 GetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef );
+RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varType );
+RET_VAL SetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef, UINT32 index );
+
 
 EVENT_MANAGER *GetEventManagerInstance( COMPILER_RECORD_T *record );
 RET_VAL CloseEventManager( );
