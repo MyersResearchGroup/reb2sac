@@ -209,7 +209,7 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
       num = ListOf_size( globalParams );
       for( i = 0; i < num; i++ ) {
 	param = (Parameter_t*)ListOf_get( globalParams, i );
-	id = Parameter_getId( param );
+	id = (char*)Parameter_getId( param );
 	value = Parameter_getValue( param );
 	constant = TRUE;
 	if (!Parameter_getConstant( param )) {

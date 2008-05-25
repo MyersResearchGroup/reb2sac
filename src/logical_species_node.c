@@ -21,9 +21,9 @@
 
 static double _GetInitialConcentration( SPECIES *species );
 
-static SPECIES *_Clone( SPECIES *species );    
+static IR_NODE *_Clone( IR_NODE *species );    
 static char *_GetType( );                                                                              
-static RET_VAL _ReleaseResource( SPECIES *species );
+static RET_VAL _ReleaseResource( IR_NODE *species );
 
 LOGICAL_SPECIES *CreateLogicalSpeciesFromSpecies( SPECIES *species, STRING *newName, int order, int highestLevel, double criticalConcentration ) {
     double initialCon = 0.0;
@@ -129,12 +129,12 @@ BOOL IsLogicalSpecies( SPECIES *species ) {
 }
 
 
-static SPECIES *_Clone( SPECIES *species ) {
+static IR_NODE *_Clone( IR_NODE *species ) {
     LOGICAL_SPECIES *clone = NULL;
     
     START_FUNCTION("_Clone");
 
-    if( !IsLogicalSpecies( species ) ) {
+    if( !IsLogicalSpecies( (SPECIES*)species ) ) {
         END_FUNCTION("_Clone", FAILING );
         return NULL;
     }
@@ -152,7 +152,7 @@ static SPECIES *_Clone( SPECIES *species ) {
     clone->originalSpeciesName = CloneString( ((LOGICAL_SPECIES*)species)->originalSpeciesName );   
            
     END_FUNCTION("_Clone", SUCCESS );    
-    return (SPECIES*)clone;
+    return (IR_NODE*)clone;
 }
 
 static char * _GetType( ) {
@@ -161,7 +161,7 @@ static char * _GetType( ) {
     return LOGICAL_SPECIES_TYPE_ID;
 }
                                                                           
-static RET_VAL _ReleaseResource( SPECIES *species ) {
+static RET_VAL _ReleaseResource( IR_NODE *species ) {
     RET_VAL ret = SUCCESS;
     
     START_FUNCTION("_ReleaseResource");

@@ -49,7 +49,7 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateSacPhageLambdaSimula
     decider->timeLimit = timeLimit;
     
     decider->IsTerminationConditionMet = 
-        (BOOL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, double))_IsTerminationConditionMet;        
+      (BOOL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, REACTION *reaction, double))_IsTerminationConditionMet;        
     decider->Destroy = (RET_VAL(*)(SIMULATION_RUN_TERMINATION_DECIDER *))_Destroy;
     decider->Report = (RET_VAL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, FILE *))_Report;
     

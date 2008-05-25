@@ -553,7 +553,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
     double maxTime;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
-    gsl_odeiv_step_type *stepType = gsl_odeiv_step_rkf45;
+    const gsl_odeiv_step_type *stepType = gsl_odeiv_step_rkf45;
     gsl_odeiv_step *step = NULL;
     gsl_odeiv_control *control = NULL;
     gsl_odeiv_evolve *evolve = NULL;

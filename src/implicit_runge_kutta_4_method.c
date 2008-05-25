@@ -318,7 +318,7 @@ static RET_VAL _InitializeRecord( IMPLICIT_RUNGE_KUTTA_4_SIMULATION_RECORD *rec,
         rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
     }
     else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(rec->seed), valueString ) ) ) ) {
+      if( IS_FAILED( ( ret = StrToUINT32( (UINT32*)&(rec->seed), valueString ) ) ) ) {
             rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
         }
     }
@@ -555,7 +555,7 @@ static RET_VAL _RunSimulation( IMPLICIT_RUNGE_KUTTA_4_SIMULATION_RECORD *rec ) {
     double maxTime;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
-    gsl_odeiv_step_type *stepType = gsl_odeiv_step_rk4imp;
+    const gsl_odeiv_step_type *stepType = gsl_odeiv_step_rk4imp;
     gsl_odeiv_step *step = NULL;
     gsl_odeiv_control *control = NULL;
     gsl_odeiv_evolve *evolve = NULL;

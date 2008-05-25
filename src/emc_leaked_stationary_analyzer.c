@@ -178,9 +178,9 @@ static BOOL _UpdateDistribution( int jumpCount, int stateSize, EMC_STATE *states
         for( i = 0; i < stateSize; i++ ) {
             rec = (EMC_LEAKED_STATIONARY_ANALYSIS_REC*)(states[i].analysisRecord);
             if( canDone ) {
-                if( fabs( rec->currentProb - rec->newProb ) >= tolerance ) {
+	      if( fabs( rec->currentProb - rec->newProb ) >= tolerance ) {
                     canDone = FALSE;
-                }
+	      }
             }
             rec->currentProb = rec->newProb;
             rec->currentLeakedProb = rec->newLeakedProb;

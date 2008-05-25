@@ -761,7 +761,7 @@ static RET_VAL _HandleConstraint( FRONT_END_PROCESSOR *frontend, Model_t *model,
     if( ( constraintManager = GetConstraintManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleConstraint", "could not get an instance of constraint manager" );
     }
-    id = (char *)SBase_getMetaId( source );
+    id = (char *)SBase_getMetaId( (SBase_t*)source );
     TRACE_1("creating constraint %s", id );
     if( ( constraintDef = constraintManager->CreateConstraint( constraintManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleConstraint", "could not allocate constraint %s", id );

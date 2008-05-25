@@ -47,7 +47,7 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateType1Pili1Simulation
     decider->timeLimit = timeLimit;
     
     decider->IsTerminationConditionMet = 
-        (BOOL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, double))_IsTerminationConditionMet;        
+      (BOOL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, REACTION*, double))_IsTerminationConditionMet;        
     decider->Destroy = (RET_VAL(*)(SIMULATION_RUN_TERMINATION_DECIDER *))_Destroy;
     decider->Report = (RET_VAL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, FILE *))_Report;
     decider->RefreshCount = _RefreshCount;

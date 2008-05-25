@@ -74,14 +74,14 @@ DLLSCOPE TIME_SERIES_SPECIES_LEVEL_UPDATER * STDCALL CreateDefaultTimeSeriesSpec
     
     updater->Initialize = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_Initialize;
     updater->GetNextUpdateTime = (double(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_GetNextUpdateTime;
-    updater->Update = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_Update;
+    updater->Update = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *, double))_Update;
     updater->ReleaseResource = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_ReleaseResource;
     
     updater->speciesArray = speciesArray;
     updater->speciesSize = speciesSize;
     updater->file = file;
     updater->lastSpeciesIndex = speciesSize - 1;
-    updater->lastSpeciesName = GetSpeciesNodeName( speciesArray[updater->lastSpeciesIndex] );
+    updater->lastSpeciesName = GetCharArrayOfString(GetSpeciesNodeName( speciesArray[updater->lastSpeciesIndex] ));
     
     if( IS_FAILED( ( _CreateEntries( updater ) ) ) ) {
         END_FUNCTION("CreateDefaultTimeSeriesSpeciesLevelUpdater", FAILING );
@@ -89,7 +89,7 @@ DLLSCOPE TIME_SERIES_SPECIES_LEVEL_UPDATER * STDCALL CreateDefaultTimeSeriesSpec
     }
     
     
-    if( IS_FAILED( ( updater->Initialize( updater ) ) ) ) {
+    if( IS_FAILED( ( updater->Initialize( (TIME_SERIES_SPECIES_LEVEL_UPDATER *)updater ) ) ) ) {
         END_FUNCTION("CreateDefaultTimeSeriesSpeciesLevelUpdater", FAILING );
         return NULL;
     }
@@ -267,7 +267,7 @@ static RET_VAL _SetDummyMethods( DEFAULT_TIME_SERIES_SPECIES_LEVEL_UPDATER *upda
     
     updater->Initialize = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_Initialize2;
     updater->GetNextUpdateTime = (double(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_GetNextUpdateTime2;
-    updater->Update = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_Update2;
+    updater->Update = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *, double))_Update2;
     updater->ReleaseResource = (RET_VAL(*)(TIME_SERIES_SPECIES_LEVEL_UPDATER *))_ReleaseResource2;
     
     return ret;
