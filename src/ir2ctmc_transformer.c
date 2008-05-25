@@ -452,7 +452,7 @@ static RET_VAL _AddProductionTransition( IR2CTMC_TRANSFORMER *transformer, CTMC_
     }
     
     species = criticalLevel->species;        
-    list = GetProductEdges( species );
+    list = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( list );
     while( (edge = GetNextEdge( list )) != NULL ){
         stoichiometry = GetStoichiometryInIREdge( edge );
@@ -502,7 +502,7 @@ static RET_VAL _AddDegradationTransition( IR2CTMC_TRANSFORMER *transformer, CTMC
     }
     
     species = criticalLevel->species;        
-    list = GetReactantEdges( species );
+    list = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( list );
     while( (edge = GetNextEdge( list )) != NULL ){
         stoichiometry = GetStoichiometryInIREdge( edge );
@@ -599,7 +599,7 @@ static RET_VAL _UpdateReactionRates( IR2CTMC_TRANSFORMER *transformer, int state
     for( i = 0; i < updatedSpeciesSize; i++ ) {
         species = updatedSpeciesArray[i];
         
-        list = GetReactantEdges( species );
+        list = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( list );
         while( (edge = GetNextEdge( list )) != NULL ){
             reaction = GetReactionInIREdge( edge );
@@ -608,7 +608,7 @@ static RET_VAL _UpdateReactionRates( IR2CTMC_TRANSFORMER *transformer, int state
             }
         }
         
-        list = GetModifierEdges( species );
+        list = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( list );
         while( (edge = GetNextEdge( list )) != NULL ){
             reaction = GetReactionInIREdge( edge );
@@ -617,7 +617,7 @@ static RET_VAL _UpdateReactionRates( IR2CTMC_TRANSFORMER *transformer, int state
             }
         }
         
-        list = GetProductEdges( species );
+        list = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( list );
         while( (edge = GetNextEdge( list )) != NULL ){
             reaction = GetReactionInIREdge( edge );
@@ -648,7 +648,7 @@ static RET_VAL _GenerateCurrentRate( KINETIC_LAW_EVALUATER *evaluator, REACTION 
         return SUCCESS;
     }
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) > 0 ) {
         /** at most one reactant */
         edge = GetHeadEdge( list );

@@ -88,7 +88,7 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod6( ABSTRACTION_M
             continue;
         }
         kineticLaw = GetKineticLawInReactionNode( reaction );
-        edges = GetReactantEdges( reaction );
+        edges = GetReactantEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
@@ -108,7 +108,7 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod6( ABSTRACTION_M
             }
 #endif            
         }        
-        edges = GetModifierEdges( reaction );
+        edges = GetModifierEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );
@@ -126,11 +126,11 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod6( ABSTRACTION_M
 static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION *reaction ) {
     LINKED_LIST *list = NULL;
     
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) > 0 ) {
         return FALSE;
     }
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     return ( GetLinkedListSize( list ) == 0 ? FALSE : TRUE );    
 }
 
@@ -282,14 +282,14 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
     LINKED_LIST *reactantEdges = NULL;
     LINKED_LIST *productEdges = NULL;
     
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     if( GetLinkedListSize( edges ) == 0 ) {
         return FALSE;
     }
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
-        reactantEdges = GetReactantEdges( reaction );
+        reactantEdges = GetReactantEdges( (IR_NODE*)reaction );
         /*
          *  reactant in this reaction is only this species
          */
@@ -297,7 +297,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
             return FALSE;
         }
         
-        productEdges = GetProductEdges( reaction );
+        productEdges = GetProductEdges( (IR_NODE*)reaction );
         /*
          *  there is no product in this reaction
          */
@@ -312,14 +312,14 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
     }
     
     stoichiometry = -1;
-    edges = GetProductEdges( species );
+    edges = GetProductEdges( (IR_NODE*)species );
     if( GetLinkedListSize( edges ) == 0 ) {
         return FALSE;
     }
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
-        productEdges = GetProductEdges( reaction );
+        productEdges = GetProductEdges( (IR_NODE*)reaction );
         /*
          *  product in this reaction is only this species
          */
@@ -327,7 +327,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
             return FALSE;
         }                
         
-        reactantEdges = GetReactantEdges( reaction );
+        reactantEdges = GetReactantEdges( (IR_NODE*)reaction );
         /*
          *  there is no reactant in this reaction
          */
@@ -366,12 +366,12 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *s
         return ret;
     }
     
-    list = GetProductEdges( species );
+    list = GetProductEdges( (IR_NODE*)species );
     productionEdge = GetHeadEdge( list );
     production = GetReactionInIREdge( productionEdge );
     productionKineticLaw = GetKineticLawInReactionNode( production );
         
-    list = GetReactantEdges( species );
+    list = GetReactantEdges( (IR_NODE*)species );
     degradationEdge = GetHeadEdge( list );
     degradation = GetReactionInIREdge( degradationEdge );
     degradationKineticLaw = GetKineticLawInReactionNode( degradation );
@@ -414,7 +414,7 @@ static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, 
     IR_EDGE *modifierEdge = NULL;
     LINKED_LIST *modifierEdges = NULL;
     
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     edge = GetNextEdge( edges );
     newReaction = GetReactionInIREdge( edge );
@@ -424,7 +424,7 @@ static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, 
         reaction = GetReactionInIREdge( edge );
         kineticLaw = GetKineticLawInReactionNode( reaction );
         newKineticLaw = CreateOpKineticLaw( KINETIC_LAW_OP_PLUS, newKineticLaw, CloneKineticLaw( kineticLaw ) );
-        modifierEdges = GetModifierEdges( reaction );
+        modifierEdges = GetModifierEdges( (IR_NODE*)reaction );
         ResetCurrentElement( modifierEdges );
         while( ( modifierEdge = GetNextEdge( modifierEdges ) ) != NULL ) {
             modifier = GetSpeciesInIREdge( modifierEdge );
@@ -463,7 +463,7 @@ static RET_VAL _CombineProductionReactions(ABSTRACTION_METHOD *method, IR *ir, S
     IR_EDGE *modifierEdge = NULL;
     LINKED_LIST *modifierEdges = NULL;
     
-    edges = GetProductEdges( species );
+    edges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     edge = GetNextEdge( edges );
     newReaction = GetReactionInIREdge( edge );
@@ -473,7 +473,7 @@ static RET_VAL _CombineProductionReactions(ABSTRACTION_METHOD *method, IR *ir, S
         reaction = GetReactionInIREdge( edge );
         kineticLaw = GetKineticLawInReactionNode( reaction );
         newKineticLaw = CreateOpKineticLaw( KINETIC_LAW_OP_PLUS, newKineticLaw, CloneKineticLaw( kineticLaw ) );
-        modifierEdges = GetModifierEdges( reaction );
+        modifierEdges = GetModifierEdges( (IR_NODE*)reaction );
         ResetCurrentElement( modifierEdges );
         while( ( modifierEdge = GetNextEdge( modifierEdges ) ) != NULL ) {
             modifier = GetSpeciesInIREdge( modifierEdge );
@@ -565,8 +565,8 @@ static RET_VAL _AddModifiers( ABSTRACTION_METHOD *method, IR *ir, REACTION *prod
     LINKED_LIST *productionEdges = NULL;        
     LINKED_LIST *degradationEdges = NULL;        
 
-    productionEdges = GetModifierEdges( production );
-    degradationEdges = GetModifierEdges( degradation );
+    productionEdges = GetModifierEdges( (IR_NODE*)production );
+    degradationEdges = GetModifierEdges( (IR_NODE*)degradation );
     
     size = GetLinkedListSize( degradationEdges );
     ResetCurrentElement( productionEdges );

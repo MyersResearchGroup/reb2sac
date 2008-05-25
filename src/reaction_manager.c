@@ -132,7 +132,7 @@ static REACTION_LAW *_CreateReactionLaw( REACTION_LAW_MANAGER *manager, char *id
         END_FUNCTION("_CreateReactionLaw", FAILING );
         return NULL;
     }
-    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( reactionLaw->id ), GetStringLength( reactionLaw->id ), reactionLaw, manager->table ) ) ) {
+    if( IS_FAILED( PutInHashTable( (CADDR_T)GetCharArrayOfString( reactionLaw->id ), GetStringLength( reactionLaw->id ), (CADDR_T)reactionLaw, manager->table ) ) ) {
         FREE( reactionLaw );
         END_FUNCTION("_CreateReactionLaw", FAILING );
         return NULL;

@@ -153,7 +153,7 @@ static LINKED_LIST *_CreateListOfInterestingSpecies( ABSTRACTION_METHOD *method,
     ResetCurrentElement( speciesList );    
     while( ( species = (SPECIES*)GetNextFromLinkedList( speciesList ) ) != NULL ) {
         if( IsKeepFlagSetInSpeciesNode( species ) ) {
-            if( IS_FAILED( AddElementInLinkedList( species, list ) ) ) {
+	  if( IS_FAILED( AddElementInLinkedList( (CADDR_T)species, list ) ) ) {
                 END_FUNCTION("_CreateListOfInterestingSpecies", FAILING );
                 return NULL;
             } 
@@ -209,7 +209,7 @@ static RET_VAL _FindIrrelevant( IR *ir, IRRELEVANT_SPECIES_ELIMINATION_INTERNAL 
     ResetCurrentElement( irrelevantList );
     while( ( irrelevantNode = (IR_NODE*)GetNextFromLinkedList( irrelevantList ) ) != NULL ) {
         if( IsGraphFlagBlackInIRNode( (IR_NODE*)irrelevantNode ) ) {
-            if( IS_FAILED( ( ret = RemoveElementFromLinkedList( irrelevantNode, irrelevantList ) ) ) ) {
+            if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)irrelevantNode, irrelevantList ) ) ) ) {
                 END_FUNCTION("_FindIrrelevant", ret );
                 return ret;
             }        
@@ -220,7 +220,7 @@ static RET_VAL _FindIrrelevant( IR *ir, IRRELEVANT_SPECIES_ELIMINATION_INTERNAL 
     ResetCurrentElement( irrelevantList );
     while( ( irrelevantNode = (IR_NODE*)GetNextFromLinkedList( irrelevantList ) ) != NULL ) {
         if( IsGraphFlagBlackInIRNode( (IR_NODE*)irrelevantNode ) ) {
-            if( IS_FAILED( ( ret = RemoveElementFromLinkedList( irrelevantNode, irrelevantList ) ) ) ) {
+            if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)irrelevantNode, irrelevantList ) ) ) ) {
                 END_FUNCTION("_FindIrrelevant", ret );
                 return ret;
             }        
@@ -317,7 +317,7 @@ static RET_VAL _WalkSpecies( ABSTRACTION_METHOD *method, SPECIES *species ) {
         return ret;
     }
     
-    edges = GetProductEdges( species );
+    edges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
@@ -327,7 +327,7 @@ static RET_VAL _WalkSpecies( ABSTRACTION_METHOD *method, SPECIES *species ) {
         }
     }
 
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
@@ -366,7 +366,7 @@ static RET_VAL _WalkReaction( ABSTRACTION_METHOD *method, REACTION *reaction ) {
         return ret;
     }
 
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -376,7 +376,7 @@ static RET_VAL _WalkReaction( ABSTRACTION_METHOD *method, REACTION *reaction ) {
         }
     }
 
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -386,7 +386,7 @@ static RET_VAL _WalkReaction( ABSTRACTION_METHOD *method, REACTION *reaction ) {
         }
     }
 
-    edges = GetModifierEdges( reaction );
+    edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );

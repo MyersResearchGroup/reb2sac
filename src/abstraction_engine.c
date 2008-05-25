@@ -725,7 +725,7 @@ static LINKED_LIST *_CreateListOfMethods( ABSTRACTION_ENGINE *abstractionEngine,
             return NULL;
         }
         TRACE_2( "putting %s in method list %i", methodID, i );
-        AddElementInLinkedList( method, list ); 
+        AddElementInLinkedList( (CADDR_T)method, list ); 
     }
     END_FUNCTION("_CreateListOfMethods", SUCCESS );
     return list;

@@ -480,7 +480,7 @@ static RET_VAL _PrintUnitForXHTML( UNIT_DEFINITION *unitDef, FILE *file ) {
     units = GetUnitsInUnitDefinition( unitDef );
     num = GetLinkedListSize( units );
     for (i = 0; i < num; i++) {
-      unit = (char*)GetElementByIndex( i, units );
+      unit = (UNIT*)GetElementByIndex( i, units );
       scale = GetScaleInUnit( unit );
       exp = GetExponentInUnit( unit );
       mult = GetMultiplierInUnit( unit );

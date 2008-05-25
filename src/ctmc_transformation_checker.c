@@ -71,8 +71,8 @@ static BOOL _IsSpeciesTransformable( SPECIES *species ) {
     
     START_FUNCTION("_IsSpeciesTransformable");
         
-    reactionsAsReactant = GetReactantEdges( species );
-    reactionsAsProduct = GetProductEdges( species );
+    reactionsAsReactant = GetReactantEdges( (IR_NODE*)species );
+    reactionsAsProduct = GetProductEdges( (IR_NODE*)species );
     
     num = GetLinkedListSize( reactionsAsReactant ) + GetLinkedListSize( reactionsAsProduct );
     if( num == 0 ) {
@@ -97,8 +97,8 @@ static BOOL _IsReactionTransformable( REACTION *reaction ) {
         return FALSE;
     }
     
-    reactants = GetReactantEdges( reaction );
-    products = GetProductEdges( reaction );
+    reactants = GetReactantEdges( (IR_NODE*)reaction );
+    products = GetProductEdges( (IR_NODE*)reaction );
     
     num = GetLinkedListSize( reactants ) + GetLinkedListSize( products );
     if( num != 1 ) {

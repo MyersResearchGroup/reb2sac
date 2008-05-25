@@ -1736,7 +1736,7 @@ static RET_VAL _PrintListOfEventsForSBML( IR *ir, FILE *file, UINT32 tabCount ) 
     _PrintTab( file, tabCount );
     fprintf( file, "<listOfEvents>%s", NEW_LINE );
     ResetCurrentElement( list );
-    while( ( event = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
+    while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
       if( IS_FAILED( ( ret = _PrintEventForSBML( event, file, tabCount+ 1 ) ) ) ) {
             END_FUNCTION("_PrintListOfEventsForSBML", ret );    
             return ret;
@@ -2386,12 +2386,12 @@ static RET_VAL _PrintPWKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
     for (i = 0; i < size-1; i+=2) {
       _PrintTab( file, tabCount + 1 );
       fprintf( file, "<piece>%s", NEW_LINE );
-      child = GetElementByIndex( i, children );
+      child = (KINETIC_LAW*)GetElementByIndex( i, children );
       if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
         END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
         return ret;
       }
-      child = GetElementByIndex( i+1, children );
+      child = (KINETIC_LAW*)GetElementByIndex( i+1, children );
       if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
         END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
         return ret;
@@ -2402,7 +2402,7 @@ static RET_VAL _PrintPWKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
     if (size % 2 == 1) {
       _PrintTab( file, tabCount + 1 );
       fprintf( file, "<otherwise>%s", NEW_LINE );
-      child = GetElementByIndex( size - 1, children );
+      child = (KINETIC_LAW*)GetElementByIndex( size - 1, children );
       if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
         END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
         return ret;

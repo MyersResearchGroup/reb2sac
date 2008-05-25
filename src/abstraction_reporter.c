@@ -140,6 +140,3 @@ static RET_VAL STDCALL _DefaultReleaseResource( ABSTRACTION_REPORTER *reporter  
     END_FUNCTION("_DefaultReleaseResource", SUCCESS );
     return ret;
 }
-
-
- 
