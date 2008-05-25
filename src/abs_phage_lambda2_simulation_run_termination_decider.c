@@ -19,7 +19,7 @@
  ***************************************************************************/
 #include "abs_phage_lambda2_simulation_run_termination_decider.h"
 
-static BOOL _IsTerminationConditionMet( ABS_PHAGE_LAMBDA2_SIMULATION_RUN_TERMINATION_DECIDER *decider, double time );
+static BOOL _IsTerminationConditionMet( ABS_PHAGE_LAMBDA2_SIMULATION_RUN_TERMINATION_DECIDER *decider, REACTION *reaction, double time );
 static RET_VAL _Destroy( ABS_PHAGE_LAMBDA2_SIMULATION_RUN_TERMINATION_DECIDER *decider );
 static RET_VAL _Report( ABS_PHAGE_LAMBDA2_SIMULATION_RUN_TERMINATION_DECIDER *decider, FILE *file );
 static int _GetIndexOfCI( SPECIES **speciesArray, int size );
@@ -45,7 +45,7 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateAbsPhageLambda2Simul
     decider->timeLimit = timeLimit;
     
     decider->IsTerminationConditionMet = 
-        (BOOL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, double))_IsTerminationConditionMet;        
+      (BOOL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, REACTION*, double))_IsTerminationConditionMet;        
     decider->Destroy = (RET_VAL(*)(SIMULATION_RUN_TERMINATION_DECIDER *))_Destroy;
     decider->Report = (RET_VAL(*)(SIMULATION_RUN_TERMINATION_DECIDER *, FILE *))_Report;
     
@@ -88,7 +88,7 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateAbsPhageLambda2Simul
     return (SIMULATION_RUN_TERMINATION_DECIDER*)decider;
 }
 
-static BOOL _IsTerminationConditionMet( ABS_PHAGE_LAMBDA2_SIMULATION_RUN_TERMINATION_DECIDER *decider, double time ) {
+static BOOL _IsTerminationConditionMet( ABS_PHAGE_LAMBDA2_SIMULATION_RUN_TERMINATION_DECIDER *decider, REACTION *reaction,double time ) {
     SPECIES *species = NULL;
     SPECIES **speciesArray = decider->speciesArray;
     int indexCI = decider->indexCI;

@@ -20,7 +20,7 @@
 #if !defined(HAVE_EMC_STATIONARY_ANALYZER)
 #define HAVE_EMC_STATIONARY_ANALYZER
 
-
+#include <math.h>
 #include "common.h"
 #include "markov_chain.h"
 

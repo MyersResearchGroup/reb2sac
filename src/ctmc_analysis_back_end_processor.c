@@ -89,7 +89,7 @@ RET_VAL ProcessCTMCAnalysisBackend( BACK_END_PROCESSOR *backend, IR *ir ) {
     if( ( reporter = CreateMarkovAnalysisResultReporter( properties ) ) == NULL ) {
         return ErrorReport( FAILING, "ProcessCTMCAnalysisBackend", "could not create a markov analysis reporter" );
     } 
-    if( IS_FAILED( ( ret = reporter->Report( reporter, file, ctmc, transformer ) ) ) ) {
+    if( IS_FAILED( ( ret = reporter->Report( reporter, file, (MARKOV_CHAIN*)ctmc, (CADDR_T)transformer ) ) ) ) {
         END_FUNCTION("ProcessCTMCAnalysisBackend", ret );
         return ret;
     }

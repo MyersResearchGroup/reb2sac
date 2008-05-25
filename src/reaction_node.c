@@ -23,9 +23,9 @@
 
 #include "reaction_node.h"
 
-static REACTION *_Clone( REACTION *reaction );    
+static IR_NODE *_Clone( IR_NODE *reaction );    
 static char * _GetType(  );                                                                              
-static RET_VAL _ReleaseResource( REACTION *reaction );
+static RET_VAL _ReleaseResource( IR_NODE *reaction );
 
 
 RET_VAL InitReactionNode( REACTION *reaction, char *name ) {
@@ -320,7 +320,7 @@ static char * _GetType( ) {
 }
 
 
-static REACTION* _Clone( REACTION *reaction ) {
+static IR_NODE* _Clone( IR_NODE *reaction ) {
     REACTION *clone = NULL;
     
     START_FUNCTION("_Clone");
@@ -335,18 +335,18 @@ static REACTION* _Clone( REACTION *reaction ) {
         return NULL;
     }
     
-    clone->isReversible = reaction->isReversible;
-    if( ( clone->kineticLaw = CloneKineticLaw( reaction->kineticLaw ) ) == NULL ) {
+    clone->isReversible = ((REACTION*)reaction)->isReversible;
+    if( ( clone->kineticLaw = CloneKineticLaw( ((REACTION*)reaction)->kineticLaw ) ) == NULL ) {
         END_FUNCTION("_Clone", FAILING );
         return NULL;
     }
     
     END_FUNCTION("_Clone", SUCCESS );    
-    return clone;
+    return (IR_NODE*)clone;
 }
 
 
-static RET_VAL _ReleaseResource( REACTION *reaction ) {
+static RET_VAL _ReleaseResource( IR_NODE *reaction ) {
     RET_VAL ret = SUCCESS;
     
     START_FUNCTION("_ReleaseResource");
@@ -357,7 +357,7 @@ static RET_VAL _ReleaseResource( REACTION *reaction ) {
         END_FUNCTION("_ReleaseResource", ret );
         return ret;
     }
-    FreeKineticLaw( &(reaction->kineticLaw) );
+    FreeKineticLaw( &(((REACTION*)reaction)->kineticLaw) );
     END_FUNCTION("_ReleaseResource", SUCCESS );
     return ret;
 }
