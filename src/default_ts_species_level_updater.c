@@ -81,7 +81,7 @@ DLLSCOPE TIME_SERIES_SPECIES_LEVEL_UPDATER * STDCALL CreateDefaultTimeSeriesSpec
     updater->speciesSize = speciesSize;
     updater->file = file;
     updater->lastSpeciesIndex = speciesSize - 1;
-    updater->lastSpeciesName = speciesArray[updater->lastSpeciesIndex];
+    updater->lastSpeciesName = GetSpeciesNodeName( speciesArray[updater->lastSpeciesIndex] );
     
     if( IS_FAILED( ( _CreateEntries( updater ) ) ) ) {
         END_FUNCTION("CreateDefaultTimeSeriesSpeciesLevelUpdater", FAILING );
@@ -213,28 +213,28 @@ static RET_VAL _UpdateReactionRateUpdateTime( SPECIES *species, double time ) {
     LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
 
-    updateEdges = GetReactantEdges( species );
+    updateEdges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-        reaction = GetReactionInIREdge( updateEdge );
+      reaction = (REACTION*)GetReactionInIREdge( updateEdge );
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
             return ret;                
         }
     }                
     
-    updateEdges = GetModifierEdges( species );
+    updateEdges = GetModifierEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-        reaction = GetReactionInIREdge( updateEdge );
+        reaction = (REACTION*)GetReactionInIREdge( updateEdge );
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
             return ret;                
         }
     }                
     
-    updateEdges = GetProductEdges( species );
+    updateEdges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-        reaction = GetReactionInIREdge( updateEdge );
+        reaction = (REACTION*)GetReactionInIREdge( updateEdge );
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
             return ret;                
         }

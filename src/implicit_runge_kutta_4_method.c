@@ -308,7 +308,7 @@ static RET_VAL _InitializeRecord( IMPLICIT_RUNGE_KUTTA_4_SIMULATION_RECORD *rec,
         rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
     } 
     else {        
-        if( IS_FAILED( ( ret = StrToUINT32( &(rec->seed), valueString ) ) ) ) {
+        if( IS_FAILED( ( ret = StrToUINT32( (UINT32*)&(rec->seed), valueString ) ) ) ) {
             rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
         }
         TRACE_1("seed from command line is %i", rec->seed );

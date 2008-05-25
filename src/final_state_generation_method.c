@@ -130,10 +130,10 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, FINAL_STAT
     logicalSpecies = element->logicalSpecies;
     
     if( type == REB2SAC_TYPE_FINAL_STATE_HIGH ) {
-        edges = GetReactantEdges( logicalSpecies );
+        edges = GetReactantEdges( (IR_NODE*)logicalSpecies );
     }
     else if( type == REB2SAC_TYPE_FINAL_STATE_LOW ) {
-        edges = GetProductEdges( logicalSpecies );
+        edges = GetProductEdges( (IR_NODE*)logicalSpecies );
     }
     else {
         return ErrorReport( FAILING, "_DoTransformation", "invalid final state type" );
@@ -145,7 +145,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, FINAL_STAT
         list = GetReactantsInReactionNode( reaction );
         reactantsNum = GetLinkedListSize( list );
         
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         productsNum = GetLinkedListSize( list );
         if( ( reactantsNum + productsNum ) != 1 ) {
             continue;
@@ -204,7 +204,7 @@ static RET_VAL _InitFinalStateInternal( ABSTRACTION_METHOD *method, IR *ir, FINA
                 FREE( element );
                 continue;
             }
-            if( IS_FAILED( ( ret = AddElementInLinkedList( element, elements ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)element, elements ) ) ) ) {
                 END_FUNCTION("_InitFinalStateInternal", ret );
                 return ret;
             } 
@@ -223,7 +223,7 @@ static RET_VAL _InitFinalStateInternal( ABSTRACTION_METHOD *method, IR *ir, FINA
                 FREE( element );
                 continue;
             }
-            if( IS_FAILED( ( ret = AddElementInLinkedList( element, elements ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)element, elements ) ) ) ) {
                 END_FUNCTION("_InitFinalStateInternal", ret );
                 return ret;
             } 

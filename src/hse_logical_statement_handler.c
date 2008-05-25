@@ -291,7 +291,7 @@ static RET_VAL _EvaluateModifiers( REB2SAC_HSE_REACTION_RECORD *reactionRec ) {
         return ret;
     }
     
-    edges = GetModifierEdges( reaction );
+    edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         modifier = GetSpeciesInIREdge( edge );
@@ -312,14 +312,14 @@ static RET_VAL _EvaluateModifiers( REB2SAC_HSE_REACTION_RECORD *reactionRec ) {
         }
         else if( value2 > value1 ) {
             TRACE_2("%s is an activator in %s", GetCharArrayOfString( GetSpeciesNodeName( modifier ) ), GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
-            if( IS_FAILED( ( ret = AddElementInLinkedList( modifier, reactionRec->catalysts ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)modifier, reactionRec->catalysts ) ) ) ) {
                 END_FUNCTION("_EvaluateModifiers", ret );        
                 return ret;
             }
         }
         else {
             TRACE_2("%s is an inhibitor in %s", GetCharArrayOfString( GetSpeciesNodeName( modifier ) ), GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
-            if( IS_FAILED( ( ret = AddElementInLinkedList( modifier, reactionRec->inhibitors ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)modifier, reactionRec->inhibitors ) ) ) ) {
                 END_FUNCTION("_EvaluateModifiers", ret );        
                 return ret;
             }
@@ -376,7 +376,7 @@ static RET_VAL _EvaluateReactionRate( REB2SAC_HSE_REACTION_RECORD *reactionRec )
         }
     }    
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
         if( IS_FAILED( ( ret = evaluater->SetSpeciesValue( evaluater, species, REB2SAC_HSE_ACTIVATOR_VALUE ) ) ) ) {
@@ -384,7 +384,7 @@ static RET_VAL _EvaluateReactionRate( REB2SAC_HSE_REACTION_RECORD *reactionRec )
             return ret;
         }
     }    
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
         if( IS_FAILED( ( ret = evaluater->SetSpeciesValue( evaluater, species, REB2SAC_HSE_INHIBITOR_VALUE ) ) ) ) {
@@ -594,7 +594,7 @@ static RET_VAL _HandleSimpleProduction( HSE_LOGICAL_STATEMENT_HANDLER *handler, 
             fprintf( file, REB2SAC_HSE_REACTION_FORMAT_SPECIES, GetLogicalSpeciesID( backend, species ) );
         }
         
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         
         if( first ) {
             first = FALSE;
@@ -624,7 +624,7 @@ static RET_VAL _HandleSimpleProduction( HSE_LOGICAL_STATEMENT_HANDLER *handler, 
     fprintf( file, REB2SAC_HSE_REACTION_FORMAT_ARROW );
 
     /* simple production has at least one product */
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     edge = GetNextEdge( list );
     species = GetSpeciesInIREdge( edge );
@@ -687,7 +687,7 @@ static RET_VAL _HandleSimpleDegradation( HSE_LOGICAL_STATEMENT_HANDLER *handler,
         }
 
         /* simple degradation has at least one reactant */
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( first ) {
             first = FALSE;
         }
@@ -709,7 +709,7 @@ static RET_VAL _HandleSimpleDegradation( HSE_LOGICAL_STATEMENT_HANDLER *handler,
         fprintf( file, REB2SAC_HSE_REACTION_FORMAT_FALSE );
     }
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     fprintf( file, REB2SAC_HSE_REACTION_FORMAT_ARROW );
 
     /* simple degradation has at least one reactant */
@@ -793,7 +793,7 @@ static RET_VAL _HandleXMLSimpleProduction( HSE_LOGICAL_STATEMENT_HANDLER *handle
             fprintf( file, REB2SAC_HSE_REACTION_FORMAT_SPECIES, GetLogicalSpeciesID( backend, species ) );
         }
         
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         
         if( first ) {
             first = FALSE;
@@ -823,7 +823,7 @@ static RET_VAL _HandleXMLSimpleProduction( HSE_LOGICAL_STATEMENT_HANDLER *handle
     fprintf( file, REB2SAC_HSE_REACTION_FORMAT_ARROW );
 
     /* simple production has at least one product */
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     edge = GetNextEdge( list );
     species = GetSpeciesInIREdge( edge );
@@ -886,7 +886,7 @@ static RET_VAL _HandleXMLSimpleDegradation( HSE_LOGICAL_STATEMENT_HANDLER *handl
         }
 
         /* simple degradation has at least one reactant */
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( first ) {
             first = FALSE;
         }
@@ -908,7 +908,7 @@ static RET_VAL _HandleXMLSimpleDegradation( HSE_LOGICAL_STATEMENT_HANDLER *handl
         fprintf( file, REB2SAC_HSE_REACTION_FORMAT_FALSE );    
     }
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     fprintf( file, REB2SAC_HSE_REACTION_FORMAT_ARROW );
 
     /* simple degradation has at least one reactant */

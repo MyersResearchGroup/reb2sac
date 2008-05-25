@@ -135,13 +135,13 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     
     repressor = internal->elements[0].repressor;
     transcriptionReactions = internal->elements[0].transcriptionReactions;
-    list = GetModifierEdges( repressor );
+    list = GetModifierEdges( (IR_NODE*)repressor );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         transcription = GetReactionInIREdge( edge );
         if( _IsTranscriptionReaction( method, transcription, internal ) ) {
             transcriptionExist = TRUE;
-            if( IS_FAILED( AddElementInLinkedList( transcription, transcriptionReactions ) ) ) {
+            if( IS_FAILED( AddElementInLinkedList( (CADDR_T)transcription, transcriptionReactions ) ) ) {
                 END_FUNCTION("_IsConditionSatisfied", FAILING );
                 return FALSE;
             } 
@@ -150,13 +150,13 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     
     repressor = internal->elements[1].repressor;
     transcriptionReactions = internal->elements[1].transcriptionReactions;
-    list = GetModifierEdges( repressor );
+    list = GetModifierEdges( (IR_NODE*)repressor );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         transcription = GetReactionInIREdge( edge );
         if( _IsTranscriptionReaction( method, transcription, internal ) ) {
             transcriptionExist = TRUE;
-            if( IS_FAILED( AddElementInLinkedList( transcription, transcriptionReactions ) ) ) {
+            if( IS_FAILED( AddElementInLinkedList( (CADDR_T)transcription, transcriptionReactions ) ) ) {
                 END_FUNCTION("_IsConditionSatisfied", FAILING );
                 return FALSE;
             } 
@@ -184,7 +184,7 @@ static BOOL _IsInductionReaction( ABSTRACTION_METHOD *method, REACTION *reaction
         return FALSE;
     }
 
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsInductionReaction", SUCCESS );
         return FALSE;
@@ -192,19 +192,19 @@ static BOOL _IsInductionReaction( ABSTRACTION_METHOD *method, REACTION *reaction
     
     edge = GetHeadEdge( list );
     species = GetSpeciesInIREdge( edge );
-    list = GetProductEdges( species );
+    list = GetProductEdges( (IR_NODE*)species );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsInductionReaction", SUCCESS );
         return FALSE;
     }
     
-    list = GetReactantEdges( species );
+    list = GetReactantEdges( (IR_NODE*)species );
     if( GetLinkedListSize( list ) != 0 ) {
         END_FUNCTION("_IsInductionReaction", SUCCESS );
         return FALSE;
     }
     
-    list = GetModifierEdges( species );
+    list = GetModifierEdges( (IR_NODE*)species );
     if( GetLinkedListSize( list ) != 0 ) {
         END_FUNCTION("_IsInductionReaction", SUCCESS );
         return FALSE;
@@ -212,7 +212,7 @@ static BOOL _IsInductionReaction( ABSTRACTION_METHOD *method, REACTION *reaction
     
     internal->boundInducer = species;        
         
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 2 ) {
         END_FUNCTION("_IsInductionReaction", SUCCESS );
         return FALSE;
@@ -245,13 +245,13 @@ static BOOL _IsTranscriptionReaction( ABSTRACTION_METHOD *method, REACTION *reac
         return FALSE;
     }
 
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 0 ) {
         END_FUNCTION("_IsTranscriptionReaction", SUCCESS );
         return FALSE;
     }
     
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsTranscriptionReaction", SUCCESS );
         return FALSE;

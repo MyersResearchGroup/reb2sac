@@ -229,12 +229,12 @@ _CreateSpeciesArrayOfInterest( char *nameOfSpeciesOfInterest, SPECIES **speciesA
         return NULL;                
     }
             
-    relevantEdges = GetReactantEdges( speciesOfInterest );
+    relevantEdges = GetReactantEdges( (IR_NODE*)speciesOfInterest );
     ResetCurrentElement( relevantEdges );
     while( ( relevantEdge = GetNextEdge( relevantEdges ) ) != NULL ) {
         reaction = GetReactionInIREdge( relevantEdge );
         multiplier = GetStoichiometryInIREdge( relevantEdge );
-        edges = GetProductEdges( reaction );
+        edges = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( edges ) != 1 ) {
             continue;
         }

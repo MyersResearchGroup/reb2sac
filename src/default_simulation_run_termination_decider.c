@@ -355,5 +355,3 @@ static DEFAULT_SIMULATION_RUN_TERMINATION_CONDITION  *_CreateCondition(DEFAULT_S
     TRACE_4("condition: %s (index %i), %s, %g is created", speciesName, i, typeString, value );
     return condition;
 }
- 
- 

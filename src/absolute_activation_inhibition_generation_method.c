@@ -171,7 +171,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION 
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
         } 
-        if( FindElementInLinkedList( modifier, _CompareLogicalSpecies, absoluteSpeciesList ) < 0 ) {
+        if( FindElementInLinkedList( (CADDR_T)modifier, _CompareLogicalSpecies, absoluteSpeciesList ) < 0 ) {
             continue;        
         }
         
@@ -295,7 +295,7 @@ static RET_VAL _CreateAbsoluteSpeciesList( ABSTRACTION_METHOD *method, IR *ir ) 
         }        
         
         TRACE_1("%s is added in the absolute list", GetCharArrayOfString( GetSpeciesNodeName( logicalSpecies ) ) );  
-        if( IS_FAILED( ( ret = AddElementInLinkedList( logicalSpecies, absoluteSpeciesList ) ) ) ) {
+        if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)logicalSpecies, absoluteSpeciesList ) ) ) ) {
             END_FUNCTION("_CreateAbsoluteSpeciesList", ret );
             return ret;
         }                        
@@ -339,7 +339,7 @@ static RET_VAL _AddLogicalSpeciesInInternal( KINETIC_LAW_EVALUATER *evaluater, R
     START_FUNCTION("_AddLogicalSpeciesInInternal");
     
     kineticLaw = GetKineticLawInReactionNode( reaction );
-    sprintf( buf, "%s_con", GetCharArrayOfString( GetSpeciesNodeName( logicalSpecies ) ) );    
+    sprintf( buf, "%s_con", GetCharArrayOfString( GetSpeciesNodeName( (SPECIES*)logicalSpecies ) ) );    
     if( ( sym = symtab->Lookup( symtab, buf ) ) == NULL ) {
         return ErrorReport( FAILING, "_AddLogicalSpeciesInInternal", "%s is not found in the symtab", buf );
     }
@@ -377,14 +377,14 @@ static RET_VAL _AddLogicalSpeciesInInternal( KINETIC_LAW_EVALUATER *evaluater, R
     }
     else if( value2 > value1 ) {
         TRACE_1( "%s is an absolute activator", GetCharArrayOfString( GetSpeciesNodeName( (SPECIES*)logicalSpecies ) ) );
-        if( IS_FAILED( ( ret = AddElementInLinkedList( logicalSpecies, internal->absoluteActivators ) ) ) ) {
+        if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)logicalSpecies, internal->absoluteActivators ) ) ) ) {
             END_FUNCTION("_AddLogicalSpeciesInInternal", ret );        
             return ret;
         }
     }
     else {
         TRACE_1( "%s is an absolute inhibitor", GetCharArrayOfString( GetSpeciesNodeName( (SPECIES*)logicalSpecies ) ) );
-        if( IS_FAILED( ( ret = AddElementInLinkedList( logicalSpecies, internal->absoluteInhibitors ) ) ) ) {
+        if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)logicalSpecies, internal->absoluteInhibitors ) ) ) ) {
             END_FUNCTION("_AddLogicalSpeciesInInternal", ret );        
             return ret;
         }

@@ -330,7 +330,7 @@ static REACTION* _Clone( REACTION *reaction ) {
         return NULL;
     }
     
-    if( IS_FAILED( CopyIRNode( reaction, clone ) ) ) {
+    if( IS_FAILED( CopyIRNode( (IR_NODE*)reaction, (IR_NODE*)clone ) ) ) {
         END_FUNCTION("_Clone", FAILING );
         return NULL;
     }
