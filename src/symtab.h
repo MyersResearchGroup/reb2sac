@@ -32,6 +32,8 @@ typedef struct _REB2SAC_SYMTAB REB2SAC_SYMTAB;
 
 #define REB2SAC_SYMBOL_TYPE_REAL ((BYTE)0)
 
+struct KINETIC_LAW;
+
 typedef struct {
     STRING *id;
     union {
@@ -39,7 +41,8 @@ typedef struct {
     } value;
     double currentRealValue;
     BYTE type;
-    BOOL isConstant;    
+    BOOL isConstant;
+    struct KINETIC_LAW *initialAssignment;    
 } REB2SAC_SYMBOL;
 
 STRING *GetSymbolID( REB2SAC_SYMBOL *sym );
@@ -48,6 +51,8 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
 double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
+struct KINETIC_LAW *GetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym );
+RET_VAL SetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym, struct KINETIC_LAW *law );
 BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym );
 
 struct _REB2SAC_SYMTAB {

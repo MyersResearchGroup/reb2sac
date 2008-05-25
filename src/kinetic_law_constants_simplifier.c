@@ -444,6 +444,26 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
         case KINETIC_LAW_OP_LT:
 	  result = (leftValue < rightValue);
         break;
+
+        case KINETIC_LAW_OP_UNIFORM:
+	  result = GetNextUniformRandomNumber(leftValue,rightValue);
+	break;
+
+        case KINETIC_LAW_OP_NORMAL:
+	  result = GetNextNormalRandomNumber(leftValue,rightValue);
+	break;
+
+        case KINETIC_LAW_OP_BINOMIAL:
+	  result = GetNextBinomialRandomNumber(leftValue,(unsigned int)rightValue);
+	break;
+
+        case KINETIC_LAW_OP_GAMMA:
+	  result = GetNextGammaRandomNumber(leftValue,rightValue);
+	break;
+
+        case KINETIC_LAW_OP_LOGNORMAL:
+	  result = GetNextLogNormalRandomNumber(leftValue,rightValue);
+	break;
         
         default:
         return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
@@ -604,6 +624,27 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
         case KINETIC_LAW_UNARY_OP_LOG:
 	  result = log10(childValue);
         break;
+        case KINETIC_LAW_UNARY_OP_EXPRAND:
+	  result = GetNextExponentialRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_POISSON:
+	  result = GetNextPoissonRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CHISQ:
+	  result = GetNextChiSquaredRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LAPLACE:
+	  result = GetNextLaplaceRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CAUCHY:
+	  result = GetNextCauchyRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_RAYLEIGH:
+	  result = GetNextRayleighRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_BERNOULLI:
+	  result = GetNextBernoulliRandomNumber(childValue);
+        break;
         
         default:
         return ErrorReport( FAILING, "_VisitUnaryOpToSimplifyKineticLaw", "invalid operator type" );        
@@ -634,6 +675,13 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
     
     children = GetPWChildrenFromKineticLaw( kineticLaw );
     num = GetLinkedListSize( children );
+    for ( i = 0; i < num; i++ ) {
+      child = (KINETIC_LAW*)GetElementByIndex( i,children );
+      if( !IsConstantValueKineticLaw( child ) ) {
+        END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+        return ret;
+      }
+    }
     for ( i = 1; i < num; i+=2 ) {
       child = (KINETIC_LAW*)GetElementByIndex( i,children );
       if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
@@ -878,6 +926,26 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
         case KINETIC_LAW_OP_LT:
 	  result = (leftValue < rightValue);
         break;
+
+        case KINETIC_LAW_OP_UNIFORM:
+	  return ret;
+	break;
+
+        case KINETIC_LAW_OP_NORMAL:
+	  return ret;
+	break;
+
+        case KINETIC_LAW_OP_BINOMIAL:
+	  return ret;
+	break;
+
+        case KINETIC_LAW_OP_GAMMA:
+	  return ret;
+	break;
+
+        case KINETIC_LAW_OP_LOGNORMAL:
+	  return ret;
+	break;
         
         default:
         return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
@@ -1028,6 +1096,27 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
         break;
         case KINETIC_LAW_UNARY_OP_LOG:
 	  result = log10(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_EXPRAND:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_POISSON:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_CHISQ:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_LAPLACE:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_CAUCHY:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_RAYLEIGH:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_BERNOULLI:
+	  return ret;
         break;
         
         default:

@@ -57,6 +57,7 @@ typedef struct {
     double timeStep;
     double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
+    UINT32 seed;
     char *outDir; 
 } EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD;
 

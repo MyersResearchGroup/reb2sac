@@ -27,13 +27,12 @@
 #include "unit_manager.h"
 #include "compartment_manager.h"
 
-#define CONSTANT 0
-#define UNIFORM 1
-
 BEGIN_C_NAMESPACE
 
 struct _SPECIES;
 typedef struct _SPECIES SPECIES;
+
+struct KINETIC_LAW;
 
 struct  _SPECIES {
     STRING *id;
@@ -57,13 +56,11 @@ struct  _SPECIES {
         double amount;
         double concentration;
     } quantity;
-    int initType;
-    double initMin;
-    double initMax;
     UNIT_DEFINITION *substanceUnits;
     UNIT_DEFINITION *spatialSizeUnits;
     int charge;
     BYTE flags;    
+    struct KINETIC_LAW *initialAssignment;
 };
 
 RET_VAL InitSpeciesNode( SPECIES *species, char *name );
@@ -85,7 +82,7 @@ double GetInitialAmountInSpeciesNode( SPECIES *species );
 double GetInitialConcentrationInSpeciesNode( SPECIES *species );
 double GetAmountInSpeciesNode( SPECIES *species );
 double GetConcentrationInSpeciesNode( SPECIES *species );
-
+struct KINETIC_LAW *GetInitialAssignmentInSpeciesNode( SPECIES *species );
 
 BOOL IsInitialQuantityInAmountInSpeciesNode( SPECIES *species );
 BOOL IsSpeciesNodeConstant( SPECIES *species );
@@ -104,6 +101,7 @@ RET_VAL SetConcentrationInSpeciesNode( SPECIES *species, double concentration);
 RET_VAL SetSpeciesNodeConstant( SPECIES *species, BOOL flag );
 RET_VAL SetOnlySubstanceUnitsInSpeciesNode( SPECIES *species, BOOL flag );
 RET_VAL SetBoundaryConditionInSpeciesNode( SPECIES *species, BOOL flag );
+RET_VAL SetInitialAssignmentInSpeciesNode( SPECIES *species, struct KINETIC_LAW *law );
 
 BOOL IsKeepFlagSetInSpeciesNode( SPECIES *species );
 RET_VAL SetKeepFlagInSpeciesNode( SPECIES *species, BOOL flag );

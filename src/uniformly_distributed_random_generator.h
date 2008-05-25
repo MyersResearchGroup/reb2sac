@@ -24,11 +24,6 @@
 #include "common.h"
 
 BEGIN_C_NAMESPACE
-
-
-double GetNextUniformRandomNumber( double minUniform, double maxUniform );
-double GetNextUnitUniformRandomNumber( );
-
 END_C_NAMESPACE
 
 #endif

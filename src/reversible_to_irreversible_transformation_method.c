@@ -144,7 +144,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         return ret;
     }
     
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -155,7 +155,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         } 
     } 
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
@@ -166,7 +166,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         } 
     } 
        
-    list = GetModifierEdges( reaction );
+    list = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );

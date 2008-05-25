@@ -125,7 +125,7 @@ static RET_VAL _RegisterMethod(ABSTRACTION_METHOD_MANAGER *manager, ABSTRACTION_
 
     id = method->GetID( method );
     TRACE_2("%i Registering abstraction method %s", (i+1), id );
-    if( IS_FAILED( ( ret = PutInHashTable( id, strlen(id), method, manager->table ) ) ) ) {
+    if( IS_FAILED( ( ret = PutInHashTable( id, strlen(id), (CADDR_T)method, manager->table ) ) ) ) {
         END_FUNCTION("_RegisterMethod", SUCCESS );    
         return ret;
     }

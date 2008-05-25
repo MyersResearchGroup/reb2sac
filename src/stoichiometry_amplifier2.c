@@ -78,7 +78,7 @@ static RET_VAL _ApplyStoichiometryAmplificationMethod2( ABSTRACTION_METHOD *meth
     ResetCurrentElement( reactionList );    
     while( ( reaction = (REACTION*)GetNextFromLinkedList( reactionList ) ) != NULL ) {
         kineticLaw = GetKineticLawInReactionNode( reaction );
-        edges = GetReactantEdges( reaction );
+        edges = GetReactantEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
@@ -94,7 +94,7 @@ static RET_VAL _ApplyStoichiometryAmplificationMethod2( ABSTRACTION_METHOD *meth
                 return ret;
             }
         }        
-        edges = GetProductEdges( reaction );
+        edges = GetProductEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
@@ -110,7 +110,7 @@ static RET_VAL _ApplyStoichiometryAmplificationMethod2( ABSTRACTION_METHOD *meth
                 return ret;
             }
         }        
-        edges = GetModifierEdges( reaction );
+        edges = GetModifierEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );

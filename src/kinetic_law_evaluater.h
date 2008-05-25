@@ -45,6 +45,7 @@ struct _KINETIC_LAW_EVALUATER {
     double (*Evaluate)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentAmounts)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentConcentrations)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
+    double (*EvaluateWithCurrentConcentrationsDeter)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 };
 
 KINETIC_LAW_EVALUATER *CreateKineticLawEvaluater();

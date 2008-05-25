@@ -31,6 +31,7 @@ static RET_VAL _SetDefaultSpeciesValue( KINETIC_LAW_EVALUATER *evaluater, double
 static double _Evaluate( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentAmounts( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentConcentrations( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
+static double _EvaluateWithCurrentConcentrationsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 
 static double _GetValue( KINETIC_LAW_EVALUATER *evaluater, SPECIES *species );       
 
@@ -43,6 +44,8 @@ static RET_VAL _VisitSpeciesToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 static RET_VAL _VisitCompartmentToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitFunctionSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 
 static RET_VAL _VisitCompartmentToEvaluateWithCurrentSize( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToEvaluateWithCurrentAmounts( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
@@ -70,6 +73,7 @@ KINETIC_LAW_EVALUATER *CreateKineticLawEvaluater() {
     evaluater->Evaluate =_Evaluate;
     evaluater->EvaluateWithCurrentAmounts = _EvaluateWithCurrentAmounts;
     evaluater->EvaluateWithCurrentConcentrations = _EvaluateWithCurrentConcentrations;    
+    evaluater->EvaluateWithCurrentConcentrationsDeter = _EvaluateWithCurrentConcentrationsDeter;    
     
     END_FUNCTION("FreeKineticLawEvaluater", SUCCESS );        
     return evaluater;
@@ -267,6 +271,42 @@ static double _EvaluateWithCurrentConcentrations( KINETIC_LAW_EVALUATER *evaluat
 }     
 
 
+static double _EvaluateWithCurrentConcentrationsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw ) {
+    static KINETIC_LAW_VISITOR visitor;
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    
+    START_FUNCTION("_Evaluate");
+    
+    KINETIC_LAW *massActionRatio = NULL;
+    
+    START_FUNCTION("_Evaluate");
+    
+    if( visitor.VisitOp == NULL ) {
+        visitor.VisitPW = _VisitPWToEvaluate;
+        visitor.VisitOp = _VisitOpToEvaluateDeter;
+        visitor.VisitUnaryOp = _VisitUnaryOpToEvaluateDeter;
+        visitor.VisitInt = _VisitIntToEvaluate;
+        visitor.VisitReal = _VisitRealToEvaluate;
+        visitor.VisitSpecies = _VisitSpeciesToEvaluateWithCurrentConcentrations;
+        visitor.VisitCompartment = _VisitCompartmentToEvaluateWithCurrentSize;
+        visitor.VisitSymbol = _VisitSymbolToEvaluate;
+	visitor.VisitFunctionSymbol = _VisitFunctionSymbolToEvaluate;
+    }
+    
+    visitor._internal1 = (CADDR_T)evaluater;
+    visitor._internal2 = (CADDR_T)(&result);
+    
+    if( IS_FAILED( kineticLaw->Accept( kineticLaw, &visitor ) ) ) {
+        END_FUNCTION("_Evaluate", FAILING );
+        return -1.0;
+    } 
+        
+    END_FUNCTION("_Evaluate", SUCCESS );        
+    return result;
+}     
+
+
 static RET_VAL _VisitPWToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
     RET_VAL ret = SUCCESS;
     BYTE opType = 0x00;
@@ -405,6 +445,26 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
         case KINETIC_LAW_OP_OR:
             *result = leftValue || rightValue;
         break;
+
+        case KINETIC_LAW_OP_UNIFORM:
+	    *result = GetNextUniformRandomNumber(leftValue,rightValue);
+        break;
+
+        case KINETIC_LAW_OP_NORMAL:
+	    *result = GetNextNormalRandomNumber(leftValue,rightValue);
+        break;
+
+        case KINETIC_LAW_OP_BINOMIAL:
+	  *result = GetNextBinomialRandomNumber(leftValue,(unsigned int)rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GAMMA:
+	    *result = GetNextGammaRandomNumber(leftValue,rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LOGNORMAL:
+	    *result = GetNextLogNormalRandomNumber(leftValue,rightValue);
+        break;
         
         default:
             END_FUNCTION("_VisitOpToEvaluate", E_WRONGDATA );
@@ -535,6 +595,298 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
         case KINETIC_LAW_UNARY_OP_LOG:
 	  *result = log10(childValue);
         break;
+        case KINETIC_LAW_UNARY_OP_EXPRAND:
+	  *result = GetNextExponentialRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_POISSON:
+	  *result = GetNextPoissonRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CHISQ:
+	  *result = GetNextChiSquaredRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LAPLACE:
+	  *result = GetNextLaplaceRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CAUCHY:
+	  *result = GetNextCauchyRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_RAYLEIGH:
+	  *result = GetNextRayleighRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_BERNOULLI:
+	  *result = GetNextBernoulliRandomNumber(childValue);
+        break;
+        
+        default:
+            END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
+        return E_WRONGDATA;
+    }
+    
+    visitor->_internal2 = (CADDR_T)result;
+
+    END_FUNCTION("_VisitUnaryOpToEvaluate", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    BYTE opType = 0x00;
+    double leftValue = 0.0;
+    double rightValue = 0.0;
+    double *result = NULL;
+    KINETIC_LAW *left = NULL;
+    KINETIC_LAW *right = NULL;
+    
+    START_FUNCTION("_VisitOpToEvaluate");
+    
+    result = (double*)(visitor->_internal2);
+    
+    left = GetOpLeftFromKineticLaw( kineticLaw );
+    visitor->_internal2 = (CADDR_T)(&leftValue);
+    if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
+        END_FUNCTION("_VisitOpToEvaluate", ret );
+        return ret;
+    }
+    
+    right = GetOpRightFromKineticLaw( kineticLaw );       
+    visitor->_internal2 = (CADDR_T)(&rightValue);
+    if( IS_FAILED( ( ret = right->Accept( right, visitor ) ) ) ) {
+        END_FUNCTION("_VisitOpToEvaluate", ret );
+        return ret;
+    }            
+    
+    opType = GetOpTypeFromKineticLaw( kineticLaw );     
+    switch( opType ) {
+        case KINETIC_LAW_OP_PLUS:
+            *result = leftValue + rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_MINUS:
+            *result = leftValue - rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_TIMES:
+            *result = leftValue * rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_DIVIDE:
+            *result = leftValue / rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_POW:
+            *result = pow( leftValue, rightValue );
+        break;
+        
+        case KINETIC_LAW_OP_ROOT:
+	  *result = pow(rightValue,(1./leftValue));
+        break;        
+
+        case KINETIC_LAW_OP_XOR:
+	  *result = (!leftValue && rightValue)||(leftValue && !rightValue);
+        break;
+
+        case KINETIC_LAW_OP_AND:
+            *result = leftValue && rightValue;
+        break;
+
+        case KINETIC_LAW_OP_EQ:
+	  *result = (leftValue == rightValue);
+        break;
+
+        case KINETIC_LAW_OP_NEQ:
+	  *result = (leftValue != rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GEQ:
+	  *result = (leftValue >= rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GT:
+	  *result = (leftValue > rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LEQ:
+	  *result = (leftValue <= rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LT:
+	  *result = (leftValue < rightValue);
+        break;
+
+        case KINETIC_LAW_OP_OR:
+            *result = leftValue || rightValue;
+        break;
+
+        case KINETIC_LAW_OP_UNIFORM:
+	    *result = (leftValue + rightValue)/2;
+        break;
+
+        case KINETIC_LAW_OP_NORMAL:
+	    *result = leftValue;
+        break;
+
+        case KINETIC_LAW_OP_BINOMIAL:
+	  *result = (leftValue * rightValue);
+        break;
+
+        case KINETIC_LAW_OP_GAMMA:
+	    *result = (leftValue * rightValue);
+        break;
+
+        case KINETIC_LAW_OP_LOGNORMAL:
+	    *result = exp(leftValue + (rightValue * rightValue)/2);
+        break;
+        
+        default:
+            END_FUNCTION("_VisitOpToEvaluate", E_WRONGDATA );
+        return E_WRONGDATA;
+    }
+    
+    visitor->_internal2 = (CADDR_T)result;
+    
+    END_FUNCTION("_VisitOpToEvaluate", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    RET_VAL ret = SUCCESS;
+    BYTE opType = 0x00;
+    double childValue = 0.0;
+    double *result = NULL;
+    KINETIC_LAW *child = NULL;
+    UINT i = 0;
+    START_FUNCTION("_VisitUnaryOpToEvaluate");
+    
+    result = (double*)(visitor->_internal2);
+    
+    child = GetUnaryOpChildFromKineticLaw( kineticLaw );
+    visitor->_internal2 = (CADDR_T)(&childValue);
+    if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+        END_FUNCTION("_VisitUnaryOpToEvaluate", ret );
+        return ret;
+    }
+    
+    opType = GetUnaryOpTypeFromKineticLaw( kineticLaw );     
+    switch( opType ) {
+        case KINETIC_LAW_UNARY_OP_NOT:
+	  *result = !childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_ABS:
+	  *result = labs(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COT:
+	  *result = cos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COTH:
+	  *result = cosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CSC:
+	  *result = cos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CSCH:
+	  *result = cosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SEC:
+	  *result = cos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SECH:
+	  *result = cosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COS:
+	  *result = cos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_COSH:
+	  *result = cosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SIN:
+	  *result = sin(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_SINH:
+	  *result = sinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_TAN:
+	  *result = tan(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_TANH:
+	  *result = tanh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOT:
+	  *result = atan(1./(childValue));
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOTH:
+	  *result = ((1./2.)*log((childValue+1.)/(childValue-1.)) );
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCSC:
+	  *result = atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCSCH:
+	  *result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSEC:
+	  *result = atan( SQRT(( childValue-1.)*( childValue+1.)) );
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSECH:
+	  *result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOS:
+	  *result = acos(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCCOSH:
+	  *result = acosh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSIN:
+	  *result = asin(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCSINH:
+	  *result = asinh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCTAN:
+	  *result = atan(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_ARCTANH:
+	  *result = atanh(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_CEILING:
+	  *result = ceil(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_EXP:
+	  *result = exp(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_FACTORIAL:
+	  i = floor(childValue);
+	  for((*result)=1;i>1;--i)
+	    *result *= i;
+        break;
+        case KINETIC_LAW_UNARY_OP_FLOOR:
+	  *result = floor(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LN:
+	  *result = log(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_LOG:
+	  *result = log10(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_EXPRAND:
+	  *result = 1 / childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_POISSON:
+	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_CHISQ:
+	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_LAPLACE:
+	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_CAUCHY:
+	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_RAYLEIGH:
+	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_BERNOULLI:
+	  *result = childValue;
+        break;
         
         default:
             END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
@@ -655,7 +1007,7 @@ static double _GetValue( KINETIC_LAW_EVALUATER *evaluater, SPECIES *species ) {
     START_FUNCTION("_GetValue");
 
     table = evaluater->table;    
-    if( ( element = (KINETIC_LAW_EVALUATION_ELEMENT*)GetValueFromHashTable( species, sizeof( species ), table ) ) != NULL ) {
+    if( ( element = (KINETIC_LAW_EVALUATION_ELEMENT*)GetValueFromHashTable( (CADDR_T)species, sizeof( species ), table ) ) != NULL ) {
         result = element->value;
     }
     else {

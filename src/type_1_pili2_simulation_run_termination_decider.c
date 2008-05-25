@@ -197,9 +197,9 @@ static RET_VAL _CreateSwitchingReactionArray( TYPE_1_PILI2_SIMULATION_RUN_TERMIN
     int *counts = NULL;
     LINKED_LIST *edges = NULL;
     
-    edges = GetProductEdges( switchSpecies );
+    edges = GetProductEdges( (IR_NODE*)switchSpecies );
     size = GetLinkedListSize( edges );
-    if( ( reactions = (REACTION*)MALLOC( size * sizeof(REACTION*) ) ) == NULL ) {
+    if( ( reactions = (REACTION**)MALLOC( size * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CreateSwitchingReactionArray", "could not create an array for switching reactions" );
     }
     if( ( counts = (int*)CALLOC( size, sizeof(int) ) ) == NULL ) {

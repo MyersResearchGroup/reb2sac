@@ -57,6 +57,7 @@ typedef struct {
     double timeStep;
     double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
+    UINT seed;
     char *outDir; 
 } IMPLICIT_GEAR1_SIMULATION_RECORD;
 

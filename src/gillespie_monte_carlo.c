@@ -20,8 +20,6 @@
 #include <math.h>
 #include <float.h>
 #include "gillespie_monte_carlo.h"
-#include "uniformly_distributed_random_generator.h"
-
 
 
 static BOOL _IsModelConditionSatisfied( IR *ir );
@@ -52,9 +50,6 @@ static double fireEvents( GILLESPIE_MONTE_CARLO_RECORD *rec, double time );
 static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec );
 static void ExecuteAssignments( GILLESPIE_MONTE_CARLO_RECORD *rec );
 
-static double _GetUniformRandom();
-
-
 
 DLLSCOPE RET_VAL STDCALL DoGillespieMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -62,7 +57,8 @@ DLLSCOPE RET_VAL STDCALL DoGillespieMonteCarloAnalysis( BACK_END_PROCESSOR *back
     UINT runs = 1;
     char *namePrefix = NULL;
     static GILLESPIE_MONTE_CARLO_RECORD rec;
-    
+    UINT timeout = 0;
+
     START_FUNCTION("DoGillespieMonteCarloAnalysis");
     
     if( !_IsModelConditionSatisfied( ir ) ) {
@@ -76,9 +72,19 @@ DLLSCOPE RET_VAL STDCALL DoGillespieMonteCarloAnalysis( BACK_END_PROCESSOR *back
     
     runs = rec.runs;    
     for( i = 1; i <= runs; i++ ) {
-        if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
+        SeedRandomNumberGenerators( rec.seed );
+        rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
+        timeout = 0;
+	do {
+	  SeedRandomNumberGenerators( rec.seed );
+	  if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
             return ErrorReport( ret, "DoGillespieMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
-        }
+	  }
+	  timeout++;
+	} while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
+	if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
+	  return ErrorReport( ret, "DoGillespieMonteCarloAnalysis", "Cycle detected in initial and rule assignments" );
+	}
         if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoGillespieMonteCarloAnalysis", "%i-th simulation failed at time %f", i, rec.time );
         }
@@ -246,58 +252,6 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
-	char temp[255];
-	strcpy(temp,"reb2sac.initial.type.");
-	strcat(temp,GetCharArrayOfString(species->name));
-	if( ( valueString = properties->GetProperty( properties, temp) ) != NULL ) {
-          if (strcmp(valueString,"uniform")==0) {
-	    species->initType = UNIFORM;
-	    strcpy(temp,"reb2sac.initial.min.");
-	    strcat(temp,GetCharArrayOfString(species->name));
-	    if( ( valueString = properties->GetProperty( properties, temp) ) != NULL ) {
-	      if( IS_FAILED( ( ret = StrToFloat( &(species->initMin), valueString ) ) ) ) {
-		if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-		  species->initMin = GetInitialAmountInSpeciesNode( species );
-		}
-		else {
-		  /* need to multiply concentration by the volume.  But not doing it yet */
-		  species->initMin = GetInitialConcentrationInSpeciesNode( species ); 
-		}
-	      } 
-	    } else {
-	      if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-		species->initMin = GetInitialAmountInSpeciesNode( species );
-	      }
-	      else {
-		/* need to multiply concentration by the volume.  But not doing it yet */
-		species->initMin = GetInitialConcentrationInSpeciesNode( species ); 
-	      }
-	    }
-	    strcpy(temp,"reb2sac.initial.max.");
-	    strcat(temp,GetCharArrayOfString(species->name));
-	    if( ( valueString = properties->GetProperty( properties, temp) ) != NULL ) {
-	      if( IS_FAILED( ( ret = StrToFloat( &(species->initMax), valueString ) ) ) ) {
-		if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-		  species->initMax = GetInitialAmountInSpeciesNode( species );
-		}
-		else {
-		  /* need to multiply concentration by the volume.  But not doing it yet */
-		  species->initMax = GetInitialConcentrationInSpeciesNode( species ); 
-		}
-	      } 
-	    } else {
-	      if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-		species->initMax = GetInitialAmountInSpeciesNode( species );
-	      }
-	      else {
-		/* need to multiply concentration by the volume.  But not doing it yet */
-		species->initMax = GetInitialConcentrationInSpeciesNode( species ); 
-	      }
-	    }
-	  }  
-	}
-	//printf("%s : %d %f %f\n",GetCharArrayOfString(species->name),species->initType,
-	//       species->initMin,species->initMax);
         i++;        
     }
     rec->speciesArray = speciesArray;    
@@ -509,10 +463,8 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     COMPARTMENT **compartmentArray = rec->compartmentArray;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
-    
-    srand( rec->seed );
-    rec->seed = rand();
-    srand( rec->seed );
+    KINETIC_LAW *law = NULL;
+    BOOL change = FALSE;
     
     sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );        
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
@@ -526,41 +478,58 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     size = rec->speciesSize;        
     for( i = 0; i < size; i++ ) {
         species = speciesArray[i];
-
-        if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	  if (species->initType==UNIFORM) {
-	    amount = floor(GetNextUniformRandomNumber(species->initMin,species->initMax+1.0));
-	  } else {
-            amount = GetInitialAmountInSpeciesNode( species );
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
+	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	    amount = GetInitialAmountInSpeciesNode( species );
 	  }
-        }
-        else {
-            /* need to multiply concentration by the volume.  But not doing it yet */
-	  if (species->initType==UNIFORM) {
-	    amount = floor(GetNextUniformRandomNumber(species->initMin,species->initMax+1.0));
-	  } else {
-            amount = GetInitialConcentrationInSpeciesNode( species ); 
+	  else {
+	    amount = GetInitialAmountInSpeciesNode( species ); 
 	  }
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    amount = GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    amount = (double)GetIntValueFromKineticLaw(law); 
+	  } 
+	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
+	      SetInitialAmountInSpeciesNode( species, amount );
+	      change = TRUE;
+	    }
+	  }
+	  else {
+	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
+	      SetInitialAmountInSpeciesNode( species, amount ); 
+	      change = TRUE;
+	    }
+	  }
+	  FreeKineticLaw( &(law) );
 	}
-	//	printf("%s : %f\n",GetCharArrayOfString(species->name),amount);
-	if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
-	  return ret;            
-	}
-    }
-    size = rec->reactionsSize;
-    for( i = 0; i < size; i++ ) {
-        reaction = reactionArray[i];
-        if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, 0.0 ) ) ) ) {
-            return ret;
+        if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
+            return ret;            
         }
-        if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
-            return ret;
-        }        
     }
     size = rec->compartmentsSize;        
     for( i = 0; i < size; i++ ) {
         compartment = compartmentArray[i];
-	compSize = GetSizeInCompartment( compartment );
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
+	  compSize = GetSizeInCompartment( compartment );
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    compSize = GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    compSize = (double)GetIntValueFromKineticLaw(law); 
+	  } 
+	  if (GetSizeInCompartment( compartment ) != compSize) {
+	    SetSizeInCompartment( compartment, compSize );
+	    change = TRUE;
+	  }
+	  FreeKineticLaw( &(law) );
+	}
         if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
             return ret;            
         }
@@ -568,19 +537,37 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     size = rec->symbolsSize;        
     for( i = 0; i < size; i++ ) {
         symbol = symbolArray[i];
-	param = GetRealValueInSymbol( symbol );
-        if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
-            return ret;            
-        }
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
+	  param = GetRealValueInSymbol( symbol );
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    param = GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    param = (double)GetIntValueFromKineticLaw(law); 
+	  } 
+	  if( GetRealValueInSymbol( symbol ) != param ) {
+	    SetRealValueInSymbol( symbol, param );
+	    change = TRUE;
+	  }
+	  FreeKineticLaw( &(law) );
+	}
+	if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
+	  return ret;            
+	}
     }
     for (i = 0; i < rec->eventsSize; i++) {
       if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
       } else {
 	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
       }
     }
+
+    if (change)
+      return CHANGE;
     return ret;            
 }
 
@@ -871,7 +858,7 @@ static RET_VAL _FindNextReactionTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     double random = 0.0;
     double t = 0.0;
     
-    random = _GetUniformRandom();
+    random = GetNextUnitUniformRandomNumber();
     t = log( 1.0 / random ) / rec->totalPropensities;
     rec->time += t;     
     rec->t = t;
@@ -893,7 +880,7 @@ static RET_VAL _FindNextReaction( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
     
-    random = _GetUniformRandom();
+    random = GetNextUnitUniformRandomNumber();
     threshold = random * rec->totalPropensities;
     
     TRACE_1( "next reaction threshold is %f", threshold );
@@ -1246,17 +1233,6 @@ static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec 
     }    
     return ret;            
 }
-
-
-
-static double _GetUniformRandom() {
-    int value = 0; 
-    double uniformRandom = 0.0;
-    value = rand();
-    uniformRandom = (value + 0.999999) / ( RAND_MAX + 1.0 );
-    return uniformRandom;
-}
-
 
 static int _ComparePropensity( REACTION *a, REACTION *b ) {
     double d1 = 0.0;

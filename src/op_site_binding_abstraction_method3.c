@@ -142,7 +142,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         return FALSE;
     }
     
-    edges = GetProductEdges( species ); 
+    edges = GetProductEdges( (IR_NODE*)species ); 
     if( GetLinkedListSize(  edges ) != 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -150,7 +150,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
     /*
         * this species S is not used as a product in any reactions   
         */
-    reactantEdges = GetReactantEdges( species );
+    reactantEdges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( reactantEdges );
     while( ( reactantEdge = GetNextEdge( reactantEdges ) ) != NULL ) {
         /*
@@ -185,7 +185,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             *every reaction R, where R uses S as a reactant, R has more than 1 reactants
             */
-        edges = GetReactantEdges( reaction );
+        edges = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( edges ) == 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -193,7 +193,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             * every reaction R, where R uses S as a reactant, R only has 1 product
             */
-        edges = GetProductEdges( reaction );
+        edges = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( edges ) != 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -216,7 +216,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             *  P is produced only by R
             */
-        edges = GetProductEdges( product );
+        edges = GetProductEdges( (IR_NODE*)product );
         
         if( GetLinkedListSize( edges ) != 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
@@ -226,7 +226,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             *  P is not used as a reactant in any reactions
             */
-        edges = GetReactantEdges( product );
+        edges = GetReactantEdges( (IR_NODE*)product );
         if( GetLinkedListSize( edges ) != 0 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -302,11 +302,11 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
         return ErrorReport( FAILING, "_DoTransformation", "could not create a list for products" );
     }
     
-    edges = GetReactantEdges( op );
+    edges = GetReactantEdges( (IR_NODE*)op );
     ResetCurrentElement( edges );    
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
-        complexEdges = GetProductEdges( reaction );
+        complexEdges = GetProductEdges( (IR_NODE*)reaction );
         complexEdge = GetHeadEdge( complexEdges );
         boundOp = GetSpeciesInIREdge( complexEdge );
         totalConcentration += _GetSpeciesConcentration( boundOp );
@@ -315,7 +315,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
                 GetCharArrayOfString( GetSpeciesNodeName( op ) ), GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
         }
         
-        if( IS_FAILED( ( ret = PutInHashTable( boundOp, sizeof( SPECIES ), law, massActionTable ) ) ) ) {
+        if( IS_FAILED( ( ret = PutInHashTable( (CADDR_T)boundOp, sizeof( SPECIES ), (CADDR_T)law, massActionTable ) ) ) ) {
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         }
@@ -323,11 +323,11 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
         if( ( denom = CreateOpKineticLaw( KINETIC_LAW_OP_PLUS, denom, CloneKineticLaw( law ) ) ) == NULL ) {
             return ErrorReport( FAILING, "_DoTransformation", "could not create denominator kinetic law" );
         }
-        modifierEdges = GetModifierEdges( boundOp );
+        modifierEdges = GetModifierEdges( (IR_NODE*)boundOp );
         ResetCurrentElement( modifierEdges );       
         while( ( modifierEdge = GetNextEdge( modifierEdges ) ) != NULL ) {     
             productionReaction = GetReactionInIREdge( modifierEdge );
-            productEdges = GetProductEdges( productionReaction );
+            productEdges = GetProductEdges( (IR_NODE*)productionReaction );
             ResetCurrentElement( productEdges );
             while( ( productEdge = GetNextEdge( productEdges ) ) != NULL ) {
                 product = GetSpeciesInIREdge( productEdge );
@@ -355,7 +355,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
         return ErrorReport( FAILING, "_DoTransformation", "could not create kinetic law for total concentation of %s", GetCharArrayOfString( GetSpeciesNodeName( op ) ) );
     }
     
-    modifierEdges = GetModifierEdges( op );
+    modifierEdges = GetModifierEdges( (IR_NODE*)op );
     if( GetLinkedListSize( modifierEdges ) > 0 ) {
         if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_DIVIDE, CloneKineticLaw( totalConKineticLaw ), CloneKineticLaw( denom ) ) ) == NULL ) {
             return ErrorReport( FAILING, "_DoTransformation", "could not create a new kinetic law for %s", GetCharArrayOfString( GetSpeciesNodeName( op ) ) );
@@ -392,16 +392,16 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
         ResetCurrentElement( edges );    
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             reaction = GetReactionInIREdge( edge );        
-            complexEdges = GetProductEdges( reaction );
+            complexEdges = GetProductEdges( (IR_NODE*)reaction );
             complexEdge = GetHeadEdge( complexEdges );        
             boundOp = GetSpeciesInIREdge( complexEdge );
-            modifierEdges = GetModifierEdges( boundOp );
+            modifierEdges = GetModifierEdges( (IR_NODE*)boundOp );
             if( GetLinkedListSize( modifierEdges ) == 0 ) {
                 continue;
             }
             
             productionReaction = GetReactionInIREdge( modifierEdge );
-            productEdges = GetProductEdges( productionReaction );
+            productEdges = GetProductEdges( (IR_NODE*)productionReaction );
             ResetCurrentElement( productEdges );
             while( ( productEdge = GetNextEdge( productEdges ) ) != NULL ) {
                 producedSpecies = GetSpeciesInIREdge( productEdge );
@@ -410,7 +410,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
             }
             
             TRACE_1("transforming reaction %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
-            if( ( numer = (KINETIC_LAW*)GetValueFromHashTable( boundOp, sizeof( SPECIES ), massActionTable ) ) == NULL ) {
+            if( ( numer = (KINETIC_LAW*)GetValueFromHashTable( (CADDR_T)boundOp, sizeof( SPECIES ), massActionTable ) ) == NULL ) {
                 return ErrorReport( FAILING, "_DoTransformation", "could not find mass action ratio for %s", GetCharArrayOfString( GetSpeciesNodeName( boundOp ) ) );
             }   
             
@@ -451,7 +451,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
     ResetCurrentElement( edges );    
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );        
-        complexEdges = GetProductEdges( reaction );
+        complexEdges = GetProductEdges( (IR_NODE*)reaction );
         complexEdge = GetHeadEdge( complexEdges );        
         boundOp = GetSpeciesInIREdge( complexEdge );
         TRACE_1("removing reaction %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
@@ -525,7 +525,7 @@ static RET_VAL _CombineReactions( IR *ir, REACTION *productionReaction, SPECIES 
         
     START_FUNCTION("_CombineReactions");
     if( boundOp != NULL ) {
-        modifierEdges = GetModifierEdges( boundOp );
+        modifierEdges = GetModifierEdges( (IR_NODE*)boundOp );
         modifierEdge = GetHeadEdge( modifierEdges );
         if( IS_FAILED( ( ret = ir->RemoveModifierEdge( ir, &modifierEdge ) ) ) ) {
             END_FUNCTION("_CombineReactions", ret );
@@ -533,11 +533,11 @@ static RET_VAL _CombineReactions( IR *ir, REACTION *productionReaction, SPECIES 
         } 
     }   
     
-    edges = GetReactantEdges( op );
+    edges = GetReactantEdges( (IR_NODE*)op );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
-        modifierEdges = GetReactantEdges( reaction );
+        modifierEdges = GetReactantEdges( (IR_NODE*)reaction );
         ResetCurrentElement( modifierEdges );
         while( ( modifierEdge = GetNextEdge( modifierEdges ) ) != NULL ) {
             modifier = GetSpeciesInIREdge( modifierEdge );
@@ -553,11 +553,11 @@ static RET_VAL _CombineReactions( IR *ir, REACTION *productionReaction, SPECIES 
         }    
     }
     
-    edges = GetReactantEdges( op );
+    edges = GetReactantEdges( (IR_NODE*)op );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
-        modifierEdges = GetModifierEdges( reaction );
+        modifierEdges = GetModifierEdges( (IR_NODE*)reaction );
         ResetCurrentElement( modifierEdges );
         while( ( modifierEdge = GetNextEdge( modifierEdges ) ) != NULL ) {
             modifier = GetSpeciesInIREdge( modifierEdge );
@@ -577,7 +577,7 @@ static RET_VAL _CombineReactions( IR *ir, REACTION *productionReaction, SPECIES 
 static RET_VAL _AddSpeciesInList( SPECIES *species, LINKED_LIST *list ) {
     RET_VAL ret = SUCCESS;
     
-    if( FindElementInLinkedList( species, _CompareSpeciesEdge, list ) < 0 ) {
+    if( FindElementInLinkedList( (CADDR_T)species, _CompareSpeciesEdge, list ) < 0 ) {
         if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)species, list ) ) ) ) {
             return ret;
         }

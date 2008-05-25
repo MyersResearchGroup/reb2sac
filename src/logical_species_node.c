@@ -37,7 +37,7 @@ LOGICAL_SPECIES *CreateLogicalSpeciesFromSpecies( SPECIES *species, STRING *newN
         return NULL;
     }
        
-    if( IS_FAILED( CopyIRNode( species, logicalSpecies ) ) ) {
+    if( IS_FAILED( CopyIRNode( (IR_NODE*)species, (IR_NODE*)logicalSpecies ) ) ) {
         END_FUNCTION("CreateLogicalSpeciesFromSpecies", FAILING );
         return NULL;
     }
@@ -144,7 +144,7 @@ static SPECIES *_Clone( SPECIES *species ) {
         return NULL;
     }
     
-    if( IS_FAILED( CopyIRNode( species, clone ) ) ) {
+    if( IS_FAILED( CopyIRNode( (IR_NODE*)species, (IR_NODE*)clone ) ) ) {
         END_FUNCTION("_Clone", FAILING );
         return NULL;
     }

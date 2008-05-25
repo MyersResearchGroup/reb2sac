@@ -24,10 +24,6 @@
 #include "common.h"
 
 BEGIN_C_NAMESPACE
-
-double GetNextExponentialRandomNumber( double lambda );
-double GetNextUnitExponentialRandomNumber( );
-
 END_C_NAMESPACE
 
 #endif

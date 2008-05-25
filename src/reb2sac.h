@@ -27,6 +27,7 @@
 #include "abstraction_engine.h"
 #include "back_end_processor.h"
 #include "util.h"
+#include "random_number_generator.h"
 
 #if defined(__cplusplus)
 extern "C" {

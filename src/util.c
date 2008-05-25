@@ -574,7 +574,7 @@ static RET_VAL STDCALL _Properties_SetProperty( PROPERTIES *properties, char *ke
     
     table = properties->table;
     TRACE_2( "putting key %s and value %s in the properties", entry->key, entry->value );            
-    if( IS_FAILED( ( ret = PutInHashTable( entry->key, len, entry, table ) ) ) ) {
+    if( IS_FAILED( ( ret = PutInHashTable( entry->key, len, (CADDR_T)entry, table ) ) ) ) {
         END_FUNCTION("_Properties_SetProperty", ret );
         return ret;
     } 

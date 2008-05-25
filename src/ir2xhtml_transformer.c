@@ -131,6 +131,7 @@ static RET_VAL _PrintConstantInXHTML( REB2SAC_SYMBOL *sym, FILE *file ) {
 
     START_FUNCTION("_PrintConstantInXHTML");
     
+    /*
     if( !IsSymbolConstant( sym ) ) {
         END_FUNCTION("_PrintConstantInXHTML", SUCCESS );        
         return ret;
@@ -139,7 +140,13 @@ static RET_VAL _PrintConstantInXHTML( REB2SAC_SYMBOL *sym, FILE *file ) {
         END_FUNCTION("_PrintConstantInXHTML", SUCCESS );        
         return ret;
     }
-    
+    */
+    if (strcmp(GetCharArrayOfString( GetSymbolID( sym ) ),"t")==0 ||
+	strcmp(GetCharArrayOfString( GetSymbolID( sym ) ),"time")==0) {
+        END_FUNCTION("_PrintConstantInXHTML", SUCCESS );        
+        return ret;
+    }
+
     id = GetCharArrayOfString( GetSymbolID( sym ) );
     value = GetRealValueInSymbol( sym );
     
@@ -1064,6 +1071,13 @@ static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETI
     case KINETIC_LAW_UNARY_OP_CEILING:
     case KINETIC_LAW_UNARY_OP_NOT:
     case KINETIC_LAW_UNARY_OP_EXP:
+    case KINETIC_LAW_UNARY_OP_EXPRAND:
+    case KINETIC_LAW_UNARY_OP_POISSON:
+    case KINETIC_LAW_UNARY_OP_CHISQ:
+    case KINETIC_LAW_UNARY_OP_LAPLACE:
+    case KINETIC_LAW_UNARY_OP_CAUCHY:
+    case KINETIC_LAW_UNARY_OP_RAYLEIGH:
+    case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	    if ( unaryOpType == KINETIC_LAW_UNARY_OP_EXP ) { 
 	      _PrintTab( file, *tabCount );
 	      fprintf( file, REB2SAC_XHTML_MATHML_START_POWER_FORMAT );            
@@ -1128,6 +1142,20 @@ static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETI
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_LN_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_NOT ) { 
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_NOT_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_EXPRAND ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_EXPRAND_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_POISSON ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_POISSON_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_CHISQ ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_CHISQ_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_LAPLACE ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_LAPLACE_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_CAUCHY ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_CAUCHY_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_RAYLEIGH ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_RAYLEIGH_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_BERNOULLI ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_BERNOULLI_FORMAT );
 	    } 
 
             (*tabCount)++;
@@ -1213,6 +1241,55 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     right = GetOpRightFromKineticLaw( kineticLaw );
     
     switch( opType ) {
+        case KINETIC_LAW_OP_UNIFORM:
+        case KINETIC_LAW_OP_GAMMA:
+        case KINETIC_LAW_OP_NORMAL:
+        case KINETIC_LAW_OP_BINOMIAL:
+        case KINETIC_LAW_OP_LOGNORMAL:
+	  _PrintTab( file, *tabCount );
+	  if (opType == KINETIC_LAW_OP_UNIFORM) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_UNIFORM_FORMAT );
+	  } else if (opType == KINETIC_LAW_OP_GAMMA) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_GAMMA_FORMAT );
+	  } else if (opType == KINETIC_LAW_OP_BINOMIAL) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_BINOMIAL_FORMAT );
+	  } else if (opType == KINETIC_LAW_OP_LOGNORMAL) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_LOGNORMAL_FORMAT );
+	  } else {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_NORMAL_FORMAT );
+	  }
+	  (*tabCount)++;
+	  _PrintTab( file, *tabCount );
+	  fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
+	  fprintf( file, NEW_LINE );             
+
+	  (*tabCount)++;
+	  _PrintTab( file, *tabCount );
+	  fprintf( file, REB2SAC_XHTML_MATHML_L_PAREN_FORMAT );
+	  fprintf( file, NEW_LINE );
+	  (*tabCount)++;
+
+	  if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
+	    END_FUNCTION("_VisitOpToPrintInXHTML", ret );
+	    return ret;
+	  }             
+	  fprintf( file, REB2SAC_XHTML_MATHML_COMMA_FORMAT );
+	  if( IS_FAILED( ( ret = right->Accept( right, visitor ) ) ) ) {
+	    END_FUNCTION("_VisitOpToPrintInXHTML", ret );
+	    return ret;
+	  }             
+    
+	  (*tabCount)--;
+	  _PrintTab( file, *tabCount );
+	  fprintf( file, REB2SAC_XHTML_MATHML_R_PAREN_FORMAT );
+	  fprintf( file, NEW_LINE );
+	  
+	  (*tabCount)--;
+	  _PrintTab( file, *tabCount );
+	  fprintf( file, REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT );
+	  fprintf( file, NEW_LINE );
+	  (*tabCount)--;
+	break;
         case KINETIC_LAW_OP_GT:
         case KINETIC_LAW_OP_LT:
         case KINETIC_LAW_OP_GEQ:
@@ -1840,6 +1917,11 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_GT ) ||
 	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_UNIFORM ) ||
+	( parentOpType == KINETIC_LAW_OP_LOGNORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_NORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_BINOMIAL ) ||
+	( parentOpType == KINETIC_LAW_OP_GAMMA ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -1890,6 +1972,11 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_GT ) ||
 	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_UNIFORM ) ||
+	( parentOpType == KINETIC_LAW_OP_LOGNORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_GAMMA ) ||
+	( parentOpType == KINETIC_LAW_OP_NORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_BINOMIAL ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -1906,6 +1993,11 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	    ( childOpType == KINETIC_LAW_OP_GT ) ||
 	    ( childOpType == KINETIC_LAW_OP_LEQ ) ||
 	    ( childOpType == KINETIC_LAW_OP_LT ) ||
+	    ( childOpType == KINETIC_LAW_OP_UNIFORM ) ||
+	    ( childOpType == KINETIC_LAW_OP_LOGNORMAL ) ||
+	    ( childOpType == KINETIC_LAW_OP_GAMMA ) ||
+	    ( childOpType == KINETIC_LAW_OP_NORMAL ) ||
+	    ( childOpType == KINETIC_LAW_OP_BINOMIAL ) ||
 	    ( childOpType == KINETIC_LAW_OP_AND ) ||
 	    ( childOpType == KINETIC_LAW_OP_XOR ) ||
 	    ( childOpType == KINETIC_LAW_OP_OR ) ) {

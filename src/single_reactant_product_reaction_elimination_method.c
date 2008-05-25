@@ -100,12 +100,12 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION 
         return FALSE;
     }
     
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -148,7 +148,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         return ret;
     }
     
-    edges = GetProductEdges( degradation );
+    edges = GetProductEdges( (IR_NODE*)degradation );
     edge = GetHeadEdge( edges );
     product = GetSpeciesInIREdge( edge );
     stoichiometry = GetStoichiometryInIREdge( edge );
@@ -173,7 +173,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         return ret;
     }
     
-    edges = GetReactantEdges( reaction );
+    edges = GetReactantEdges( (IR_NODE*)reaction );
     edge = GetHeadEdge( edges );
     reactant = GetSpeciesInIREdge( edge );
     stoichiometry = GetStoichiometryInIREdge( edge );

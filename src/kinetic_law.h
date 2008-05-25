@@ -20,12 +20,12 @@
 #if !defined(HAVE_KINETIC_LAW)
 #define HAVE_KINETIC_LAW
 
-
 #include "common.h"
 #include "util.h"
 #include "compartment_manager.h"
 #include "species_node.h"
 #include "symtab.h"
+#include "random_number_generator.h"
 
 BEGIN_C_NAMESPACE
 
@@ -85,6 +85,19 @@ BEGIN_C_NAMESPACE
 #define KINETIC_LAW_UNARY_OP_ARCCSCH '9'
 #define KINETIC_LAW_UNARY_OP_ARCSEC 'q'
 #define KINETIC_LAW_UNARY_OP_ARCSECH 'Q'
+
+#define KINETIC_LAW_OP_UNIFORM 'U'
+#define KINETIC_LAW_OP_NORMAL 'n'
+#define KINETIC_LAW_OP_GAMMA 'A'
+#define KINETIC_LAW_OP_BINOMIAL 'B'
+#define KINETIC_LAW_OP_LOGNORMAL 'O'
+#define KINETIC_LAW_UNARY_OP_EXPRAND 'E'
+#define KINETIC_LAW_UNARY_OP_POISSON 'p'
+#define KINETIC_LAW_UNARY_OP_CHISQ 'H'
+#define KINETIC_LAW_UNARY_OP_LAPLACE 'Z'
+#define KINETIC_LAW_UNARY_OP_CAUCHY 'Y'
+#define KINETIC_LAW_UNARY_OP_RAYLEIGH 'R'
+#define KINETIC_LAW_UNARY_OP_BERNOULLI 'u'
 
 #define KINETIC_LAW_VALUE_TYPE_PW ((BYTE)1)
 #define KINETIC_LAW_VALUE_TYPE_OP ((BYTE)2)

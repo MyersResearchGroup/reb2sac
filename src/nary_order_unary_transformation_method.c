@@ -141,12 +141,12 @@ static RET_VAL _ApplyNaryOrderUnaryTransformationMethod( ABSTRACTION_METHOD *met
 #if 1
     ResetCurrentElement( speciesList );    
     while( ( species = (SPECIES*)GetNextFromLinkedList( speciesList ) ) ) {
-        list =  GetReactantEdges( species );
+        list =  GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( list );    
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
             edge->stoichiometry = 1;
         }
-        list = GetProductEdges( species );
+        list = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( list );    
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
             edge->stoichiometry = 1;
@@ -199,7 +199,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
      * species S cannot be a logical species 
      */  
     table = (HASH_TABLE*)(method->_internal1);
-    if( GetValueFromHashTable( species, sizeof(SPECIES), table ) != NULL ) {
+    if( GetValueFromHashTable( (CADDR_T)species, sizeof(SPECIES), table ) != NULL ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
@@ -210,16 +210,16 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
      * species S must be either produced or consumed 
      */  
     
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     if( GetLinkedListSize( edges ) == 0 ) {
-        edges = GetProductEdges( species );
+        edges = GetProductEdges( (IR_NODE*)species );
         if( GetLinkedListSize( edges ) == 0 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
         }
     }
     
-    edges = GetReactantEdges( species );
+    edges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         /*
@@ -227,7 +227,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
         *  S is the only reactant in r
         */  
         reaction = GetReactionInIREdge( edge );
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -236,14 +236,14 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
         * for each r in { reactions which use S as a reactant }
         *  there is no product in r
         */  
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
         }    
     }        
     
-    edges = GetProductEdges( species );
+    edges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         /*
@@ -251,7 +251,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
         *  there is no reactant in r
         */  
         reaction = GetReactionInIREdge( edge );
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -260,7 +260,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
         * for each r in { reactions which use S as a product }
         *  S is the only product in r
         */  
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -276,7 +276,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
     specType = _GetCriticalConcentrationLevelsSpecificationType( method, species );    
 
     if( specType != REB2SAC_CRITICAL_CONCENTRATION_LEVEL_SPECIFICATION_TYPE_ONLY_PROPERTIES ) {
-        list = GetModifierEdges( species );
+        list = GetModifierEdges( (IR_NODE*)species );
         ResetCurrentElement( list );
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
             reaction = GetReactionInIREdge( edge );    
@@ -399,7 +399,7 @@ static RET_VAL _FindCriticalConcentrationLevelsFromPropertiesFile( ABSTRACTION_M
             END_FUNCTION("_FindCriticalConcentrationLevelsFromPropertiesFile", ret );
             return ret;
         }
-        if( IS_FAILED( ( ret = AddElementInLinkedList( conListElement, list ) ) ) ) {
+        if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)conListElement, list ) ) ) ) {
             END_FUNCTION("_FindCriticalConcentrationLevelsFromPropertiesFile", ret );
             return ret;
         } 
@@ -434,7 +434,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, CRITICAL_C
     
     species = info->species;
     
-    list = GetProductEdges( species );
+    list = GetProductEdges( (IR_NODE*)species );
     if( GetLinkedListSize( list ) > 0 ) {
         ResetCurrentElement( list );        
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
@@ -445,7 +445,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, CRITICAL_C
         }
     }
     
-    list = GetReactantEdges( species );
+    list = GetReactantEdges( (IR_NODE*)species );
     if( GetLinkedListSize( list ) > 0 ) {
         ResetCurrentElement( list );        
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
@@ -456,7 +456,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, CRITICAL_C
         }
     }
     
-    list = GetModifierEdges( species );
+    list = GetModifierEdges( (IR_NODE*)species );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         if( IS_FAILED( ( ret = _HandleReactionM( method, ir, edge, info ) ) ) ) {
@@ -530,7 +530,7 @@ static RET_VAL _CreateLogicalSpecies( ABSTRACTION_METHOD *method, IR *ir, CRITIC
         }
                 
         elements[i-1].logicalSpecies = (SPECIES*)logicalSpecies;        
-        if( IS_FAILED( ( ret = PutInHashTable( logicalSpecies, sizeof(SPECIES), logicalSpecies, table ) ) ) ) {
+        if( IS_FAILED( ( ret = PutInHashTable( (CADDR_T)logicalSpecies, sizeof(SPECIES), (CADDR_T)logicalSpecies, table ) ) ) ) {
             END_FUNCTION("_CreateLogicalSpecies", ret );
             return ret;
         }
@@ -1151,7 +1151,7 @@ static STRING *_CreateNewReactionID( REACTION *newReaction ) {
     char buf[REB2SAC_LOGICAL_REACTION_NAME_SIZE];
     STRING *newID = NULL;
             
-    edges = GetReactantEdges( newReaction );
+    edges = GetReactantEdges( (IR_NODE*)newReaction );
     if( GetLinkedListSize( edges ) > 0 ) {
         edge = GetHeadEdge( edges );
         species = GetSpeciesInIREdge( edge );
@@ -1169,7 +1169,7 @@ static STRING *_CreateNewReactionID( REACTION *newReaction ) {
         return newID;
     }
     
-    edges = GetProductEdges( newReaction );
+    edges = GetProductEdges( (IR_NODE*)newReaction );
     if( GetLinkedListSize( edges ) > 0 ) {
         edge = GetHeadEdge( edges );
         species = GetSpeciesInIREdge( edge );

@@ -110,7 +110,7 @@ static RET_VAL _ApplySimilarReactionCombiningMethod( ABSTRACTION_METHOD *method,
                     END_FUNCTION("_ApplySimilarReactionCombiningMethod", ret );
                     return ret;
                 }
-                if( IS_FAILED( ( RemoveElementFromLinkedList( reaction1, reactionList2 ) ) ) )  {
+                if( IS_FAILED( ( RemoveElementFromLinkedList( (CADDR_T)reaction1, reactionList2 ) ) ) )  {
                     END_FUNCTION("_ApplySimilarReactionCombiningMethod", ret );
                     return ret;
                 }
@@ -137,22 +137,22 @@ static BOOL _AreReactionsStructurallyEqual( REACTION *r1, REACTION *r2 ) {
     
     START_FUNCTION("_AreReactionsStructurallyEqual");
     
-    l1 = GetReactantEdges( r1 );
-    l2 = GetReactantEdges( r2 );
+    l1 = GetReactantEdges( (IR_NODE*)r1 );
+    l2 = GetReactantEdges( (IR_NODE*)r2 );
     if( !_ContainsSameSpecies( l1, l2 ) ) {
         END_FUNCTION("_AreReactionsStructurallyEqual", SUCCESS );
         return FALSE;
     }
     
-    l1 = GetProductEdges( r1 );
-    l2 = GetProductEdges( r2 );
+    l1 = GetProductEdges( (IR_NODE*)r1 );
+    l2 = GetProductEdges( (IR_NODE*)r2 );
     if( !_ContainsSameSpecies( l1, l2 ) ) {
         END_FUNCTION("_AreReactionsStructurallyEqual", SUCCESS );
         return FALSE;
     }
 
-    l1 = GetModifierEdges( r1 );
-    l2 = GetModifierEdges( r2 );
+    l1 = GetModifierEdges( (IR_NODE*)r1 );
+    l2 = GetModifierEdges( (IR_NODE*)r2 );
     if( !_ContainsSameSpecies( l1, l2 ) ) {
         END_FUNCTION("_AreReactionsStructurallyEqual", SUCCESS );
         return FALSE;
@@ -174,10 +174,10 @@ static BOOL _ContainsSameSpecies( LINKED_LIST *l1, LINKED_LIST *l2 ) {
         
     ResetCurrentElement( l1 );
     while( ( target = GetNextEdge( l1 ) ) != NULL ) {
-        if( FindElementInLinkedList( target, _CompareSpeciesEdge, l2 ) < 0 ) {
+      if( FindElementInLinkedList( (CADDR_T)target, _CompareSpeciesEdge, l2 ) < 0 ) {
             END_FUNCTION("_ContainsSameSpecies", SUCCESS );
             return FALSE;
-        }
+      }
     }
             
     END_FUNCTION("_ContainsSameSpecies", SUCCESS );

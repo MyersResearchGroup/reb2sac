@@ -2316,6 +2316,9 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_GT ) ||
 	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_UNIFORM ) ||
+	( parentOpType == KINETIC_LAW_OP_GAMMA ) ||
+	( parentOpType == KINETIC_LAW_OP_NORMAL ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2366,6 +2369,9 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_GT ) ||
 	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_UNIFORM ) ||
+	( parentOpType == KINETIC_LAW_OP_GAMMA ) ||
+	( parentOpType == KINETIC_LAW_OP_NORMAL ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2388,6 +2394,9 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	    ( childOpType == KINETIC_LAW_OP_GT ) ||
 	    ( childOpType == KINETIC_LAW_OP_LEQ ) ||
 	    ( childOpType == KINETIC_LAW_OP_LT ) ||
+	    ( childOpType == KINETIC_LAW_OP_UNIFORM ) ||
+	    ( childOpType == KINETIC_LAW_OP_GAMMA ) ||
+	    ( childOpType == KINETIC_LAW_OP_NORMAL ) ||
 	    ( childOpType == KINETIC_LAW_OP_AND ) ||
 	    ( childOpType == KINETIC_LAW_OP_XOR ) ||
 	    ( childOpType == KINETIC_LAW_OP_OR ) ) {

@@ -376,7 +376,7 @@ RET_VAL AddListOfCriticalConcentrationLevels( REACTION *reaction, SPECIES *speci
                 return ErrorReport( FAILING, "AddListOfCriticalConcentrationLevels", "could not allocate memory space for critical concentration level" );
             }            
             *result = 1.0 / rateRatio;
-            if( IS_FAILED( ( ret = AddElementInLinkedList( result, conList ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)result, conList ) ) ) ) {
                 END_FUNCTION("AddListOfCriticalConcentrationLevels", ret );
                 return ret;
             }
@@ -391,7 +391,7 @@ RET_VAL AddListOfCriticalConcentrationLevels( REACTION *reaction, SPECIES *speci
                 return ErrorReport( FAILING, "AddListOfCriticalConcentrationLevels", "could not allocate memory space for critical concentration level" );
             }
             *result = rateRatio;
-            if( IS_FAILED( ( ret = AddElementInLinkedList( result, conList ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)result, conList ) ) ) ) {
                 END_FUNCTION("AddListOfCriticalConcentrationLevels", ret );
                 return ret;
             }
@@ -1096,7 +1096,7 @@ static RET_VAL _AddListOfCriticalConcentrationLevels( KINETIC_LAW *kineticLaw, S
             printf("critical concentration level %f is found from %s" NEW_LINE, value, GetCharArrayOfString( string ) );
             FreeString( &string );
 #endif
-            if( IS_FAILED( ( ret = AddElementInLinkedList( criticalCon, list ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)criticalCon, list ) ) ) ) {
                 END_FUNCTION("_AddListOfCriticalConcentrationLevels", ret );
                 return ret;
             }
@@ -1176,7 +1176,7 @@ static RET_VAL __AddListOfCriticalConcentrationLevels( KINETIC_LAW *kineticLaw, 
             printf("critical concentration level %f is found from %s" NEW_LINE, *concentration, GetCharArrayOfString( string ) );
             FreeString( &string );
 #endif
-        if( IS_FAILED( ( ret = AddElementInLinkedList( concentration, list ) ) ) ) {
+        if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)concentration, list ) ) ) ) {
                 END_FUNCTION("__AddListOfCriticalConcentrationLevels", ret );
                 return ret;
         }
@@ -1700,7 +1700,7 @@ static RET_VAL _VisitOpToCreateListOfMultipleTerms( KINETIC_LAW_VISITOR *visitor
         return ret;
 
         default:
-            if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
                 END_FUNCTION("_VisitOpToCreateListOfMultipleTerms", ret );
                 return ret;
             }
@@ -1719,7 +1719,7 @@ static RET_VAL _VisitIntToCreateListOfMultipleTerms( KINETIC_LAW_VISITOR *visito
     START_FUNCTION("_VisitIntToCreateListOfMultipleTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitIntToCreateListOfMultipleTerms", ret );
         return ret;
     }
@@ -1735,7 +1735,7 @@ static RET_VAL _VisitRealToCreateListOfMultipleTerms( KINETIC_LAW_VISITOR *visit
     START_FUNCTION("_VisitRealToCreateListOfMultipleTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitRealToCreateListOfMultipleTerms", ret );
         return ret;
     }
@@ -1751,7 +1751,7 @@ static RET_VAL _VisitSpeciesToCreateListOfMultipleTerms( KINETIC_LAW_VISITOR *vi
     START_FUNCTION("_VisitSpeciesToCreateListOfMultipleTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitSpeciesToCreateListOfMultipleTerms", ret );
         return ret;
     }
@@ -1767,7 +1767,7 @@ static RET_VAL _VisitSymbolToCreateListOfMultipleTerms( KINETIC_LAW_VISITOR *vis
     START_FUNCTION("_VisitSymbolToCreateListOfMultipleTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitSymbolToCreateListOfMultipleTerms", ret );
         return ret;
     }
@@ -1835,7 +1835,7 @@ static RET_VAL _VisitOpToCreateListOfSumTerms( KINETIC_LAW_VISITOR *visitor, KIN
         return ret;
 
         default:
-            if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+            if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
                 END_FUNCTION("_VisitOpToCreateListOfSumTerms", ret );
                 return ret;
             }
@@ -1854,7 +1854,7 @@ static RET_VAL _VisitIntToCreateListOfSumTerms( KINETIC_LAW_VISITOR *visitor, KI
     START_FUNCTION("_VisitIntToCreateListOfSumTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitIntToCreateListOfSumTerms", ret );
         return ret;
     }
@@ -1870,7 +1870,7 @@ static RET_VAL _VisitRealToCreateListOfSumTerms( KINETIC_LAW_VISITOR *visitor, K
     START_FUNCTION("_VisitRealToCreateListOfSumTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitRealToCreateListOfSumTerms", ret );
         return ret;
     }
@@ -1886,7 +1886,7 @@ static RET_VAL _VisitSpeciesToCreateListOfSumTerms( KINETIC_LAW_VISITOR *visitor
     START_FUNCTION("_VisitSpeciesToCreateListOfSumTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitSpeciesToCreateListOfSumTerms", ret );
         return ret;
     }
@@ -1902,7 +1902,7 @@ static RET_VAL _VisitSymbolToCreateListOfSumTerms( KINETIC_LAW_VISITOR *visitor,
     START_FUNCTION("_VisitSymbolToCreateListOfSumTerms");
     
     list = (LINKED_LIST*)(visitor->_internal1);
-    if( IS_FAILED( ( ret = AddElementInLinkedList( kineticLaw, list ) ) ) ) {
+    if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)kineticLaw, list ) ) ) ) {
         END_FUNCTION("_VisitSymbolToCreateListOfSumTerms", ret );
         return ret;
     }

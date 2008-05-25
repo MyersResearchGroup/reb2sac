@@ -44,11 +44,10 @@ RET_VAL InitSpeciesNode( SPECIES *species, char *name ) {
         END_FUNCTION("InitSpeciesNode", FAILING );
         return FAILING;
     }
-    
+    species->initialAssignment = NULL;
     species->Clone = _Clone;
     species->GetType = _GetType;
     species->ReleaseResource = _ReleaseResource;
-    species->initType = CONSTANT;
 
     END_FUNCTION("InitSpeciesNode", SUCCESS );
     return ret;
@@ -152,6 +151,16 @@ UNIT_DEFINITION *GetSpatialSizeUnitsInSpeciesNode( SPECIES *species ) {
     }
     END_FUNCTION("GetSpatialSizeUnitsInSpeciesNode", SUCCESS );
     return species->spatialSizeUnits;
+}
+
+struct KINETIC_LAW *GetInitialAssignmentInSpeciesNode( SPECIES *species ) {
+    START_FUNCTION("GetInitialAssignmentInSpeciesNode");
+    if( species == NULL ) {
+        END_FUNCTION("GetInitialAssignmentInSpeciesNode", FAILING );
+        return NULL;
+    }
+    END_FUNCTION("GetInitialAssignmentInSpeciesNode", SUCCESS );
+    return species->initialAssignment;
 }
 
 
@@ -358,6 +367,18 @@ RET_VAL SetConcentrationInSpeciesNode( SPECIES *species, double concentration) {
     }
     species->quantity.concentration = concentration;
     END_FUNCTION("SetConcentrationInSpeciesNode", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetInitialAssignmentInSpeciesNode( SPECIES *species, struct KINETIC_LAW *law) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetInitialAssignmentInSpeciesNode");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetInitialAssignmentInSpeciesNode", "input species node is NULL" );
+    }
+    species->initialAssignment = law;
+    END_FUNCTION("SetInitialAssignmentInSpeciesNode", SUCCESS );
     return ret;
 }
 

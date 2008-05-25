@@ -130,7 +130,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
     START_FUNCTION("_DoTransformation");
     
     kineticLaw = GetKineticLawInReactionNode( reaction );    
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         product = GetSpeciesInIREdge( edge );
@@ -145,7 +145,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
     
     originalName = GetReactionNodeName( reaction );
     
-    edges = GetProductEdges( reaction );
+    edges = GetProductEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     GetNextEdge( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
@@ -163,7 +163,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
             return ret;
         }
         
-        newEdges = GetProductEdges( newReaction );
+        newEdges = GetProductEdges( (IR_NODE*)newReaction );
         ResetCurrentElement( newEdges );
         while( ( newEdge = GetNextEdge( newEdges ) ) != NULL ) {
             species = GetSpeciesInIREdge( newEdge );
