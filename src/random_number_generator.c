@@ -18,72 +18,114 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include <math.h>
-
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 #include "random_number_generator.h"
-#include "uniformly_distributed_random_generator.h"
-#include "exponentially_distributed_random_generator.h"
-#include "normally_distributed_random_generator.h"
 
+gsl_rng * r;
 
+void CreateRandomNumberGenerators( ) {
+  const gsl_rng_type * T;
+     
+  gsl_rng_env_setup();
+     
+  T = gsl_rng_default;
+  r = gsl_rng_alloc(T);
+}
 
-static RET_VAL _SetSeed( UINT seed );
-static double _GetNextUniform( double min, double max );
-static double _GetNextUnitUniform( );
-static double _GetNextExponential( double lambda );
-static double _GetNextUnitExponential( );
-static double _GetNextNormal( double mean, double stdDeviation );
-static double _GetNextUnitNormal( );
+void FreeRandomNumberGenerators( ) {
 
+  gsl_rng_free(r);
+}
 
+void SeedRandomNumberGenerators( double s ) {
 
-RANDOM_NUMBER_GENERATOR *CreateRandomNumberGenerator( ) {
-    static RANDOM_NUMBER_GENERATOR _randomNumberGeneratorInstance;
+  gsl_rng_set(r,s);
+}
+
+double GetNextUniformRandomNumber( double minUniform, double maxUniform ) {
+  return gsl_ran_flat( r, minUniform, maxUniform );
+}
+
+double GetNextUnitUniformRandomNumber( double minUniform, double maxUniform ) {
+  return gsl_ran_flat( r, 0.0, 1.0 );
+}
+
+double GetNextNormalRandomNumber( double mean, double stdDeviation ) {
+    double unitNormal = 0.0;
+    double normal = 0.0;
+
+    unitNormal = GetNextUnitNormalRandomNumber();
+    normal = ( unitNormal * stdDeviation ) + mean;
     
-    if( _randomNumberGeneratorInstance.SetSeed == NULL ) {
-        _randomNumberGeneratorInstance.SetSeed = _SetSeed;
-        _randomNumberGeneratorInstance.GetNextUniform = _GetNextUniform;
-        _randomNumberGeneratorInstance.GetNextUnitUniform = _GetNextUnitUniform;
-        _randomNumberGeneratorInstance.GetNextExponential = _GetNextExponential;
-        _randomNumberGeneratorInstance.GetNextUnitExponential = _GetNextUnitExponential;
-        _randomNumberGeneratorInstance.GetNextNormal = _GetNextNormal;
-        _randomNumberGeneratorInstance.GetNextUnitNormal = _GetNextUnitNormal;
+    return normal;
+}
+
+double GetNextUnitNormalRandomNumber( ) {
+  return gsl_ran_gaussian(r, 1.0);
+  /*    static BOOL haveNextNormal = FALSE;
+    static double nextNormal = 0.0;
+    
+    double v1;
+    double v2;
+    double s;
+    double multiplier;
+    double unitNormal;
+
+    if( haveNextNormal ) {
+        haveNextNormal = FALSE;
+        return nextNormal;
     }
-    return &_randomNumberGeneratorInstance;
+    else {
+        do {
+            v1 = 2 * GetNextUnitUniformRandomNumber() - 1.0;
+            v2 = 2 * GetNextUnitUniformRandomNumber() - 1.0;
+            s = v1 * v1 + v2 * v2;
+        } while( s >= 1.0 || s == 0.0 );
+        multiplier = sqrt( -2.0 * log( s ) / s );
+        haveNextNormal = TRUE;
+        nextNormal = v2 * multiplier;
+        unitNormal = v1 * multiplier;
+        return unitNormal;
+	} */
 }
 
-RET_VAL FreeRandomNumberGenerator( RANDOM_NUMBER_GENERATOR **generator ) {
-    (*generator)->SetSeed = NULL;
-    return SUCCESS;
+double GetNextExponentialRandomNumber( double lambda ) {
+  return gsl_ran_exponential(r, lambda);
 }
 
-static RET_VAL _SetSeed( UINT seed ) {
-    srand( seed );
-    return SUCCESS;
+double GetNextGammaRandomNumber( double a, double b ) {
+    return gsl_ran_gamma(r, a, b);
 }
 
-static double _GetNextUniform( double min, double max ) {
-    return GetNextUniformRandomNumber( min, max );
+double GetNextPoissonRandomNumber( double mu ) {
+  return (double)gsl_ran_poisson(r, mu);
 }
 
-static double _GetNextUnitUniform( ) {
-    return GetNextUnitUniformRandomNumber();
+double GetNextBinomialRandomNumber( double p, unsigned int n ) {
+  return (double)gsl_ran_binomial(r, p, n);
 }
 
-static double _GetNextExponential( double lambda ) {
-    return GetNextExponentialRandomNumber( lambda ); 
+double GetNextLogNormalRandomNumber( double zeta, double sigma ) {
+  return gsl_ran_lognormal(r, zeta, sigma);
 }
 
-static double _GetNextUnitExponential( ) {
-    return GetNextUnitExponentialRandomNumber();
+double GetNextChiSquaredRandomNumber( double nu ) {
+  return gsl_ran_chisq(r, nu);
 }
 
-static double _GetNextNormal( double mean, double stdDeviation ) {
-    return GetNextNormalRandomNumber( mean, stdDeviation );
+double GetNextLaplaceRandomNumber( double a ) {
+  return gsl_ran_laplace(r, a);
 }
 
-static double _GetNextUnitNormal( ) {
-    return GetNextUnitNormalRandomNumber();
+double GetNextCauchyRandomNumber( double a ) {
+  return gsl_ran_cauchy(r, a);
 }
 
+double GetNextRayleighRandomNumber( double a ) {
+  return gsl_ran_rayleigh(r, a);
+}
 
-
+double GetNextBernoulliRandomNumber( double a ) {
+  return (double)gsl_ran_bernoulli(r, a);
+}

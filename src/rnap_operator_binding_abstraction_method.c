@@ -195,7 +195,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species,
             if( reactant == species ) {
                 continue;
             }
-            if( ( rnapInfo = (RNAP_OPERATOR_BINDING_METHOD_INTERNAL_RNAP_INFO*)GetValueFromHashTable( reactant, sizeof(SPECIES), table ) ) == NULL ) {
+            if( ( rnapInfo = (RNAP_OPERATOR_BINDING_METHOD_INTERNAL_RNAP_INFO*)GetValueFromHashTable( (CADDR_T)reactant, sizeof(SPECIES), table ) ) == NULL ) {
                 continue;
             }
             if( internal->rnap != NULL ) {
@@ -250,12 +250,12 @@ static BOOL _IsRnap( ABSTRACTION_METHOD *method, SPECIES *species, RNAP_OPERATOR
             END_FUNCTION("_IsRnap", SUCCESS );
             return FALSE;
         }
-        products = GetProductsInReactionNode( reaction );
-        if( GetLinkedListSize( products ) != 1 ) {
+        products = (SPECIES*)GetProductsInReactionNode( reaction );
+        if( GetLinkedListSize( (LINKED_LIST*)products ) != 1 ) {
             END_FUNCTION("_IsRnap", SUCCESS );
             return FALSE;
         }
-        product = (SPECIES*)GetHeadFromLinkedList( products );        
+        product = (SPECIES*)GetHeadFromLinkedList( (LINKED_LIST*)products );        
         rnapConTotal += _GetSpeciesConcentration( product );
     }
     
@@ -285,7 +285,7 @@ static BOOL _IsRnap( ABSTRACTION_METHOD *method, SPECIES *species, RNAP_OPERATOR
     rnapInfo->rnap = species;
     rnapInfo->rnapConTotal = rnapConTotal;
     
-    if( IS_FAILED( PutInHashTable( rnapInfo->rnap, sizeof(SPECIES), rnapInfo, table ) ) ) {
+    if( IS_FAILED( PutInHashTable( (CADDR_T)rnapInfo->rnap, sizeof(SPECIES), (CADDR_T)rnapInfo, table ) ) ) {
         END_FUNCTION("_IsRnap", FAILING );
         return FALSE;
     }     
@@ -421,7 +421,7 @@ static BOOL _IsOperator( ABSTRACTION_METHOD *method, SPECIES *species, RNAP_OPER
             return FALSE;
         }
         
-        if( IS_FAILED( AddElementInLinkedList( element, internal->elements ) ) ) {
+        if( IS_FAILED( AddElementInLinkedList( (CADDR_T)element, internal->elements ) ) ) {
             END_FUNCTION("_IsOperator", FAILING );
             return FALSE;
         } 
@@ -479,7 +479,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, RNAP_OPERA
             return ErrorReport( FAILING, "_DoTransformation", "could not create mass action ratio for %s", GetCharArrayOfString( GetSpeciesNodeName( op ) ) );
         }
         
-        if( IS_FAILED( ( ret = PutInHashTable( boundOp, sizeof( SPECIES ), law, massActionTable ) ) ) ) {
+        if( IS_FAILED( ( ret = PutInHashTable( (CADDR_T)boundOp, sizeof( SPECIES ), (CADDR_T)law, massActionTable ) ) ) ) {
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         }
@@ -533,7 +533,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, RNAP_OPERA
         reactionsAsModifier = GetReactionsAsModifierInSpeciesNode( boundOp );
         if( GetLinkedListSize( reactionsAsModifier ) > 0 ) {
             TRACE_1("transforming reaction %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
-            if( ( numer = (KINETIC_LAW*)GetValueFromHashTable( boundOp, sizeof( SPECIES ), massActionTable ) ) == NULL ) {
+            if( ( numer = (KINETIC_LAW*)GetValueFromHashTable( (CADDR_T)boundOp, sizeof( SPECIES ), massActionTable ) ) == NULL ) {
                 return ErrorReport( FAILING, "_DoTransformation", "could not find mass action ratio for %s", GetCharArrayOfString( GetSpeciesNodeName( boundOp ) ) );
             }   
             

@@ -25,40 +25,37 @@
 
 BEGIN_C_NAMESPACE
 
-/*
-typedef union {
-    long discreteValue;
-    double continuousValue;
-} RANDOM_T;
-*/
+void CreateRandomNumberGenerators( );
+void SeedRandomNumberGenerators( double s );
+void FreeRandomNumberGenerators( );
 
-struct _RANDOM_NUMBER_GENERATOR;
-typedef struct _RANDOM_NUMBER_GENERATOR  RANDOM_NUMBER_GENERATOR;
+double GetNextUniformRandomNumber( double minUniform, double maxUniform );
+double GetNextUnitUniformRandomNumber( );
 
-struct _RANDOM_NUMBER_GENERATOR {
-    RET_VAL (*SetSeed)( UINT seed );
+double GetNextNormalRandomNumber( double mean, double stdDeviation );
+double GetNextUnitNormalRandomNumber( );
 
-    double (*GetNextUniform)( double min, double max );
-    double (*GetNextUnitUniform)( );
+double GetNextGammaRandomNumber( double a, double b );
 
-    double (*GetNextExponential)( double lambda );
-    double (*GetNextUnitExponential)( );
+double GetNextExponentialRandomNumber( double lambda );
 
-    double (*GetNextNormal)( double mean, double stdDeviation );
-    double (*GetNextUnitNormal)( );
-/*
-    UINT seed;
-    double minUniform;
-    double rangeUniform;
-    double meanNormal;
-    double stdDeviationNormal;
-*/
-};
+double GetNextPoissonRandomNumber( double mu );
 
-RANDOM_NUMBER_GENERATOR *CreateRandomNumberGenerator( );
-RET_VAL FreeRandomNumberGenerator( RANDOM_NUMBER_GENERATOR **generator );
+double GetNextBinomialRandomNumber( double p, unsigned int n );
 
+double GetNextLogNormalRandomNumber( double zeta, double sigma );
 
+double GetNextLogNormalRandomNumber( double zeta, double sigma );
+
+double GetNextChiSquaredRandomNumber( double nu );
+
+double GetNextLaplaceRandomNumber( double a );
+
+double GetNextCauchyRandomNumber( double a );
+
+double GetNextRayleighRandomNumber( double a );
+
+double GetNextBernoulliRandomNumber( double a );
 
 END_C_NAMESPACE
 

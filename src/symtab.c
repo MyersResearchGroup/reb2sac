@@ -18,6 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include "symtab.h"
+#include "kinetic_law.h"
 
 static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, double value, BOOL isConstant );
 static REB2SAC_SYMBOL *_AddSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, REB2SAC_SYMBOL *symbol );
@@ -61,6 +62,18 @@ double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
         
     END_FUNCTION("GetRealValueInSymbol", SUCCESS );
     return sym->currentRealValue;
+}
+
+struct KINETIC_LAW *GetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym ) {
+    START_FUNCTION("GetInitialAssignmentInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("GetInitialAssignmentInSymbol", FAILING );
+        return NULL;
+    }
+        
+    END_FUNCTION("GetInitialAssignmentInSymbol", SUCCESS );
+    return sym->initialAssignment;
 }
 
 BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym ) {
@@ -117,6 +130,21 @@ RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     sym->currentRealValue = value;
     
     END_FUNCTION("SetRealValueInSymbol", SUCCESS );
+    return SUCCESS;
+}
+
+RET_VAL SetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym, struct KINETIC_LAW *law ) {
+    
+    START_FUNCTION("SetInitialAssignmentInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("SetInitialAssignmentInSymbol", FAILING );
+        return FAILING;
+    }
+    
+    sym->initialAssignment = law;
+    
+    END_FUNCTION("SetInitialAssignment", SUCCESS );
     return SUCCESS;
 }
 
@@ -327,6 +355,7 @@ static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *propos
     }
 
     symbol->id = id;
+    symbol->initialAssignment = NULL;
     if( IS_FAILED( SetRealValueInSymbol( symbol, value ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    
         return NULL;
@@ -335,7 +364,7 @@ static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *propos
     symbol->isConstant = isConstant;
     
     table = symtab->table;
-    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), symbol, table ) ) ) {
+    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), (CADDR_T)symbol, table ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    
         return NULL;
     }
@@ -355,9 +384,10 @@ static REB2SAC_SYMBOL *_AddSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, REB
         return NULL;
     }
     symbol->id = id;
+    symbol->initialAssignment = NULL;
     
     table = symtab->table;
-    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), symbol, table ) ) ) {
+    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), (CADDR_T)symbol, table ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    
         return NULL;
     }

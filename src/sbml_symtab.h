@@ -67,7 +67,6 @@ struct _SBML_SYMTAB_MANAGER {
     BOOL (*LookupGlobalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
     BOOL (*LookupLocalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );
     RET_VAL (*PutParametersInGlobalSymtab)( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab );    
-    RET_VAL (*UpdateParametersInGlobalSymtab)( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab );    
 };
 
 SBML_SYMTAB_MANAGER *GetSymtabManagerInstance( COMPILER_RECORD_T *record );

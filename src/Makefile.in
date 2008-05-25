@@ -104,14 +104,11 @@ am_reb2sac_OBJECTS =  \
 	enzyme_kinetic_qssa_method.$(OBJEXT) \
 	enzyme_kinetic_rapid_equilibrium_method2.$(OBJEXT) \
 	enzyme_kinetic_rapid_equilibrium_method.$(OBJEXT) \
-	erlang_distributed_random_generator.$(OBJEXT) \
 	euler_method.$(OBJEXT) \
-	exponentially_distributed_random_generator.$(OBJEXT) \
 	final_state_generation_method.$(OBJEXT) \
 	flat_phage_lambda2_simulation_run_termination_decider.$(OBJEXT) \
 	flat_phage_lambda_simulation_run_termination_decider.$(OBJEXT) \
 	front_end_processor.$(OBJEXT) \
-	gamma_distributed_random_generator.$(OBJEXT) \
 	gillespie_monte_carlo.$(OBJEXT) \
 	gnuplot_dat_simulation_printer.$(OBJEXT) hash_table.$(OBJEXT) \
 	hse2_back_end_processor.$(OBJEXT) \
@@ -146,7 +143,6 @@ am_reb2sac_OBJECTS =  \
 	nary_order_unary_transformation_method3.$(OBJEXT) \
 	nary_order_unary_transformation_method.$(OBJEXT) \
 	next_reaction_simulation.$(OBJEXT) \
-	normally_distributed_random_generator.$(OBJEXT) \
 	normal_waiting_time_monte_carlo.$(OBJEXT) \
 	null_simulation_printer.$(OBJEXT) \
 	op_site_binding_abstraction_method2.$(OBJEXT) \
@@ -178,7 +174,6 @@ am_reb2sac_OBJECTS =  \
 	type_1_pili2_simulation_run_termination_decider.$(OBJEXT) \
 	type1pili_gillespie_ci.$(OBJEXT) \
 	type_1_pili_markov_analysis_result_reporter.$(OBJEXT) \
-	uniformly_distributed_random_generator.$(OBJEXT) \
 	unit_manager.$(OBJEXT) util.$(OBJEXT) vector.$(OBJEXT) \
 	function_manager.$(OBJEXT) rule_manager.$(OBJEXT) \
 	constraint_manager.$(OBJEXT) event_manager.$(OBJEXT) \
@@ -251,14 +246,11 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/enzyme_kinetic_qssa_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method2.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/erlang_distributed_random_generator.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/euler_method.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/exponentially_distributed_random_generator.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/final_state_generation_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/flat_phage_lambda2_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/flat_phage_lambda_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/front_end_processor.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/gamma_distributed_random_generator.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/gillespie_monte_carlo.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/gnuplot_dat_simulation_printer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/hash_table.Po \
@@ -297,7 +289,6 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/nary_order_unary_transformation_method3.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/next_reaction_simulation.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/normal_waiting_time_monte_carlo.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/normally_distributed_random_generator.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/null_simulation_printer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/op_site_binding_abstraction_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/op_site_binding_abstraction_method2.Po \
@@ -339,7 +330,6 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/type_1_pili1_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/type_1_pili2_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/type_1_pili_markov_analysis_result_reporter.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/uniformly_distributed_random_generator.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/unit_manager.Po ./$(DEPDIR)/util.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/function_manager.Po ./$(DEPDIR)/rule_manager.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/constraint_manager.Po ./$(DEPDIR)/event_manager.Po \
@@ -468,8 +458,8 @@ noinst_HEADERS = \
 				ctmc_stationary_analyzer.h	ctmc_transformation_checker.h \
 				default_reb2sac_properties.h	default_simulation_run_termination_decider.h	default_ts_species_level_updater.h dependency_graph.h dll_scope.h	dot_back_end_processor.h \
 				embedded_runge_kutta_fehlberg_method.h	embedded_runge_kutta_prince_dormand_method.h	emc_leaked_stationary_analyzer.h emc_simulation.h	emc_stationary_analyzer.h \
-				erlang_distributed_random_generator.h	euler_method.h \
-				exponentially_distributed_random_generator.h	flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h gamma_distributed_random_generator.h	gillespie_monte_carlo.h \
+				euler_method.h \
+				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h \
 				gnuplot_dat_simulation_printer.h hash_table.h	hse2_back_end_processor.h \
 				hse_back_end_processor_common.h	hse_back_end_processor_def.h hse_back_end_processor.h	hse_back_end_processor_util.h \
 				hse_logical_statement_handler.h	hse_transformation_checker.h implicit_gear1_method.h	implicit_gear2_method.h \
@@ -477,12 +467,12 @@ noinst_HEADERS = \
 				kinetic_law.h law_of_mass_action_util.h	linked_list.h log.h logical_species_node.h \
 				markov_analysis_result_reporter.h markov_chain_analysis_properties.h	markov_chain.h \
 				nary_level_back_end_process.h nary_order_decider.h	nary_order_transformation_method.h \
-				next_reaction_simulation.h	normally_distributed_random_generator.h	normal_waiting_time_monte_carlo.h null_simulation_printer.h	random_number_generator.h reaction_node.h \
+				next_reaction_simulation.h	normal_waiting_time_monte_carlo.h null_simulation_printer.h	random_number_generator.h reaction_node.h \
 				reb2sac.h	sac_phage_lambda_simulation_run_termination_decider.h	sbml_back_end_processor.h sbml_front_end_processor.h sbml_symtab.h	simulation_method.h \
 				simulation_printer.h	simulation_run_termination_decider.h species_critical_level_generator.h	species_critical_level.h \
 				species_node.h ssa_with_user_update.h strconv.h	symtab.h tsd_simulation_printer.h \
 				ts_species_level_updater.h	type_1_pili1_simulation_run_termination_decider.h	type_1_pili2_simulation_run_termination_decider.h	type1pili_gillespie_ci.h type_1_pili_markov_analysis_result_reporter.h	type.h \
-				uniformly_distributed_random_generator.h function_manager.h constraint_manager.h event_manager.h rule_manager.h unit_manager.h util.h	vector.h xhtml_back_end_processor.h \
+				function_manager.h constraint_manager.h event_manager.h rule_manager.h unit_manager.h util.h	vector.h xhtml_back_end_processor.h \
 				analysis_def_parser.tab.h sad_ast.h sad_ast_func_registry.h sad_ast_pretty_printer.h \
 	sad_ast_exp_evaluator.h
 
@@ -506,10 +496,10 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	dot_back_end_processor.c embedded_runge_kutta_fehlberg_method.c \
 	embedded_runge_kutta_prince_dormand_method.c emc_leaked_stationary_analyzer.c emc_simulation.c \
 	emc_stationary_analyzer.c ppta_method.c enzyme_kinetic_qssa_method.c enzyme_kinetic_rapid_equilibrium_method2.c \
-	enzyme_kinetic_rapid_equilibrium_method.c erlang_distributed_random_generator.c euler_method.c \
-	exponentially_distributed_random_generator.c final_state_generation_method.c \
+	enzyme_kinetic_rapid_equilibrium_method.c euler_method.c \
+	final_state_generation_method.c \
 	flat_phage_lambda2_simulation_run_termination_decider.c flat_phage_lambda_simulation_run_termination_decider.c \
-	front_end_processor.c gamma_distributed_random_generator.c gillespie_monte_carlo.c \
+	front_end_processor.c gillespie_monte_carlo.c \
 	gnuplot_dat_simulation_printer.c hash_table.c hse2_back_end_processor.c hse_back_end_processor.c \
 	hse_back_end_processor_util.c hse_logical_statement_handler.c hse_transformation_checker.c \
 	implicit_gear1_method.c implicit_gear2_method.c implicit_runge_kutta_4_method.c \
@@ -522,7 +512,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	multiple_reactants_reaction_elimination_method.c nary_level_back_end_process2.c nary_level_back_end_process.c \
 	nary_order_decider.c nary_order_unary_transformation_method2.c \
 	nary_order_unary_transformation_method3.c nary_order_unary_transformation_method.c next_reaction_simulation.c \
-	normally_distributed_random_generator.c normal_waiting_time_monte_carlo.c null_simulation_printer.c \
+	normal_waiting_time_monte_carlo.c null_simulation_printer.c \
 	op_site_binding_abstraction_method2.c op_site_binding_abstraction_method3.c \
 	op_site_binding_abstraction_method.c pow_kinetic_law_transformer.c random_number_generator.c reaction_node.c \
 	reb2sac.c reversible_reaction_structure_transformation_method.c \
@@ -535,7 +525,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	symtab.c tsd_simulation_printer.c ts_species_level_updater.c \
 	type_1_pili1_simulation_run_termination_decider.c type_1_pili2_simulation_run_termination_decider.c \
 	type1pili_gillespie_ci.c type_1_pili_markov_analysis_result_reporter.c \
-	uniformly_distributed_random_generator.c function_manager.c constraint_manager.c event_manager.c rule_manager.c unit_manager.c util.c vector.c xhtml_back_end_processor.c \
+	function_manager.c constraint_manager.c event_manager.c rule_manager.c unit_manager.c util.c vector.c xhtml_back_end_processor.c \
 	analysis_def_parser.tab.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c \
 	sad_ast_exp_evaluator.c sad_ast_creator.c sad_simulation_run_termination_decider.c \
 	analysis_def_scanner.c constraint_simulation_run_termination_decider.c
@@ -668,14 +658,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enzyme_kinetic_qssa_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/enzyme_kinetic_rapid_equilibrium_method2.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/erlang_distributed_random_generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/euler_method.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/exponentially_distributed_random_generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/final_state_generation_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flat_phage_lambda2_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flat_phage_lambda_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_processor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gamma_distributed_random_generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gillespie_monte_carlo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gnuplot_dat_simulation_printer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash_table.Po@am__quote@
@@ -715,7 +702,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nary_order_unary_transformation_method3.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/next_reaction_simulation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/normal_waiting_time_monte_carlo.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/normally_distributed_random_generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/null_simulation_printer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_site_binding_abstraction_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/op_site_binding_abstraction_method2.Po@am__quote@
@@ -758,7 +744,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type_1_pili1_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type_1_pili2_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/type_1_pili_markov_analysis_result_reporter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uniformly_distributed_random_generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unit_manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/function_manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rule_manager.Po@am__quote@

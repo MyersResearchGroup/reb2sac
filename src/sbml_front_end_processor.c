@@ -69,7 +69,6 @@ static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend
 static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode,  Reaction_t *reaction );
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
-static RET_VAL _UpdateGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
 
 int workingOnFunctions;
 
@@ -170,7 +169,6 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
 
 static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     RET_VAL ret = SUCCESS;
-    RET_VAL ret1 = SUCCESS;
     Model_t *model = NULL;
     SBMLDocument_t *doc = NULL;
     HASH_TABLE *table = NULL;
@@ -183,7 +181,6 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     REACTION_LAW_MANAGER *reactionLawManager = NULL;
     SBML_SYMTAB_MANAGER *sbmlSymtabManager = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
-    int timeout = 0;
 
     START_FUNCTION("_GenerateIR");
     
@@ -299,30 +296,15 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
         return ret;
     } 
 
-    timeout = Model_getNumInitialAssignments( model );
-    timeout += Model_getNumRules( model );
-    if (timeout > 0) {
-      timeout++;
-      do {
-	if( IS_FAILED( ( ret1 = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
-	  END_FUNCTION("_GenerateIR", ret1 );
-	  return ret1;
-	}
-	if( IS_FAILED( ( ret1 = _HandleRuleAssignments( frontend, model, ir ) ) ) ) {
-	  END_FUNCTION("_GenerateIR", ret1 );
-	  return ret1;
-	}
-	if( IS_FAILED( ( ret = _UpdateGlobalParamInSymtab( frontend, symtab, sbmlSymtabManager ) ) ) ) {
-	  END_FUNCTION("_GenerateIR", ret );
-	  return ret;
-	}
-	timeout--;
-      } while (timeout >= 0 && ret1 == CHANGE);
-      if (timeout < 0) {
-	return ErrorReport( FAILING, "_GenerateIR", "cycle detected in assignments" ); 
-      }
+    if( IS_FAILED( ( ret = _HandleInitialAssignments( frontend, model, ir ) ) ) ) {
+      END_FUNCTION("_GenerateIR", ret );
+      return ret;
     }
-        
+    if( IS_FAILED( ( ret = _HandleRuleAssignments( frontend, model, ir ) ) ) ) {
+      END_FUNCTION("_GenerateIR", ret );
+      return ret;
+    }
+    
     END_FUNCTION("_GenerateIR", SUCCESS );
     return ret;
 }
@@ -356,8 +338,6 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     UINT size = 0;
     UINT i = 0;
     UINT j = 0;
-    UINT sizeP = 0;
-    ListOf_t *listP = NULL;
     UINT sizeS = 0;
     LINKED_LIST *listS = NULL;
     UINT sizeC = 0;
@@ -371,15 +351,15 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     char * Pid;
     char * Sid;
     char * Cid;
-    int change;
     double Pvalue;
     SPECIES *speciesNode;
     COMPARTMENT *compartmentNode;
     double initialValue;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    REB2SAC_SYMBOL *symbol = NULL;
 
     START_FUNCTION("_HandleInitialAssignments");
 
-    change = 0;
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleInitialAssignments", "error on getting symtab manager" ); 
     }
@@ -389,8 +369,6 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     table = (HASH_TABLE*)frontend->_internal2;    
     list = Model_getListOfInitialAssignments( model );
     size = Model_getNumInitialAssignments( model );
-    listP = Model_getListOfParameters( model );
-    sizeP = Model_getNumParameters( model );
     listS = ir->GetListOfSpeciesNodes( ir );
     sizeS = GetLinkedListSize( listS );
     listC = compartmentManager->CreateListOfCompartments( compartmentManager );
@@ -402,71 +380,28 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	return ErrorReport( FAILING, "_HandleInitialAssignments", "failed to create initial assignment for %s", id );        
       }
-      SimplifyInitialAssignment(law);
-      if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	initialValue = GetRealValueFromKineticLaw(law); 
-      } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	initialValue = (double)GetIntValueFromKineticLaw(law); 
-      } 
-      for ( j = 0; j < sizeP; j++ ) {
-	parameter = (Parameter_t*)ListOf_get( listP, j );
-	Pid = (char *)Parameter_getId(parameter);
-	Pvalue = Parameter_getValue(parameter);
-	if (strcmp(id,Pid)==0) {
-	  if (Pvalue != initialValue) {
-	      change = 1;
-	      Parameter_setValue(parameter,initialValue); 
-	      //printf("Changing %s from %g to %g\n",Pid,Pvalue,initialValue);
-	  }
-	} 
+      if( ( symbol = symtab->Lookup( symtab, id ) ) != NULL ) {
+	if ( GetRealValueInSymbol( symbol ) != initialValue ) {
+	  SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)law );
+	}
       }
       for ( j = 0; j < sizeS; j++ ) {
 	speciesNode = (SPECIES*)GetElementByIndex(j,listS);
 	Sid = GetCharArrayOfString( GetSpeciesNodeID( speciesNode ));
 	if (strcmp(id,Sid)==0) {
-	  if (IsInitialQuantityInAmountInSpeciesNode(speciesNode)) {
-	    if (GetInitialAmountInSpeciesNode( speciesNode ) != initialValue) {
-	      //printf("Changing %s from %g to %g\n",Sid,GetInitialAmountInSpeciesNode( speciesNode ),initialValue);
-	      if( IS_FAILED( ( ret = SetInitialAmountInSpeciesNode( speciesNode, initialValue ) ) ) ) {
-		END_FUNCTION("_HandleInitialAssignments", ret );
-		return ret;   
-	      }
-	      change = 1;
-	    }
-	  } else {
-	    if (GetInitialConcentrationInSpeciesNode( speciesNode ) != initialValue) {
-	      //printf("Changing %s from %g to %g\n",Sid,GetInitialConcentrationInSpeciesNode( speciesNode ),initialValue);
-	      if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialValue ) ) ) ) {
-		END_FUNCTION("_HandleInitialAssignments", ret );
-		return ret;   
-	      }
-	      change = 1;
-	    }
-	  }
+	  SetInitialAssignmentInSpeciesNode( speciesNode,(struct KINETIC_LAW*)law );
 	}
       }
       for ( j = 0; j < sizeC; j++ ) {
 	compartmentNode = (COMPARTMENT*)GetElementByIndex(j,listC);
 	Cid = GetCharArrayOfString( GetCompartmentID( compartmentNode ));
 	if (strcmp(id,Cid)==0) {
-	  if (GetSizeInCompartment( compartmentNode ) != initialValue) {
-	    //printf("Changing %s from %g to %g\n",Cid,GetSizeInCompartment( compartmentNode ),initialValue);
-	    if( IS_FAILED( ( ret = SetSizeInCompartment( compartmentNode, initialValue ) ) ) ) {
-	      END_FUNCTION("_HandleInitialAssignments", ret );
-	      return ret;   
-	    }
-	    change = 1;
-	  }
+	  SetInitialAssignmentInCompartment( compartmentNode,(struct KINETIC_LAW*)law );
 	}
       }
     }
-    if( IS_FAILED( ( ret = manager->SetGlobal( manager, listP ) ) ) ) {
-        return ErrorReport( FAILING, "_HandleInitialAssignments", "error on setting global" ); 
-    }     
     END_FUNCTION("_HandleInitialAssignments", SUCCESS );
-    if (!change)
-      return ret;
-    return CHANGE;
+    return ret;
 }
 
 static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *model, IR *ir ) {
@@ -477,8 +412,6 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
     UINT size = 0;
     UINT i = 0;
     UINT j = 0;
-    UINT sizeP = 0;
-    ListOf_t *listP = NULL;
     UINT sizeS = 0;
     LINKED_LIST *listS = NULL;
     UINT sizeC = 0;
@@ -492,15 +425,15 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
     char * Pid;
     char * Sid;
     char * Cid;
-    int change;
     double Pvalue;
     SPECIES *speciesNode;
     COMPARTMENT *compartmentNode;
     double initialValue;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    REB2SAC_SYMBOL *symbol = NULL;
 
     START_FUNCTION("_HandleRuleAssignments");
 
-    change = 0;
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRuleAssignments", "error on getting symtab manager" ); 
     }
@@ -510,8 +443,6 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
     table = (HASH_TABLE*)frontend->_internal2;    
     list = Model_getListOfRules( model );
     size = Model_getNumRules( model );
-    listP = Model_getListOfParameters( model );
-    sizeP = Model_getNumParameters( model );
     listS = ir->GetListOfSpeciesNodes( ir );
     sizeS = GetLinkedListSize( listS );
     listC = compartmentManager->CreateListOfCompartments( compartmentManager );
@@ -524,72 +455,29 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleRuleAssignments", "failed to create initial assignment for rule %s", id );        
 	}
-	SimplifyInitialAssignment(law);
-	if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	  initialValue = GetRealValueFromKineticLaw(law); 
-	} else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	  initialValue = (double)GetIntValueFromKineticLaw(law); 
-	} 
-	for ( j = 0; j < sizeP; j++ ) {
-	  parameter = (Parameter_t*)ListOf_get( listP, j );
-	  Pid = (char*)Parameter_getId(parameter);
-	  Pvalue = Parameter_getValue(parameter);
-	  if (strcmp(id,Pid)==0) {
-	    if (Pvalue != initialValue) {
-	      change = 1;
-	      Parameter_setValue(parameter,initialValue); 
-	      //printf("Changing %s from %g to %g\n",Pid,Pvalue,initialValue);
-	    }
-	  } 
+	if( ( symbol = symtab->Lookup( symtab, id ) ) != NULL ) {
+	  if ( GetRealValueInSymbol( symbol ) != initialValue ) {
+	    SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)law );
+	  }
 	}
 	for ( j = 0; j < sizeS; j++ ) {
 	  speciesNode = (SPECIES*)GetElementByIndex(j,listS);
 	  Sid = GetCharArrayOfString( GetSpeciesNodeID( speciesNode ));
 	  if (strcmp(id,Sid)==0) {
-	    if (IsInitialQuantityInAmountInSpeciesNode(speciesNode)) {
-	      if (GetInitialAmountInSpeciesNode( speciesNode ) != initialValue) {
-		//printf("Changing %s from %g to %g\n",Sid,GetInitialAmountInSpeciesNode( speciesNode ),initialValue);
-		if( IS_FAILED( ( ret = SetInitialAmountInSpeciesNode( speciesNode, initialValue ) ) ) ) {
-		  END_FUNCTION("_HandleRuleAssignments", ret );
-		  return ret;   
-		}
-		change = 1;
-	      }
-	    } else {
-	      if (GetInitialConcentrationInSpeciesNode( speciesNode ) != initialValue) {
-		//printf("Changing %s from %g to %g\n",Sid,GetInitialConcentrationInSpeciesNode( speciesNode ),initialValue);
-		if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, initialValue ) ) ) ) {
-		  END_FUNCTION("_HandleRuleAssignments", ret );
-		  return ret;   
-		}
-		change = 1;
-	      }
-	    }
+	    SetInitialAssignmentInSpeciesNode( speciesNode,(struct KINETIC_LAW*)law );
 	  }
 	}
 	for ( j = 0; j < sizeC; j++ ) {
 	  compartmentNode = (COMPARTMENT*)GetElementByIndex(j,listC);
 	  Cid = GetCharArrayOfString( GetCompartmentID( compartmentNode ));
 	  if (strcmp(id,Cid)==0) {
-	    if (GetSizeInCompartment( compartmentNode ) != initialValue) {
-	      //printf("Changing %s from %g to %g\n",Cid,GetSizeInCompartment( compartmentNode ),initialValue);
-	      if( IS_FAILED( ( ret = SetSizeInCompartment( compartmentNode, initialValue ) ) ) ) {
-		END_FUNCTION("_HandleRuleAssignments", ret );
-		return ret;   
-	      }
-	      change = 1;
-	    }
+	    SetInitialAssignmentInCompartment( compartmentNode,(struct KINETIC_LAW*)law );
 	  }
 	}
       }
     }
-    if( IS_FAILED( ( ret = manager->SetGlobal( manager, listP ) ) ) ) {
-        return ErrorReport( FAILING, "_HandleRuleAssignments", "error on setting global" ); 
-    }     
     END_FUNCTION("_HandleRuleAssignments", SUCCESS );
-    if (!change)
-      return ret;
-    return CHANGE;
+    return ret;
 }
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, 
@@ -607,23 +495,6 @@ static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend,
     return SUCCESS;
 
 }
-
-static RET_VAL _UpdateGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, 
-                                        REB2SAC_SYMTAB *symtab, 
-                                        SBML_SYMTAB_MANAGER *sbmlSymtabManager ) {
-    RET_VAL ret = SUCCESS;
-    
-    START_FUNCTION("_AddGlobalParamInSymtab");
-    if( IS_FAILED( ( ret = sbmlSymtabManager->UpdateParametersInGlobalSymtab( sbmlSymtabManager, symtab ) ) ) ) {
-        END_FUNCTION("_AddGlobalParamInSymtab", ret );
-        return ret;
-    }
-    
-    END_FUNCTION("_AddGlobalParamInSymtab", SUCCESS );
-    return SUCCESS;
-
-}
-
 
 static RET_VAL _HandleUnitDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
     RET_VAL ret = SUCCESS;
@@ -1653,6 +1524,151 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     switch( type ) {
         case AST_FUNCTION:
 	  funcId = (char*)ASTNode_getName( source );
+	  if (strcmp(funcId,"uniform")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_UNIFORM, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"normal")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_NORMAL, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"binomial")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_BINOMIAL, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"lognormal")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_LOGNORMAL, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"chisq")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CHISQ, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"exprand")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_EXPRAND, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"poisson")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_POISSON, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"laplace")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_LAPLACE, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"cauchy")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CAUCHY, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"rayleigh")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_RAYLEIGH, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"bernoulli")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_BERNOULLI, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"gamma")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_GAMMA, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  }
 	  functionManager = GetFunctionManagerInstance( frontend->record );
 	  if( ( functionDef = functionManager->LookupFunctionDefinition( functionManager, funcId ) ) == NULL ) {
             return NULL; //ErrorReport( FAILING, "_HandleFunctionDefinition", "function def %s is not declared", funcId );

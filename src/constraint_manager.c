@@ -135,7 +135,7 @@ static CONSTRAINT * _CreateConstraint( CONSTRAINT_MANAGER *manager, char *id ) {
     constraintDef->math = NULL;
     constraintDef->message = NULL;
 
-    if( IS_FAILED( AddElementInLinkedList( constraintDef, manager->constraints ) ) ) {
+    if( IS_FAILED( AddElementInLinkedList( (CADDR_T)constraintDef, manager->constraints ) ) ) {
         FREE( constraintDef );
         END_FUNCTION("_CreateConstraint", FAILING );
         return NULL;

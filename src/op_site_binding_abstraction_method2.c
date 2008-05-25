@@ -106,7 +106,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         return FALSE;
     }
     
-    edges = GetProductEdges( species ); 
+    edges = GetProductEdges( (IR_NODE*)species ); 
     if( GetLinkedListSize(  edges ) != 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -114,7 +114,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
     /*
         * this species S is not used as a product in any reactions   
         */
-    reactantEdges = GetReactantEdges( species );
+    reactantEdges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( reactantEdges );
     while( ( reactantEdge = GetNextEdge( reactantEdges ) ) != NULL ) {
         /*
@@ -124,7 +124,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
         }
-        reaction = GetReactionInIREdge( reactantEdge );
+        reaction = GetReactionInIREdge( (IR_EDGE*)reactantEdge );
         /*
             * every reaction R, where R uses S as a reactant, R is a reversible reaction
             */
@@ -149,7 +149,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             *every reaction R, where R uses S as a reactant, R has more than 1 reactants
             */
-        edges = GetReactantEdges( reaction );
+        edges = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( edges ) == 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -157,7 +157,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             * every reaction R, where R uses S as a reactant, R only has 1 product
             */
-        edges = GetProductEdges( reaction );
+        edges = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( edges ) != 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -180,7 +180,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             *  P is produced only by R
             */
-        edges = GetProductEdges( product );
+        edges = GetProductEdges( (IR_NODE*)product );
         
         if( GetLinkedListSize( edges ) != 1 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
@@ -190,7 +190,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             *  P is not used as a reactant in any reactions
             */
-        edges = GetReactantEdges( product );
+        edges = GetReactantEdges( (IR_NODE*)product );
         if( GetLinkedListSize( edges ) != 0 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
@@ -246,16 +246,16 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *o
     
     START_FUNCTION("_DoTransformation");
         
-    edges = GetReactantEdges( op );
+    edges = GetReactantEdges( (IR_NODE*)op );
     ResetCurrentElement( edges );    
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        transientReaction = GetReactionInIREdge( edge );
+        transientReaction = GetReactionInIREdge( (IR_EDGE*)edge );
         law = GetKineticLawInReactionNode( transientReaction );
         left = GetOpLeftFromKineticLaw( law );
-        complexEdges = GetProductEdges( transientReaction );
+        complexEdges = GetProductEdges( (IR_NODE*)transientReaction );
         complexEdge = GetHeadEdge( complexEdges );
         boundOp = GetSpeciesInIREdge( complexEdge );
-        productionEdges = GetReactantEdges( boundOp );
+        productionEdges = GetReactantEdges( (IR_NODE*)boundOp );
         productionEdge = GetHeadEdge( productionEdges );
     }
     

@@ -128,30 +128,30 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REVERSIBLE_REACTI
     }
     
     
-    reactants1 = GetReactantEdges( reaction1 );
+    reactants1 = GetReactantEdges( (IR_NODE*)reaction1 );
     if( GetLinkedListSize( reactants1 ) == 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
-    reactants2 = GetReactantEdges( reaction2 );
+    reactants2 = GetReactantEdges( (IR_NODE*)reaction2 );
     if( GetLinkedListSize( reactants2 ) == 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
     
-    products1 = GetProductEdges( reaction1 );
+    products1 = GetProductEdges( (IR_NODE*)reaction1 );
     if( GetLinkedListSize( products1 ) == 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
-    products2 = GetProductEdges( reaction2 );
+    products2 = GetProductEdges( (IR_NODE*)reaction2 );
     if( GetLinkedListSize( products2 ) == 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
     
-    modifiers1 = GetModifierEdges( reaction1 );
-    modifiers2 = GetModifierEdges( reaction2 );
+    modifiers1 = GetModifierEdges( (IR_NODE*)reaction1 );
+    modifiers2 = GetModifierEdges( (IR_NODE*)reaction2 );
     
     if( !_AreListsOfSpeciesSame( reactants1, products2 ) ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );

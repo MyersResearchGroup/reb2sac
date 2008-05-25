@@ -198,7 +198,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         return FALSE;
     }
 
-    edges = GetReactantEdges( species );   
+    edges = GetReactantEdges( (IR_NODE*)species );   
     if( GetLinkedListSize( edges ) == 0 ) {
         END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
         return FALSE;
@@ -236,7 +236,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * R1 has 2 reactants
         */
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) != 2 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
@@ -253,7 +253,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * R1 has no modifier
         */
-        list = GetModifierEdges( reaction );
+        list = GetModifierEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
@@ -262,7 +262,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * R1 has 1 product
         */
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
@@ -275,7 +275,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         */
         productEdge = GetHeadEdge( list );
         product = GetSpeciesInIREdge( productEdge );
-        list = GetProductEdges( product );
+        list = GetProductEdges( (IR_NODE*)product );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
@@ -294,7 +294,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * C is not used as a modifier
         */
-        list = GetModifierEdges( product );
+        list = GetModifierEdges( (IR_NODE*)product );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
@@ -303,14 +303,14 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * C is consumed only by one reaction
         */
-        list = GetReactantEdges( product );
+        list = GetReactantEdges( (IR_NODE*)product );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
         }        
         edge = GetHeadEdge( list );
         reaction = GetReactionInIREdge( edge );
-        list = GetReactantEdges( reaction );
+        list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
@@ -345,13 +345,13 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * R2 does not have modifier                   
         */
-        list = GetModifierEdges( reaction );
+        list = GetModifierEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
         }
         
-        list = GetProductEdges( reaction );
+        list = GetProductEdges( (IR_NODE*)reaction );
         num = GetLinkedListSize( list );
         /*
         * The number of products in R2 is either 1 or 2                   
@@ -423,7 +423,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         printf( "\tk2 kinetic law is: %s" NEW_LINE, GetCharArrayOfString( string ) );
         FreeString( &string ); 
 #endif        
-        if( IS_FAILED( AddElementInLinkedList( element, internal->elements ) ) ) {
+        if( IS_FAILED( AddElementInLinkedList( (CADDR_T)element, internal->elements ) ) ) {
             TRACE_1("could not add element in %s", GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", FAILING );
             return FALSE;
@@ -514,7 +514,7 @@ static RET_VAL _DoEnzymeKineticQSSA1Transformation( ABSTRACTION_METHOD *method, 
         if( ( denom = CreateOpKineticLaw( KINETIC_LAW_OP_PLUS, denom, law ) ) == NULL ) {
             return ErrorReport( FAILING, "_DoEnzymeKineticQSSA1Transformation", "error creating kinetic law for the denominator" );
         }
-        if( IS_FAILED( ( ret = AddElementInLinkedList( element->substrateEdge, modifierEdges ) ) ) ) {
+        if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)element->substrateEdge, modifierEdges ) ) ) ) {
             END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
             return ret;
         }

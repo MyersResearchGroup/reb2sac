@@ -37,6 +37,7 @@ int Reb2SacMain(int argc, char *argv[]) {
     RET_VAL ret = SUCCESS;
     int exitCode = 0;
 
+    CreateRandomNumberGenerators();
     if( IS_OK( ( ret = InitCompiler( argc, argv, &record ) ) ) ) {
         ret = CompilerMain( &record );
     }
@@ -47,6 +48,7 @@ int Reb2SacMain(int argc, char *argv[]) {
         printf("Hello, world!" NEW_LINE );
     }
 #endif
+    FreeRandomNumberGenerators();
 
     return exitCode;
 }
@@ -206,7 +208,7 @@ static REB2SAC_PROPERTIES *_CreateReb2sacProperties( COMPILER_RECORD_T *record )
     }
     
     if( strcmp( value, "default" ) == 0 ) {
-        properties = DefaultReb2sacPropertiesConstructor( record );
+      properties = (REB2SAC_PROPERTIES*)DefaultReb2sacPropertiesConstructor( record );
         if( IS_FAILED( ( ret = properties->Init( properties ) ) ) ) {
             END_FUNCTION("_CreateReb2sacProperties", ret );
             return NULL;

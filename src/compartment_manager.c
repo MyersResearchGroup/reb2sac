@@ -203,6 +203,32 @@ RET_VAL SetUnitInCompartment( COMPARTMENT *compartment, UNIT_DEFINITION *unit ) 
     return SUCCESS;
 }
 
+struct KINETIC_LAW *GetInitialAssignmentInCompartment( COMPARTMENT *compartment ) {
+    START_FUNCTION("GetInitialAssignmentInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("GetInitialAssignmentInCompartment", FAILING );
+        return NULL;
+    }
+    
+    END_FUNCTION("GetInitialAssignmentInCompartment", SUCCESS );
+    return compartment->initialAssignment;
+}
+
+
+RET_VAL SetInitialAssignmentInCompartment( COMPARTMENT *compartment, struct KINETIC_LAW *law ) {
+    START_FUNCTION("SetInitialAssignmentInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("SetInitialAssignmentInCompartment", FAILING );
+        return FAILING;
+    }
+    
+    compartment->initialAssignment = law;
+    END_FUNCTION("SetInitialAssignmentInCompartment", SUCCESS );
+    return SUCCESS;
+}
+
 
 STRING *GetOutsideInCompartment( COMPARTMENT *compartment ) {
     START_FUNCTION("GetOutsideInCompartment");
@@ -261,7 +287,7 @@ BOOL IsCompartmentConstant( COMPARTMENT *compartment ) {
     
     if( compartment == NULL ) {
         END_FUNCTION("IsCompartmentConstant", FAILING );
-        return NULL;
+        return FALSE;
     }
     
     END_FUNCTION("IsCompartmentConstant", SUCCESS );
@@ -297,7 +323,8 @@ static COMPARTMENT *_CreateCompartment( COMPARTMENT_MANAGER *manager, char *id )
         END_FUNCTION("_CreateUnitDefinition", FAILING );
         return NULL;
     }
-    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( compartment->id ), GetStringLength( compartment->id ), compartment, manager->table ) ) ) {
+    compartment->initialAssignment = NULL;
+    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( compartment->id ), GetStringLength( compartment->id ), (CADDR_T)compartment, manager->table ) ) ) {
         FREE( compartment );
         END_FUNCTION("_CreateCompartment", FAILING );
         return NULL;

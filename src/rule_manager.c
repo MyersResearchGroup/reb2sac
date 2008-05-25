@@ -174,7 +174,7 @@ static RULE * _CreateRule( RULE_MANAGER *manager, BYTE type, char *var ) {
         return NULL;
     }
         
-    if( IS_FAILED( AddElementInLinkedList( ruleDef, manager->rules ) ) ) {
+    if( IS_FAILED( AddElementInLinkedList( (CADDR_T)ruleDef, manager->rules ) ) ) {
         FREE( ruleDef );
         END_FUNCTION("_CreateRule", FAILING );
         return NULL;

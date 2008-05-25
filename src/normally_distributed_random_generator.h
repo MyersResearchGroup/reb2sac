@@ -24,10 +24,6 @@
 #include "common.h"
 
 BEGIN_C_NAMESPACE
-
-double GetNextNormalRandomNumber( double mean, double stdDeviation );
-double GetNextUnitNormalRandomNumber( );
-
 END_C_NAMESPACE
 
 #endif

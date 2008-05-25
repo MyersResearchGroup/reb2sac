@@ -32,6 +32,8 @@ BEGIN_C_NAMESPACE
 struct _COMPARTMENT;
 typedef struct _COMPARTMENT  COMPARTMENT;
 
+struct KINETIC_LAW;
+
 struct _COMPARTMENT {
     STRING *id;
     int spatialDimensions;
@@ -40,7 +42,8 @@ struct _COMPARTMENT {
     UNIT_DEFINITION *unit;
     STRING *outside;
     COMPARTMENT *outsideCompartment;
-    BOOL constant;                
+    BOOL constant; 
+    struct KINETIC_LAW *initialAssignment;
 };
 
 
@@ -77,6 +80,9 @@ RET_VAL SetUnitInCompartment( COMPARTMENT *compartment, UNIT_DEFINITION *unit );
 
 STRING *GetOutsideInCompartment( COMPARTMENT *compartment );
 RET_VAL SetOutsideInCompartment( COMPARTMENT *compartment, char *id );
+
+struct KINETIC_LAW *GetInitialAssignmentInCompartment( COMPARTMENT *compartment );
+RET_VAL SetInitialAssignmentInCompartment( COMPARTMENT *compartment, struct KINETIC_LAW *law );
 
 COMPARTMENT *GetOutsideCompartmentInCompartment( COMPARTMENT *compartment );
 

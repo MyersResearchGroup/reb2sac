@@ -55,9 +55,6 @@ static BOOL _IsTerminationConditionMet( SSA_WITH_USER_UPDATE_RECORD *rec );
 
 static void fireEvent( EVENT *event, SSA_WITH_USER_UPDATE_RECORD *rec );
 
-static double _GetUniformRandom();
-
-
 
 DLLSCOPE RET_VAL STDCALL DoSSAWithUserUpdateAnalysis( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -65,7 +62,8 @@ DLLSCOPE RET_VAL STDCALL DoSSAWithUserUpdateAnalysis( BACK_END_PROCESSOR *backen
     UINT runs = 1;
     char *namePrefix = NULL;
     static SSA_WITH_USER_UPDATE_RECORD rec;
-    
+    UINT timeout = 0;
+
     START_FUNCTION("DoSSAWithUserUpdateAnalysis");
     
     if( !_IsModelConditionSatisfied( ir ) ) {
@@ -78,9 +76,16 @@ DLLSCOPE RET_VAL STDCALL DoSSAWithUserUpdateAnalysis( BACK_END_PROCESSOR *backen
     
     runs = rec.runs;    
     for( i = 1; i <= runs; i++ ) {
-        if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
-            return ErrorReport( ret, "DoSSAWithUserUpdateAnalysis", "initialization of the %i-th simulation failed", i );
-        }
+        SeedRandomNumberGenerators( rec.seed );
+        rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
+        timeout = 0;
+	do {
+	  SeedRandomNumberGenerators( rec.seed );
+	  if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
+            return ErrorReport( ret, "DoGillespieMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
+	  }
+	  timeout++;
+	} while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
         if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoSSAWithUserUpdateAnalysis", "%i-th simulation failed at time %f", i, rec.time );
         }
@@ -369,10 +374,14 @@ static RET_VAL _InitializeSimulation( SSA_WITH_USER_UPDATE_RECORD *rec, int runN
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
     TIME_SERIES_SPECIES_LEVEL_UPDATER *timeSeriesSpeciesLevelUpdater = rec->timeSeriesSpeciesLevelUpdater;
-    
-    srand( rec->seed );
-    rec->seed = rand();
-    srand( rec->seed );
+    double compSize = 0.0;
+    double param = 0.0;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = rec->compartmentArray;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
+    KINETIC_LAW *law = NULL;
+    BOOL change = FALSE;
     
     sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, runNum );        
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
@@ -386,35 +395,96 @@ static RET_VAL _InitializeSimulation( SSA_WITH_USER_UPDATE_RECORD *rec, int runN
     size = rec->speciesSize;        
     for( i = 0; i < size; i++ ) {
         species = speciesArray[i];
-        if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-            amount = GetInitialAmountInSpeciesNode( species );
-        }
-        else {
-            /* need to multiply concentration by the volume.  But not doing it yet */
-            amount = GetInitialConcentrationInSpeciesNode( species ); 
-        }
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
+	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	    amount = GetInitialAmountInSpeciesNode( species );
+	  }
+	  else {
+	    amount = GetInitialAmountInSpeciesNode( species ); 
+	  }
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    amount = GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    amount = (double)GetIntValueFromKineticLaw(law); 
+	  } 
+	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
+	      SetInitialAmountInSpeciesNode( species, amount );
+	      change = TRUE;
+	    }
+	  }
+	  else {
+	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
+	      SetInitialAmountInSpeciesNode( species, amount ); 
+	      change = TRUE;
+	    }
+	  }
+	  FreeKineticLaw( &(law) );
+	}
         if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
             return ret;            
         }
     }
-            
-    size = rec->reactionsSize;
+    size = rec->compartmentsSize;        
     for( i = 0; i < size; i++ ) {
-        reaction = reactionArray[i];
-        if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, 0.0 ) ) ) ) {
-            return ret;
+        compartment = compartmentArray[i];
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
+	  compSize = GetSizeInCompartment( compartment );
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    compSize = GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    compSize = (double)GetIntValueFromKineticLaw(law); 
+	  } 
+	  if (GetSizeInCompartment( compartment ) != compSize) {
+	    SetSizeInCompartment( compartment, compSize );
+	    change = TRUE;
+	  }
+	  FreeKineticLaw( &(law) );
+	}
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;            
         }
     }
-
+    size = rec->symbolsSize;        
+    for( i = 0; i < size; i++ ) {
+        symbol = symbolArray[i];
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
+	  param = GetRealValueInSymbol( symbol );
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    param = GetRealValueFromKineticLaw(law); 
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    param = (double)GetIntValueFromKineticLaw(law); 
+	  } 
+	  if( GetRealValueInSymbol( symbol ) != param ) {
+	    SetRealValueInSymbol( symbol, param );
+	    change = TRUE;
+	  }
+	  FreeKineticLaw( &(law) );
+	}
+	if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
+	  return ret;            
+	}
+    }
     for (i = 0; i < rec->eventsSize; i++) {
       if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
-						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
       } else {
 	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
       }
     }
-    
+
+    if (change)
+      return CHANGE;
     if( IS_FAILED( ( ret = timeSeriesSpeciesLevelUpdater->Initialize( timeSeriesSpeciesLevelUpdater ) ) ) ) {
         return ret;
     }
@@ -701,7 +771,7 @@ static RET_VAL _FindNextReactionTime( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     double random = 0.0;
     double t = 0.0;
     
-    random = _GetUniformRandom();
+    random = GetNextUnitUniformRandomNumber();
     t = log( 1.0 / random ) / rec->totalPropensities;
     rec->time += t;  
     if( rec->time > rec->timeLimit ) {
@@ -721,7 +791,7 @@ static RET_VAL _FindNextReaction( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
     
-    random = _GetUniformRandom();
+    random = GetNextUnitUniformRandomNumber();
     threshold = random * rec->totalPropensities;
     
     TRACE_1( "next reaction threshold is %f", threshold );
@@ -1055,16 +1125,6 @@ static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec )
         }                
     }    
     return ret;            
-}
-
-
-
-static double _GetUniformRandom() {
-    int value = 0; 
-    double uniformRandom = 0.0;
-    value = rand();
-    uniformRandom = (value + 0.999999) / ( RAND_MAX + 1.0 );
-    return uniformRandom;
 }
 
 static int _ComparePropensity( REACTION *a, REACTION *b ) {

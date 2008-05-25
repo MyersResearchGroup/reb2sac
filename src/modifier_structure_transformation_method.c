@@ -71,8 +71,8 @@ static RET_VAL _ApplyModifierStructureTransformationMethod( ABSTRACTION_METHOD *
     
     ResetCurrentElement( reactionList );    
     while( ( reaction = (REACTION*)GetNextFromLinkedList( reactionList ) ) != NULL ) {
-        reactantEdges = GetReactantEdges( reaction );
-        productEdges = GetProductEdges( reaction );
+        reactantEdges = GetReactantEdges( (IR_NODE*)reaction );
+        productEdges = GetProductEdges( (IR_NODE*)reaction );
         
         if( ( GetLinkedListSize( reactantEdges ) == 0 ) || ( GetLinkedListSize( productEdges ) == 0 ) ) {
             continue;

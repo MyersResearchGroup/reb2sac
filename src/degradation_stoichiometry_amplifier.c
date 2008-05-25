@@ -82,7 +82,7 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod( ABSTRACTION_ME
             continue;
         }
         kineticLaw = GetKineticLawInReactionNode( reaction );
-        edges = GetReactantEdges( reaction );
+        edges = GetReactantEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
@@ -98,7 +98,7 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod( ABSTRACTION_ME
                 return ret;
             }
         }        
-        edges = GetModifierEdges( reaction );
+        edges = GetModifierEdges( (IR_NODE*)reaction );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );
@@ -125,11 +125,11 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod( ABSTRACTION_ME
 static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION *reaction ) {
     LINKED_LIST *list = NULL;
     
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) > 0 ) {
         return FALSE;
     }
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     return ( GetLinkedListSize( list ) == 0 ? FALSE : TRUE );    
 }
 

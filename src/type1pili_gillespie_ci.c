@@ -319,9 +319,9 @@ static RET_VAL _InitializeSimulation( TYPE1PILI_GILLESPIE_CI_RECORD *rec, int ru
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
     
-    srand( rec->seed );
-    rec->seed = rand();
-    srand( rec->seed );
+    SeedRandomNumberGenerators( rec->seed );
+    rec->seed = GetNextUniformRandomNumber(0,RAND_MAX);
+    SeedRandomNumberGenerators( rec->seed );
     
     sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, runNum );        
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
@@ -598,7 +598,7 @@ static RET_VAL _FindNextReactionTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
     double random = 0.0;
     double t = 0.0;
     
-    random = _GetUniformRandom();
+    random = GetNextUnitUniformRandomNumber();
     t = log( 1.0 / random ) / rec->totalPropensities;
     rec->time += t;            
     if( rec->time > rec->timeLimit ) {
@@ -618,7 +618,7 @@ static RET_VAL _FindNextReaction( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
     
-    random = _GetUniformRandom();
+    random = GetNextUnitUniformRandomNumber();
     threshold = random * rec->totalPropensities;
     
     TRACE_1( "next reaction threshold is %f", threshold );
@@ -800,16 +800,6 @@ static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec
         }                
     }    
     return ret;            
-}
-
-
-
-static double _GetUniformRandom() {
-    int value = 0; 
-    double uniformRandom = 0.0;
-    value = rand();
-    uniformRandom = (value + 0.999999) / ( RAND_MAX + 1.0 );
-    return uniformRandom;
 }
 
 static int _ComparePropensity( REACTION *a, REACTION *b ) {

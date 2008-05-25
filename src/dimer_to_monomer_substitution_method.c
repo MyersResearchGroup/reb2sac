@@ -123,7 +123,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     /*
     * R only has one reactant
     */
-    list = GetReactantEdges( reaction );
+    list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -138,7 +138,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     /*
     * monomer M, which is the reactant of R, is not used as a modifier
     */
-    list = GetModifierEdges( monomer );
+    list = GetModifierEdges( (IR_NODE*)monomer );
     if( GetLinkedListSize( list ) > 0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -146,7 +146,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     /*
     * R only has one product
     */
-    list = GetProductEdges( reaction );
+    list = GetProductEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -162,7 +162,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     /*
     * dimer D, which is the product of R, is produced only in R
     */
-    list = GetProductEdges( dimer );
+    list = GetProductEdges( (IR_NODE*)dimer );
     if( GetLinkedListSize( list ) != 1 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
@@ -225,7 +225,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, DIMER_TO_M
         return ErrorReport( FAILING, "_DoTransformation", "could not create a replacement with %s", GetCharArrayOfString( GetSpeciesNodeName( monomer ) ) );
     }
     
-    list = GetModifierEdges( dimer );
+    list = GetModifierEdges( (IR_NODE*)dimer );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
@@ -245,7 +245,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, DIMER_TO_M
 #endif        
     }
     
-    list = GetReactantEdges( dimer );
+    list = GetReactantEdges( (IR_NODE*)dimer );
     ResetCurrentElement( list );
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         reaction = GetReactionInIREdge( edge );
