@@ -52,6 +52,18 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
     return sym->value.realValue;
 }
 
+UNIT_DEFINITION *GetUnitsInSymbol( REB2SAC_SYMBOL *sym ) {
+    START_FUNCTION("GetUnitsInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("GetUnitsInSymbol", FAILING );
+        return NULL;
+    }
+        
+    END_FUNCTION("GetUnitsInSymbol", SUCCESS );
+    return sym->units;
+}
+
 double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
     START_FUNCTION("GetRealValueInSymbol");
 
@@ -117,6 +129,21 @@ RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     return SUCCESS;
 }
 
+RET_VAL SetUnitsInSymbol( REB2SAC_SYMBOL *sym, UNIT_DEFINITION *units ) {
+    
+    START_FUNCTION("SetUnitsInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("SetUnitsInSymbol", FAILING );
+        return FAILING;
+    }
+    
+    sym->units = units;
+    
+    END_FUNCTION("SetUnitsInSymbol", SUCCESS );
+    return SUCCESS;
+}
+
 RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     
     START_FUNCTION("SetRealValueInSymbol");
@@ -168,6 +195,10 @@ static REB2SAC_SYMBOL *_CloneSymbol( REB2SAC_SYMBOL *sym ) {
         return NULL;
     }
     memcpy( &(clone->value), &(sym->value), sizeof(clone) - sizeof(clone->id) ); 
+    clone->type = sym->type;
+    clone->isConstant = sym->isConstant;
+    clone->units = sym->units;
+    clone->initialAssignment = sym->initialAssignment;
         
     END_FUNCTION("_CloneSymbol", SUCCESS );
     return clone;
@@ -356,6 +387,7 @@ static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *propos
 
     symbol->id = id;
     symbol->initialAssignment = NULL;
+    symbol->units = NULL;
     if( IS_FAILED( SetRealValueInSymbol( symbol, value ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    
         return NULL;
@@ -385,7 +417,7 @@ static REB2SAC_SYMBOL *_AddSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, REB
     }
     symbol->id = id;
     symbol->initialAssignment = NULL;
-    
+    symbol->units = NULL;
     table = symtab->table;
     if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), (CADDR_T)symbol, table ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    

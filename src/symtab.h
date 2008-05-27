@@ -23,6 +23,7 @@
 #include "common.h"
 #include "hash_table.h"
 #include "util.h"
+#include "unit_manager.h"
 
 BEGIN_C_NAMESPACE
 
@@ -42,6 +43,7 @@ typedef struct {
     double currentRealValue;
     BYTE type;
     BOOL isConstant;
+    UNIT_DEFINITION *units;
     struct KINETIC_LAW *initialAssignment;    
 } REB2SAC_SYMBOL;
 
@@ -51,6 +53,8 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
 double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
+UNIT_DEFINITION *GetUnitsInSymbol( REB2SAC_SYMBOL *sym );
+RET_VAL SetUnitsInSymbol( REB2SAC_SYMBOL *sym, UNIT_DEFINITION *units );
 struct KINETIC_LAW *GetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym, struct KINETIC_LAW *law );
 BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym );

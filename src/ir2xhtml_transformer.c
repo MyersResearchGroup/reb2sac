@@ -38,7 +38,7 @@ static RET_VAL _PrintEventAssignmentInXHTML( LINKED_LIST *assignments, FILE *fil
 static RET_VAL _PrintCompartmentListInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ); 
 static RET_VAL _PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
-static RET_VAL _PrintMathInXHTML( KINETIC_LAW *kineticLaw, FILE *file ); 
+static RET_VAL _PrintMathInXHTML( KINETIC_LAW *kineticLaw, char *LHS, FILE *file ); 
 
 static void _PrintTab( FILE *file, int tabCount );
 
@@ -128,6 +128,9 @@ static RET_VAL _PrintConstantInXHTML( REB2SAC_SYMBOL *sym, FILE *file ) {
     RET_VAL ret = SUCCESS;
     char *id = NULL;
     double value = 0.0;
+    char *units;
+    char empty[5];
+    KINETIC_LAW *law;
 
     START_FUNCTION("_PrintConstantInXHTML");
     
@@ -149,14 +152,30 @@ static RET_VAL _PrintConstantInXHTML( REB2SAC_SYMBOL *sym, FILE *file ) {
 
     id = GetCharArrayOfString( GetSymbolID( sym ) );
     value = GetRealValueInSymbol( sym );
+    strcpy(empty,"none");
+    if (GetUnitsInSymbol ( sym ) != NULL) {
+      units = GetCharArrayOfString( GetUnitDefinitionID( GetUnitsInSymbol( sym ) ) );
+    } else {
+      units = empty;
+    }
     
-    fprintf( file, REB2SAC_XHTML_CONSTANT_ENTRY_FORMAT, id, value );
+    fprintf( file, REB2SAC_XHTML_START_CONSTANT_ENTRY_FORMAT, id );
+    if (GetInitialAssignmentInSymbol( sym ) != NULL) {
+      law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( sym );
+      if( IS_FAILED( ( ret = _PrintMathInXHTML( law, NULL, file ) ) ) ) {
+	END_FUNCTION("_PrintRuleForXHTML", ret );
+	return ret;
+      }
+    } else {
+      fprintf( file, "%g", value );
+    }
+    fprintf( file, REB2SAC_XHTML_END_CONSTANT_ENTRY_FORMAT, units,
+	     IsSymbolConstant( sym ) ? "True" : "False");
     fprintf( file, NEW_LINE );
     
     END_FUNCTION("_PrintConstantInXHTML", SUCCESS );        
     return ret;
 }
-
 
 RET_VAL PrintListOfReactionsInXHTML( LINKED_LIST *list, FILE *file ) {
     START_FUNCTION("PrintListOfReactionsInXHTML");
@@ -249,6 +268,7 @@ static RET_VAL _PrintListOfReactionsInXHTML( LINKED_LIST *list, FILE *file ) {
     
     START_FUNCTION("_PrintListOfReactionsInXHTML");
 
+    fprintf( file, REB2SAC_XHTML_START_REACTION_FORMAT );
     ResetCurrentElement( list );
     while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) )  != NULL ) {
         if( IS_FAILED( ( ret = _PrintReactionInXHTML( reaction, file ) ) ) ) {
@@ -257,6 +277,7 @@ static RET_VAL _PrintListOfReactionsInXHTML( LINKED_LIST *list, FILE *file ) {
         }
         fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     }
+    fprintf( file, REB2SAC_XHTML_END_REACTION_FORMAT );
     
     END_FUNCTION("_PrintListOfReactionsInXHTML", SUCCESS );
     return ret;
@@ -269,32 +290,36 @@ static RET_VAL _PrintReactionInXHTML( REACTION *reaction, FILE *file ) {
     
     START_FUNCTION("_PrintReactionInXHTML");
 
-    fprintf( file, REB2SAC_XHTML_START_REACTION_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
+    printf("HERE\n");
+    fprintf( file, REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
     
     list = GetReactantsInReactionNode( reaction );
     if( IS_FAILED( ( ret = _PrintListOfReactantsInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_PrintReactionInXHTML", ret );
         return ret;
     }    
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
     
     list = GetProductsInReactionNode( reaction );
     if( IS_FAILED( ( ret = _PrintListOfProductsInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_PrintReactionInXHTML", ret );
         return ret;
     }    
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
     list = GetModifiersInReactionNode( reaction );
     if( IS_FAILED( ( ret = _PrintListOfModifiersInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_PrintReactionInXHTML", ret );
         return ret;
     }    
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
         
     kineticLaw = GetKineticLawInReactionNode( reaction );
     if( IS_FAILED( ( ret = _PrintKineticLawInXHTML( kineticLaw, file ) ) ) ) {
         END_FUNCTION("_PrintReactionInXHTML", ret );
         return ret;
     }    
-    fprintf( file, REB2SAC_XHTML_END_REACTION_FORMAT );
+    fprintf( file, REB2SAC_XHTML_END_REACTION_ENTRY_FORMAT );
     fprintf( file, NEW_LINE );
     
     END_FUNCTION("_PrintReactionInXHTML", SUCCESS );
@@ -307,15 +332,15 @@ static RET_VAL _PrintListOfReactantsInXHTML( LINKED_LIST *list, FILE *file ) {
     
     START_FUNCTION("_PrintListOfReactantsInXHTML");
     
-    fprintf( file, REB2SAC_XHTML_START_REACTANTS_FORMAT );
+    //fprintf( file, REB2SAC_XHTML_START_REACTANTS_FORMAT );
     
     if( IS_FAILED( ( ret = _PrintListOfSpeciesInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_PrintListOfReactantsInXHTML", ret );
         return ret;
     }    
     
-    fprintf( file, REB2SAC_XHTML_END_REACTANTS_FORMAT );
-    fprintf( file, NEW_LINE );
+    //fprintf( file, REB2SAC_XHTML_END_REACTANTS_FORMAT );
+    //fprintf( file, NEW_LINE );
     
     END_FUNCTION("_PrintListOfReactantsInXHTML", SUCCESS );
     return ret;
@@ -326,15 +351,15 @@ static RET_VAL _PrintListOfProductsInXHTML( LINKED_LIST *list, FILE *file ) {
     
     START_FUNCTION("_PrintListOfProductsInXHTML");
     
-    fprintf( file, REB2SAC_XHTML_START_PRODUCTS_FORMAT );
+    //    fprintf( file, REB2SAC_XHTML_START_PRODUCTS_FORMAT );
     
     if( IS_FAILED( ( ret = _PrintListOfSpeciesInXHTML( list, file ) ) ) ) {
-        END_FUNCTION("_PrintListOfReactantsInXHTML", ret );
+        END_FUNCTION("_PrintListOfProductsInXHTML", ret );
         return ret;
     }    
     
-    fprintf( file, REB2SAC_XHTML_END_PRODUCTS_FORMAT );
-    fprintf( file, NEW_LINE );
+    //fprintf( file, REB2SAC_XHTML_END_PRODUCTS_FORMAT );
+    //fprintf( file, NEW_LINE );
     
     END_FUNCTION("_PrintListOfProductsInXHTML", SUCCESS );
     return ret;
@@ -345,15 +370,15 @@ static RET_VAL _PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ) {
     
     START_FUNCTION("_PrintListOfModifiersInXHTML");
     
-    fprintf( file, REB2SAC_XHTML_START_MODIFIERS_FORMAT );
+    //fprintf( file, REB2SAC_XHTML_START_MODIFIERS_FORMAT );
     
     if( IS_FAILED( ( ret = _PrintListOfSpeciesInXHTML( list, file ) ) ) ) {
-        END_FUNCTION("_PrintListOfReactantsInXHTML", ret );
+        END_FUNCTION("_PrintListOfModifiersInXHTML", ret );
         return ret;
     }    
     
-    fprintf( file, REB2SAC_XHTML_END_MODIFIERS_FORMAT );
-    fprintf( file, NEW_LINE );
+    //fprintf( file, REB2SAC_XHTML_END_MODIFIERS_FORMAT );
+    //fprintf( file, NEW_LINE );
     
     END_FUNCTION("_PrintListOfModifiersInXHTML", SUCCESS );
     return ret;
@@ -405,25 +430,26 @@ static RET_VAL _PrintFunctionForXHTML( FUNCTION_DEFINITION *function, FILE *file
     char *argument;
     int num;
     int i;
+    char funcLabel[256];
 
     START_FUNCTION("_PrintFunctionForXHTML");
 
-    fprintf( file, REB2SAC_XHTML_START_FUNCTION_ENTRY_FORMAT,
-	     GetCharArrayOfString( GetFunctionDefinitionID( function ) ) );
+    fprintf( file, REB2SAC_XHTML_START_FUNCTION_ENTRY_FORMAT );
+    sprintf( funcLabel, " %s ( ", GetCharArrayOfString( GetFunctionDefinitionID( function ) ) );
 
-    fprintf( file, REB2SAC_XHTML_START_FUNCTION_ARGUMENT_FORMAT );
     arguments = GetArgumentsInFunctionDefinition( function );
     num = GetLinkedListSize(arguments);
     for (i = 0; i < num; i++) {
       argument = (char*)GetElementByIndex(i,arguments);
-      if (i > 0) 
-	fprintf( file, ", " );
-      fprintf( file, "%s", argument );
+      if (i > 0) {
+	strcat( funcLabel, ", ");
+      }
+      strcat( funcLabel, argument );
     }
-    fprintf( file, REB2SAC_XHTML_END_FUNCTION_ARGUMENT_FORMAT );
+    strcat( funcLabel, " )" );
 
     kineticLaw = GetFunctionInFunctionDefinition( function );
-    if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, file ) ) ) ) {
+    if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, funcLabel, file ) ) ) ) {
         END_FUNCTION("_PrintFunctionForXHTML", ret );
         return ret;
     }    
@@ -517,12 +543,20 @@ static RET_VAL _PrintUnitForXHTML( UNIT_DEFINITION *unitDef, FILE *file ) {
 static RET_VAL _PrintUnitListInXHTML( LINKED_LIST *list, FILE *file ) {
     RET_VAL ret = SUCCESS;
     UNIT_DEFINITION *unitDef = NULL;
+    int count = 0;
 
     START_FUNCTION("_PrintUnitListInXHTML");
     if( ( list == NULL ) || ( GetLinkedListSize( list ) == 0 ) ) {
         END_FUNCTION("_PrintListOfUnitsForSBML", SUCCESS );    
         return ret;
     }    
+    ResetCurrentElement( list );
+    while( ( unitDef = (UNIT_DEFINITION*)GetNextFromLinkedList( list ) ) != NULL ) {
+      if ( !IsBuiltInUnitDefinition( unitDef ) ) {
+	count++;
+      }
+    }
+    if (count==0) return ret;
     fprintf( file, REB2SAC_XHTML_START_UNITDEF_FORMAT );
     ResetCurrentElement( list );
     while( ( unitDef = (UNIT_DEFINITION*)GetNextFromLinkedList( list ) ) != NULL ) {
@@ -546,22 +580,23 @@ static RET_VAL _PrintRuleForXHTML( RULE *rule, FILE *file ) {
     RET_VAL ret = SUCCESS;
     KINETIC_LAW *kineticLaw;
     BYTE type;
+    char ruleLHS[256];
 
     START_FUNCTION("_PrintRuleForXHTML");
     
     type = GetRuleType( rule );
     
     if (type == RULE_TYPE_ALGEBRAIC ) {
-      fprintf( file, REB2SAC_XHTML_START_ALGRULE_ENTRY_FORMAT );
+      strcpy(ruleLHS,"0");
     } else if (type == RULE_TYPE_ASSIGNMENT ) {
-      fprintf( file, REB2SAC_XHTML_START_ASSIGNRULE_ENTRY_FORMAT,
-	       GetCharArrayOfString( GetRuleVar( rule ) ) );
+      strcpy(ruleLHS,GetCharArrayOfString( GetRuleVar( rule ) ) );
     } else {
-      fprintf( file, REB2SAC_XHTML_START_RATERULE_ENTRY_FORMAT,
-	       GetCharArrayOfString( GetRuleVar( rule ) ) );
+      sprintf(ruleLHS, "d(%s)/dt",
+	      GetCharArrayOfString( GetRuleVar( rule ) ) );
     }
+    fprintf( file, REB2SAC_XHTML_START_RULE_ENTRY_FORMAT );
     kineticLaw = GetMathInRule( rule );
-    if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, file ) ) ) ) {
+    if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, ruleLHS, file ) ) ) ) {
         END_FUNCTION("_PrintRuleForXHTML", ret );
         return ret;
     }    
@@ -614,7 +649,7 @@ static RET_VAL _PrintConstraintForXHTML( CONSTRAINT *constraint, FILE *file ) {
 	     GetCharArrayOfString( GetConstraintMessage( constraint ) ) ); */
 
     kineticLaw = GetMathInConstraint( constraint );
-    if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, file ) ) ) ) {
+    if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, NULL, file ) ) ) ) {
         END_FUNCTION("_PrintRuleForXHTML", ret );
         return ret;
     }    
@@ -729,41 +764,34 @@ static RET_VAL _PrintEventForXHTML( EVENT *event, FILE *file ) {
 
     START_FUNCTION("_PrintEventForXHTML");
 
-    fprintf( file, REB2SAC_XHTML_START_EVENT_FORMAT,
+    fprintf( file, REB2SAC_XHTML_START_EVENT_ENTRY_FORMAT,
 	     GetCharArrayOfString( GetEventId( event ) ) );
 
     kineticLaw = GetTriggerInEvent( event );
     if (kineticLaw) {
-      fprintf( file, REB2SAC_XHTML_START_TRIGGER_FORMAT );
-      if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, file ) ) ) ) {
+      if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, NULL, file ) ) ) ) {
         END_FUNCTION("_PrintRuleForXHTML", ret );
         return ret;
-      }    
-      fprintf( file, REB2SAC_XHTML_END_TRIGGER_FORMAT );
+      }
     }
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
     kineticLaw = GetDelayInEvent( event );
     if (kineticLaw) {
-      fprintf( file, REB2SAC_XHTML_START_DELAY_FORMAT );
-      if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, file ) ) ) ) {
+      if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, NULL, file ) ) ) ) {
         END_FUNCTION("_PrintRuleForXHTML", ret );
         return ret;
       }   
-      fprintf( file, REB2SAC_XHTML_END_DELAY_FORMAT );
     } 
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
-    fprintf( file, REB2SAC_XHTML_START_ASSIGNMENTS_FORMAT );
     assignments = GetEventAssignments( event );
     if( IS_FAILED( ( ret = _PrintEventAssignmentInXHTML( assignments, file ) ) ) ) {
       END_FUNCTION("_PrintRuleForXHTML", ret );
       return ret;
     }   
-    fprintf( file, REB2SAC_XHTML_END_ASSIGNMENTS_FORMAT );
 
-    fprintf( file, REB2SAC_XHTML_END_EVENT_FORMAT );
-    fprintf( file, NEW_LINE );
-    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
-    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
+    fprintf( file, REB2SAC_XHTML_END_EVENT_ENTRY_FORMAT );
             
     END_FUNCTION("_PrintEventForXHTML", SUCCESS );
     
@@ -775,10 +803,14 @@ static RET_VAL _PrintEventListInXHTML( LINKED_LIST *list, FILE *file ) {
     EVENT *event = NULL;
 
     START_FUNCTION("_PrintEventListInXHTML");
+
     if( ( list == NULL ) || ( GetLinkedListSize( list ) == 0 ) ) {
         END_FUNCTION("_PrintListOfEventsForSBML", SUCCESS );    
         return ret;
     }    
+
+    fprintf( file, REB2SAC_XHTML_START_EVENT_FORMAT );
+
     ResetCurrentElement( list );
     while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
         if( IS_FAILED( ( ret = _PrintEventForXHTML( event, file ) ) ) ) {
@@ -786,6 +818,11 @@ static RET_VAL _PrintEventListInXHTML( LINKED_LIST *list, FILE *file ) {
             return ret;
         }
     }
+
+    fprintf( file, REB2SAC_XHTML_END_EVENT_FORMAT );
+    fprintf( file, NEW_LINE );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     
     END_FUNCTION("_PrintEventListInXHTML", SUCCESS );
     return ret;
@@ -793,12 +830,38 @@ static RET_VAL _PrintEventListInXHTML( LINKED_LIST *list, FILE *file ) {
 
 static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file ) {
     RET_VAL ret = SUCCESS;
-    
+    char *outside;
+    char empty[5];
+    char *units;
+    KINETIC_LAW *law;
+
     START_FUNCTION("_PrintCompartmentForXHTML");
 
-    fprintf( file, REB2SAC_XHTML_COMPARTMENT_ENTRY_FORMAT,
+    strcpy(empty,"none");
+    if (GetOutsideInCompartment ( compartment ) != NULL) {
+      outside = GetCharArrayOfString( GetOutsideInCompartment( compartment ) );
+    } else {
+      outside = empty;
+    }
+    if (GetUnitInCompartment ( compartment ) != NULL) {
+      units = GetCharArrayOfString( GetUnitDefinitionID( GetUnitInCompartment( compartment ) ) );
+    } else {
+      units = empty;
+    }
+    fprintf( file, REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT,
 	     GetCharArrayOfString( GetCompartmentID( compartment ) ),
-	     GetSizeInCompartment( compartment ) );
+	     GetSpatialDimensionsInCompartment( compartment ) );
+    if (GetInitialAssignmentInCompartment( compartment ) != NULL) {
+      law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment );
+      if( IS_FAILED( ( ret = _PrintMathInXHTML( law, NULL, file ) ) ) ) {
+	END_FUNCTION("_PrintRuleForXHTML", ret );
+	return ret;
+      }
+    } else {
+      fprintf( file, "%g",GetSizeInCompartment( compartment ) );
+    }
+    fprintf( file, REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT,
+	     empty, outside, IsCompartmentConstant( compartment ) ? "True" : "False");
 
     fprintf( file, NEW_LINE );
             
@@ -840,21 +903,41 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
     RET_VAL ret = SUCCESS;
     double initialQuantity = 0.0;
     COMPARTMENT *compartment = NULL;
+    char *units;
+    char empty[5];
+    KINETIC_LAW *law;
     
     START_FUNCTION("_PrintSpeciesForXHTML");
         
     compartment = GetCompartmentInSpeciesNode( species );
     
-     if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-         initialQuantity = GetInitialAmountInSpeciesNode( species );
-     } else {
-         initialQuantity = GetInitialConcentrationInSpeciesNode( species );
-     }
-
-    fprintf( file, REB2SAC_XHTML_SPECIES_ENTRY_FORMAT,
+    if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+      initialQuantity = GetInitialAmountInSpeciesNode( species );
+    } else {
+      initialQuantity = GetInitialConcentrationInSpeciesNode( species );
+    }
+    strcpy(empty,"none");
+    if (GetSubstanceUnitsInSpeciesNode ( species ) != NULL) {
+      units = GetCharArrayOfString( GetUnitDefinitionID( GetSubstanceUnitsInSpeciesNode( species ) ) );
+    } else {
+      units = empty;
+    }
+    fprintf( file, REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT,
 	     GetCharArrayOfString( GetSpeciesNodeID( species ) ),
-	     GetCharArrayOfString( GetCompartmentID( compartment ) ),
-	     initialQuantity );
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ) );
+    if (GetInitialAssignmentInSpeciesNode( species ) != NULL) {
+      law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species );
+      if( IS_FAILED( ( ret = _PrintMathInXHTML( law, NULL, file ) ) ) ) {
+	END_FUNCTION("_PrintRuleForXHTML", ret );
+	return ret;
+      }    
+    } else {
+      fprintf( file, "%g",initialQuantity );
+    }
+    fprintf( file, REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT,
+	     units, 
+	     HasBoundaryConditionInSpeciesNode( species ) ? "True" : "False",
+	     IsSpeciesNodeConstant( species ) ? "True" : "False");
 
     fprintf( file, NEW_LINE );
             
@@ -892,7 +975,7 @@ static RET_VAL _PrintSpeciesListInXHTML( LINKED_LIST *list, FILE *file ) {
     return ret;
 }
 
-static RET_VAL _PrintMathInXHTML( KINETIC_LAW *kineticLaw, FILE *file ) {
+static RET_VAL _PrintMathInXHTML( KINETIC_LAW *kineticLaw, char * LHS, FILE *file ) {
     static KINETIC_LAW_VISITOR visitor;
     RET_VAL ret = SUCCESS;
     int tabCount = 1;
@@ -924,6 +1007,9 @@ static RET_VAL _PrintMathInXHTML( KINETIC_LAW *kineticLaw, FILE *file ) {
     fprintf( file, NEW_LINE );
     tabCount++;
         
+    if (LHS != NULL) {
+      fprintf( file, "%s = ",LHS);
+    }
     if( IS_FAILED( ( ret = kineticLaw->Accept( kineticLaw, &visitor ) ) ) ) {
         END_FUNCTION("_PrintKineticLawInXHTML", ret );
         return ret;
@@ -950,13 +1036,13 @@ static RET_VAL _PrintKineticLawInXHTML( KINETIC_LAW *kineticLaw, FILE *file ) {
     
     START_FUNCTION("_PrintKineticLawInXHTML");
 
-    fprintf( file, REB2SAC_XHTML_START_KINETIC_LAW_FORMAT );
-    fprintf( file, NEW_LINE );
+    //fprintf( file, REB2SAC_XHTML_START_KINETIC_LAW_FORMAT );
+    //fprintf( file, NEW_LINE );
     
-    _PrintMathInXHTML( kineticLaw, file );
+    _PrintMathInXHTML( kineticLaw, NULL, file );
     
-    fprintf( file, REB2SAC_XHTML_END_KINETIC_LAW_FORMAT );
-    fprintf( file, NEW_LINE );
+    //fprintf( file, REB2SAC_XHTML_END_KINETIC_LAW_FORMAT );
+    //fprintf( file, NEW_LINE );
     
     END_FUNCTION("_PrintKineticLawInXHTML", SUCCESS );
     return ret;

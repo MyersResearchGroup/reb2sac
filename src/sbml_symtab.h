@@ -24,6 +24,7 @@
 #include "compiler_def.h"
 #include "hash_table.h"
 #include "symtab.h"
+#include "unit_manager.h"
 
 #include "sbml/ListOf.h"
 #include "sbml/Parameter.h"
@@ -65,8 +66,8 @@ struct _SBML_SYMTAB_MANAGER {
     RET_VAL (*SetLocal)(  SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
     BOOL (*LookupValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
     BOOL (*LookupGlobalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
-    BOOL (*LookupLocalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );
-    RET_VAL (*PutParametersInGlobalSymtab)( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab );    
+    BOOL (*LookupLocalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value, char **units );
+    RET_VAL (*PutParametersInGlobalSymtab)( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab, UNIT_MANAGER *unitManager );    
 };
 
 SBML_SYMTAB_MANAGER *GetSymtabManagerInstance( COMPILER_RECORD_T *record );
