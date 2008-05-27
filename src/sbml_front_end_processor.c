@@ -484,9 +484,11 @@ static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend,
                                         REB2SAC_SYMTAB *symtab, 
                                         SBML_SYMTAB_MANAGER *sbmlSymtabManager ) {
     RET_VAL ret = SUCCESS;
-    
+    UNIT_MANAGER *unitManager;
+
     START_FUNCTION("_AddGlobalParamInSymtab");
-    if( IS_FAILED( ( ret = sbmlSymtabManager->PutParametersInGlobalSymtab( sbmlSymtabManager, symtab ) ) ) ) {
+    unitManager = GetUnitManagerInstance( frontend->record );
+    if( IS_FAILED( ( ret = sbmlSymtabManager->PutParametersInGlobalSymtab( sbmlSymtabManager, symtab, unitManager ) ) ) ) {
         END_FUNCTION("_AddGlobalParamInSymtab", ret );
         return ret;
     }
@@ -1258,8 +1260,22 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
             return ret;
         }
     }
-    
-    
+
+    if( Reaction_getFast( reaction ) ) {
+        TRACE_0("\tsetting reversible true");
+        if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, TRUE ) ) ) ) {
+            END_FUNCTION("_CreateReactionNode", ret );
+            return ret;
+        }
+    }
+    else {
+        TRACE_0("\tsetting reversible false");
+        if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, FALSE ) ) ) ) {
+            END_FUNCTION("_CreateReactionNode", ret );
+            return ret;
+        }
+    }
+        
     if( IS_FAILED( ( ret = _ResolveNodeLinks( frontend, ir, reactionNode, reaction ) ) ) ) {
         END_FUNCTION("_CreateReactionNode", ret );
         return ret;
@@ -2230,6 +2246,9 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
     REACTION_LAW_MANAGER *reactionLawManager = NULL;
     REACTION_LAW *reactionLaw = NULL;
     //STRING *kineticLawString = NULL;
+    UNIT_MANAGER *unitManager = NULL;
+    UNIT_DEFINITION *units = NULL;
+    char *unitsID;
 
     START_FUNCTION("_TransformSymKineticLaw");
     
@@ -2241,12 +2260,21 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
       }
       return law;
     }
-    if( manager->LookupLocalValue( manager, sym, &realValue ) ) {
+    if( manager->LookupLocalValue( manager, sym, &realValue, &unitsID ) ) {
         symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
         if( ( symbol = symtab->AddRealValueSymbol( symtab, sym, realValue, TRUE ) ) == NULL ) {
             END_FUNCTION("_TransformSymKineticLaw", FAILING );
             return NULL;
         }
+	if( unitsID != NULL ) {
+	  if( ( unitManager = GetUnitManagerInstance( frontend->record ) ) == NULL ) {
+	    return NULL;
+	  }
+	  if( ( units = unitManager->LookupUnitDefinition( unitManager, unitsID ) ) == NULL ) {
+            return NULL;
+	  }
+	  SetUnitsInSymbol( symbol, units  );
+	} 
         if( ( law = CreateSymbolKineticLaw( symbol ) ) == NULL ) {
             END_FUNCTION("_TransformSymKineticLaw", FAILING );
             return NULL;

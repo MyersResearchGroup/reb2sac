@@ -25,8 +25,8 @@ static RET_VAL _SetGlobal( SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
 static RET_VAL _SetLocal( SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
 static BOOL _LookupValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
 static BOOL _LookupGlobalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
-static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
-static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab );    
+static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value, char **unitsID );    
+static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab, UNIT_MANAGER *unitManager );    
 
 
 SBML_SYMTAB_MANAGER *GetSymtabManagerInstance( COMPILER_RECORD_T *record ) {
@@ -157,7 +157,7 @@ static BOOL _LookupGlobalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *
     return FALSE;
 }
 
-static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value ) {
+static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value, char **unitsID ) {
     UINT i = 0;
     UINT num = 0;
     Parameter_t *param = NULL;
@@ -174,6 +174,7 @@ static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *v
             param = (Parameter_t*)ListOf_get( localParams, i );
             if( strcmp( id, Parameter_getId( param ) ) == 0 ) {
                 *value = Parameter_getValue( param );
+                *unitsID = (char*)Parameter_getUnits( param );
                 TRACE_1("found in local. value = %f", *value);
                 END_FUNCTION("_LookupLocalValue", SUCCESS );
                 return TRUE;
@@ -184,7 +185,7 @@ static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *v
     return FALSE;
 }
 
-static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab ) {
+static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab, UNIT_MANAGER *unitManager ) {
     RET_VAL ret = SUCCESS;
     char *id = NULL;
     double value = 0.0;
@@ -193,6 +194,9 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
     Parameter_t *param = NULL;
     ListOf_t *globalParams = NULL;
     BOOL constant = TRUE;
+    char *units;
+    UNIT_DEFINITION *unitDef;
+    REB2SAC_SYMBOL *paramS;
 
     START_FUNCTION("_PutParametersInGlobalSymtab");
 
@@ -215,10 +219,19 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
 	if (!Parameter_getConstant( param )) {
 	  constant = FALSE;
 	} 
-	if( ( globalSymtab->AddRealValueSymbol( globalSymtab, id, value, constant ) ) == NULL ) {
+	if( ( ( paramS = globalSymtab->AddRealValueSymbol( globalSymtab, id, value, constant ) ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
 			      "failed to put parameter %s in global symtab", id );
 	}     
+	if( (units = (char*)Parameter_getUnits( param )) != NULL ) {
+	  if( ( unitDef = unitManager->LookupUnitDefinition( unitManager, units ) ) == NULL ) {
+            return ErrorReport( FAILING, "_PutParametersInGlobalSymtab",  "unit def %s is not declared", units );
+	  }             
+	  if( IS_FAILED( ( ret = SetUnitsInSymbol( paramS, unitDef  ) ) ) ) {
+            END_FUNCTION("_PutParametersInGlobalSymtab", ret );
+            return ret;
+	  }
+	}
       }
     }
     END_FUNCTION("_PutParametersInGlobalSymtab", SUCCESS );

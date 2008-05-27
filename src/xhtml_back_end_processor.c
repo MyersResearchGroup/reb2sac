@@ -182,6 +182,7 @@ static RET_VAL _HandleListOfReactions( BACK_END_PROCESSOR *backend, IR *ir, FILE
         return ErrorReport( FAILING, "_GenerateMainProcess", "could not create a clone of the reaction list" );
     }
 
+    fprintf( file, REB2SAC_XHTML_START_REACTION_FORMAT );
     
     list = ir->GetListOfSpeciesNodes( ir );
     ResetCurrentElement( list );
@@ -198,13 +199,18 @@ static RET_VAL _HandleListOfReactions( BACK_END_PROCESSOR *backend, IR *ir, FILE
             END_FUNCTION("_GenerateProcess", ret );        
             return ret;
         }
-        fprintf( file, NEW_LINE );
+	//        fprintf( file, NEW_LINE );
         
         if( IS_FAILED( ( ret = _CleanProcessInfo( backend, &process ) ) ) ) {
             END_FUNCTION("_GenerateMainProcess", ret );        
             return ret;
         }        
     }
+
+    fprintf( file, REB2SAC_XHTML_END_REACTION_FORMAT );
+    fprintf( file, NEW_LINE );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     
     DeleteLinkedList( &reactions );    
     END_FUNCTION("_HandleListOfReactions", SUCCESS );
@@ -218,13 +224,17 @@ static RET_VAL _HandleReaction( BACK_END_PROCESSOR *backend, REACTION *reaction,
     
     START_FUNCTION("_HandleReaction");
 
-    fprintf( file, REB2SAC_XHTML_START_REACTION_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
+    fprintf( file, REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+	     IsReactionReversibleInReactionNode( reaction ) ? "True" : "False",
+	     IsReactionFastInReactionNode( reaction ) ? "True" : "False");
     
     list = GetReactantEdges( (IR_NODE*)reaction );
     if( IS_FAILED( ( ret = PrintListOfReactantsInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_HandleReaction", ret );
         return ret;
     }    
+
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
     
     list = GetProductEdges( (IR_NODE*)reaction );
     if( IS_FAILED( ( ret = PrintListOfProductsInXHTML( list, file ) ) ) ) {
@@ -232,11 +242,15 @@ static RET_VAL _HandleReaction( BACK_END_PROCESSOR *backend, REACTION *reaction,
         return ret;
     }    
 
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
+
     list = GetModifierEdges( (IR_NODE*)reaction );
     if( IS_FAILED( ( ret = PrintListOfModifiersInXHTML( list, file ) ) ) ) {
         END_FUNCTION("_HandleReaction", ret );
         return ret;
     }    
+
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
         
     kineticLaw = GetKineticLawInReactionNode( reaction );
     if( IS_FAILED( ( ret = PrintKineticLawInXHTML( kineticLaw, file ) ) ) ) {
@@ -251,9 +265,8 @@ static RET_VAL _HandleReaction( BACK_END_PROCESSOR *backend, REACTION *reaction,
     }        
 */
     
-    fprintf( file, REB2SAC_XHTML_END_REACTION_FORMAT );
+    fprintf( file, REB2SAC_XHTML_END_REACTION_ENTRY_FORMAT );
     fprintf( file, NEW_LINE );
-    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     
     END_FUNCTION("_HandleReaction", SUCCESS );
     return ret;

@@ -99,6 +99,16 @@ BOOL IsReactionReversibleInReactionNode( REACTION *reaction ) {
     return reaction->isReversible;
 }
 
+BOOL IsReactionFastInReactionNode( REACTION *reaction ) {
+    START_FUNCTION("IsReactionFastInReactionNode");
+    if( reaction == NULL ) {
+        END_FUNCTION("IsReactionFastInReactionNode", FAILING );
+        return FALSE;
+    }
+    END_FUNCTION("IsReactionFastInReactionNode", SUCCESS );
+    return reaction->fast;
+}
+
 
 KINETIC_LAW *GetKineticLawInReactionNode( REACTION *reaction ) {
     START_FUNCTION("GetKineticLawInReactionNode");
@@ -133,6 +143,18 @@ RET_VAL SetReactionReversibleInReactionNode( REACTION *reaction, BOOL isReversib
     }
     reaction->isReversible = isReversible;
     END_FUNCTION("SetReactionReversibleInReactionNode", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetReactionFastInReactionNode( REACTION *reaction, BOOL fast ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetReactionFastInReactionNode");
+    if( reaction == NULL ) {
+        return ErrorReport( FAILING, "SetReactionFastInReactionNode", "input reaction node is NULL" );
+    }
+    reaction->fast = fast;
+    END_FUNCTION("SetReactionFastInReactionNode", SUCCESS );
     return ret;
 }
 
@@ -336,6 +358,7 @@ static IR_NODE* _Clone( IR_NODE *reaction ) {
     }
     
     clone->isReversible = ((REACTION*)reaction)->isReversible;
+    clone->fast = ((REACTION*)reaction)->fast;
     if( ( clone->kineticLaw = CloneKineticLaw( ((REACTION*)reaction)->kineticLaw ) ) == NULL ) {
         END_FUNCTION("_Clone", FAILING );
         return NULL;

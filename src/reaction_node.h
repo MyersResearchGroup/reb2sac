@@ -42,6 +42,7 @@ typedef struct {
     RET_VAL (*ReleaseResource)( IR_NODE *node );
     
     BOOL isReversible;    
+    BOOL fast;
     KINETIC_LAW *kineticLaw;
     double rate;
     double rateUpdatedTime;
@@ -57,6 +58,7 @@ STRING *GetReactionNodeName( REACTION *reaction );
 RET_VAL SetReactionNodeName( REACTION *reaction, STRING *name );
 
 BOOL IsReactionReversibleInReactionNode( REACTION *reaction );
+BOOL IsReactionFastInReactionNode( REACTION *reaction );
 KINETIC_LAW *GetKineticLawInReactionNode( REACTION *reaction );
 
 RET_VAL SetWaitingTimeInReactionNode( REACTION *reaction, KINETIC_LAW *waitingTime );
@@ -64,6 +66,7 @@ KINETIC_LAW *GetWaitingTimeInReactionNode( REACTION *reaction );
 
 
 RET_VAL SetReactionReversibleInReactionNode( REACTION *reaction, BOOL isReversible );
+RET_VAL SetReactionFastInReactionNode( REACTION *reaction, BOOL fast );
 RET_VAL SetKineticLawInReactionNode( REACTION *reaction, KINETIC_LAW *kineticLaw );
 
 #if 0

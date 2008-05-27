@@ -138,31 +138,28 @@
 #define REB2SAC_XHTML_MATHML_R_CEILING_FORMAT "<mo>&rceil;</mo>"
 
 #define REB2SAC_XHTML_START_CONSTANTS_FORMAT \
-"<table border=\"2\"><tr><th>Parameter ID</th><th>Value</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Parameter ID</th><th>Initial Value</th><th>Units</th><th>Constant</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_CONSTANTS_FORMAT \
 "</table>" NEW_LINE
 
-#define REB2SAC_XHTML_CONSTANT_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%g</td></tr>" NEW_LINE
+#define REB2SAC_XHTML_START_CONSTANT_ENTRY_FORMAT \
+"<tr><td>%s</td><td><center>"
+
+#define REB2SAC_XHTML_END_CONSTANT_ENTRY_FORMAT \
+"</center></td><td>%s</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_FUNCTION_FORMAT \
-"<table border=\"2\"><tr><th>Function ID</th><th>Arguments</th><th>Function Body</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Functions</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_FUNCTION_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_FUNCTION_ENTRY_FORMAT \
-"<tr><td>%s</td>"
+"<tr><td>"
 
 #define REB2SAC_XHTML_END_FUNCTION_ENTRY_FORMAT \
 "</td></tr>" NEW_LINE
-
-#define REB2SAC_XHTML_START_FUNCTION_ARGUMENT_FORMAT \
-"<td>"
-
-#define REB2SAC_XHTML_END_FUNCTION_ARGUMENT_FORMAT \
-"</td><td>"
 
 #define REB2SAC_XHTML_START_UNITDEF_FORMAT \
 "<table border=\"2\"><tr><th>Unit ID</th><th>Definition</th></tr>" NEW_LINE
@@ -177,19 +174,22 @@
 "</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_RULE_FORMAT \
-"<table border=\"2\"><tr><th>Rule LHS</th><th>Rule RHS</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Rules</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_RULE_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_ALGRULE_ENTRY_FORMAT \
-"<tr><td>0</td><td>"
+"<tr><td>0 = "
 
 #define REB2SAC_XHTML_START_ASSIGNRULE_ENTRY_FORMAT \
-"<tr><td>%s</td><td>"
+"<tr><td>%s = "
 
 #define REB2SAC_XHTML_START_RATERULE_ENTRY_FORMAT \
-"<tr><td>d(%s)/dt</td><td>"
+"<tr><td>d(%s)/dt = "
+
+#define REB2SAC_XHTML_START_RULE_ENTRY_FORMAT \
+"<tr><td>"
 
 #define REB2SAC_XHTML_END_RULE_ENTRY_FORMAT \
 "</td></tr>" NEW_LINE
@@ -209,45 +209,42 @@
 "</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_FORMAT \
-"<table border=\"2\"><tr><th>Compartment ID</th><th>Initial Size</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Compartment ID</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Outside</th><th>Constant</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_COMPARTMENT_FORMAT \
 "</table>" NEW_LINE
 
-#define REB2SAC_XHTML_COMPARTMENT_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%g</td></tr>" NEW_LINE
+#define REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT \
+"<tr><td>%s</td><td><center>%d</center></td><td><center>"
+
+#define REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT \
+"</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_SPECIES_FORMAT \
-"<table border=\"2\"><tr><th>Species ID</th><th>Compartment</th><th>Initial Value</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Species ID</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_SPECIES_FORMAT \
 "</table>" NEW_LINE
 
-#define REB2SAC_XHTML_SPECIES_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%s</td><td>%g</td></tr>" NEW_LINE
+#define REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT \
+"<tr><td>%s</td><td>%s</td><td><center>"
+
+#define REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT \
+"</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_EVENT_FORMAT \
-"<table border=\"2\"><tr><th>Event ID</th><td>%s</td></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Event ID</th><th>Trigger</th><th>Delay</th><th>Assignments</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_EVENT_FORMAT \
 "</table>" NEW_LINE
 
-#define REB2SAC_XHTML_START_TRIGGER_FORMAT \
-"<tr><th>Trigger</th><td>"
+#define REB2SAC_XHTML_START_EVENT_ENTRY_FORMAT \
+"<tr><td>%s</td><td>"
 
-#define REB2SAC_XHTML_END_TRIGGER_FORMAT \
-"</td></tr>" NEW_LINE
+#define REB2SAC_XHTML_SEPARATOR_FORMAT \
+"</td><td>"
 
-#define REB2SAC_XHTML_START_DELAY_FORMAT \
-"<tr><th>Delay</th><td>" NEW_LINE
-
-#define REB2SAC_XHTML_END_DELAY_FORMAT \
-"</td></tr>" NEW_LINE
-
-#define REB2SAC_XHTML_START_ASSIGNMENTS_FORMAT \
-"<tr><th>Assignments</th><td>"
-
-#define REB2SAC_XHTML_END_ASSIGNMENTS_FORMAT \
+#define REB2SAC_XHTML_END_EVENT_ENTRY_FORMAT \
 "</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_ASSIGN_FORMAT \
@@ -257,36 +254,19 @@
 "" 
 
 #define REB2SAC_XHTML_START_REACTION_FORMAT \
-"<table border=\"2\"><tr><th>Reaction Name</th><td>%s</td></tr>" NEW_LINE
- 
+"<table border=\"2\"><tr><th>Reaction ID</th><th>Rev</th><th>Fast</th><th>Reactants</th><th>Products</th><th>Modifiers</th><th>Kinetic Law</th></tr>" NEW_LINE
+
 #define REB2SAC_XHTML_END_REACTION_FORMAT \
 "</table>" NEW_LINE
 
-#define REB2SAC_XHTML_START_REACTANTS_FORMAT \
-"<tr><th>Reactants</th><td>"
+#define REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT \
+"<tr><td>%s</td><td>%s</td><td>%s</td><td>"
 
-#define REB2SAC_XHTML_END_REACTANTS_FORMAT \
+#define REB2SAC_XHTML_SEPARATOR_FORMAT \
+"</td><td>"
+
+#define REB2SAC_XHTML_END_REACTION_ENTRY_FORMAT \
 "</td></tr>" NEW_LINE
-
-#define REB2SAC_XHTML_START_MODIFIERS_FORMAT \
-"<tr><th>Modifiers</th><td>"
-
-#define REB2SAC_XHTML_END_MODIFIERS_FORMAT \
-"</td></tr>" NEW_LINE
-
-#define REB2SAC_XHTML_START_PRODUCTS_FORMAT \
-"<tr><th>Products</th><td>"
-
-#define REB2SAC_XHTML_END_PRODUCTS_FORMAT \
-"</td></tr>" NEW_LINE
-
-
-#define REB2SAC_XHTML_START_KINETIC_LAW_FORMAT \
-"<tr><th>Kinetic Law</th><td>"
-
-#define REB2SAC_XHTML_END_KINETIC_LAW_FORMAT \
-"</td></tr>" NEW_LINE
-
 
 #define REB2SAC_XHTML_SPECIES_FORMAT "%s"
 #define REB2SAC_XHTML_MORE_SPECIES_FORMAT ", %s"
