@@ -58,7 +58,9 @@ typedef struct {
     double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
     UINT32 seed;
+    UINT32 runs; 
     char *outDir; 
+    int startIndex;
 } EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD;
 
 

@@ -897,10 +897,11 @@ static RET_VAL _Print( EMC_SIMULATION_RECORD *rec ) {
     SIMULATION_PRINTER *printer = rec->printer;
 
     while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
-        if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
-            return ret;
-        }
-        nextPrintTime += printInterval; 
+      if (nextPrintTime > 0) printf("Time = %g\n",nextPrintTime);
+      if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
+	return ret;
+      }
+      nextPrintTime += printInterval; 
     }     
     rec->nextPrintTime = nextPrintTime;
     return ret;            

@@ -52,8 +52,10 @@ typedef struct {
     double nextPrintTime;    
     double timeLimit;
     KINETIC_LAW_EVALUATER *evaluator;
-    UINT seed;
+    UINT32 seed;
+    UINT32 runs; 
     char *outDir; 
+    int startIndex;
 } EULER_SIMULATION_RECORD;
 
 
