@@ -195,7 +195,7 @@
 "</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_CONSTRAINT_FORMAT \
-"<table border=\"2\"><tr><th>Constraint ID</th><th>Constraint</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Constraint ID</th><th>Constraint</th><th>Message</th></tr>" NEW_LINE
 /*"<table border=\"2\"><tr><th>Constraint ID</th><th>Message</th><th>Constraint</th></tr>" NEW_LINE*/
  
 #define REB2SAC_XHTML_END_CONSTRAINT_FORMAT \
@@ -206,7 +206,7 @@
 /*"<tr><td>%s</td><td>%s</td><td>"*/
 
 #define REB2SAC_XHTML_END_CONSTRAINT_ENTRY_FORMAT \
-"</td></tr>" NEW_LINE
+"</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_FORMAT \
 "<table border=\"2\"><tr><th>Compartment ID</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Outside</th><th>Constant</th></tr>" NEW_LINE

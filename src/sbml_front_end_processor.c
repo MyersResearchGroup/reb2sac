@@ -781,10 +781,14 @@ static RET_VAL _HandleConstraint( FRONT_END_PROCESSOR *frontend, Model_t *model,
       END_FUNCTION("_HandleConstraintDefinition", ret );
       return ret;
     }
-    //message = (char *)Constraint_getMessage( source );
     message = NULL;
-    // ADD message here
-
+    if (Constraint_isSetMessage( source )) {
+      message = (char*)XMLNode_convertXMLNodeToString( (const XMLNode_t*)Constraint_getMessage( source ));
+      message = strstr(message,"xhtml") + 7;
+      *(strstr(message,"</p>")) = '\0';
+      AddMessageInConstraint( constraintDef, message);
+    }
+	
     END_FUNCTION("_HandleConstraint", SUCCESS );
     return ret;
 }

@@ -644,16 +644,18 @@ static RET_VAL _PrintConstraintForXHTML( CONSTRAINT *constraint, FILE *file ) {
 
     fprintf( file, REB2SAC_XHTML_START_CONSTRAINT_ENTRY_FORMAT,
 	     GetCharArrayOfString( GetConstraintId( constraint ) ) );
-    /*    fprintf( file, REB2SAC_XHTML_START_CONSTRAINT_ENTRY_FORMAT,
-	     GetCharArrayOfString( GetConstraintId( constraint ) ),
-	     GetCharArrayOfString( GetConstraintMessage( constraint ) ) ); */
 
     kineticLaw = GetMathInConstraint( constraint );
     if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, NULL, file ) ) ) ) {
         END_FUNCTION("_PrintRuleForXHTML", ret );
         return ret;
     }    
-    fprintf( file, REB2SAC_XHTML_END_CONSTRAINT_ENTRY_FORMAT );
+    if (GetConstraintMessage( constraint )==NULL) {
+      fprintf( file, REB2SAC_XHTML_END_CONSTRAINT_ENTRY_FORMAT, "" ); 
+    } else {
+      fprintf( file, REB2SAC_XHTML_END_CONSTRAINT_ENTRY_FORMAT, 
+	       GetCharArrayOfString( GetConstraintMessage( constraint ) ) );
+    }
 
     fprintf( file, NEW_LINE );
             
