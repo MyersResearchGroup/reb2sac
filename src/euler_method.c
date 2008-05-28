@@ -60,24 +60,28 @@ DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir 
     if( IS_FAILED( ( ret = _InitializeRecord( &rec, backend, ir ) ) ) )  {
         return ErrorReport( ret, "DoEulerSimulation", "initialization of the record failed" );
     }
-    SeedRandomNumberGenerators( rec.seed );
-    rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
-    do {
+    runs = rec.runs;    
+    for( i = 1; i <= runs; i++ ) {
+      timeout = 0;
       SeedRandomNumberGenerators( rec.seed );
-      if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
-        return ErrorReport( ret, "DoEulerSimulation", "initialization of the %i-th simulation failed", i );
+      rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
+      do {
+	SeedRandomNumberGenerators( rec.seed );
+	if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
+	  return ErrorReport( ret, "DoEulerSimulation", "initialization of the %i-th simulation failed", i );
+	}
+	timeout++;
+      } while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
+      if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
+	return ErrorReport( ret, "DoEulerSimulation", "Cycle detected in initial and rule assignments" );
       }
-      timeout++;
-    } while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
-    if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
-      return ErrorReport( ret, "DoEulerSimulation", "Cycle detected in initial and rule assignments" );
-    }
-    if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
+      if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
         return ErrorReport( ret, "DoEulerSimulation", "%i-th simulation failed at time %f", i, rec.time );
-    }
-    if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
+      }
+      if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
         return ErrorReport( ret, "DoEulerSimulation", "cleaning of the %i-th simulation failed", i );
-    }         
+      }    
+    }     
     
     END_FUNCTION("DoEulerSimulation", SUCCESS );
     return ret;            
@@ -309,6 +313,24 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     }
 #endif        
 
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
+        rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
+    }
+    else {
+      if( IS_FAILED( ( ret = StrToUINT32( (UINT32*)&(rec->startIndex), valueString ) ) ) ) {
+	  rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
+        }
+    }    
+    
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_RUNS ) ) == NULL ) {
+        rec->runs = DEFAULT_MONTE_CARLO_SIMULATION_RUNS_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToUINT32( &(rec->runs), valueString ) ) ) ) {
+            rec->runs = DEFAULT_MONTE_CARLO_SIMULATION_RUNS_VALUE;
+        }
+    }    
+
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_STEP ) ) == NULL ) {
         rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
     }
@@ -427,7 +449,7 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
     KINETIC_LAW *law = NULL;
     BOOL change = FALSE;
 
-    sprintf( filenameStem, "%s%ceuler-run", rec->outDir, FILE_SEPARATOR, runNum );        
+    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );        
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
         return ret;            
     }
@@ -556,6 +578,7 @@ static RET_VAL _RunSimulation( EULER_SIMULATION_RECORD *rec ) {
 	  rec->time = nextEventTime;
 	}
     }
+    if (rec->time > 0.0) printf("Time = %.2f\n",rec->time);
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
         return ret;
     }
@@ -653,7 +676,7 @@ static RET_VAL _Print( EULER_SIMULATION_RECORD *rec ) {
     SIMULATION_PRINTER *printer = rec->printer;
 
     while( nextPrintTime <= time ) {
-      if (time > 0.0) printf("Time = %.2f\n",time);
+      if (nextPrintTime > 0.0) printf("Time = %.2f\n",nextPrintTime);
       fflush(stdout);
         if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
             return ret;
