@@ -60,6 +60,7 @@ struct  _SPECIES {
     UNIT_DEFINITION *spatialSizeUnits;
     int charge;
     BYTE flags;    
+    STRING *type;
     struct KINETIC_LAW *initialAssignment;
 };
 
@@ -74,6 +75,7 @@ LINKED_LIST *GetReactionsAsReactantInSpeciesNode( SPECIES *species );
 LINKED_LIST *GetReactionsAsModifierInSpeciesNode( SPECIES *species );
 LINKED_LIST *GetReactionsAsProductInSpeciesNode( SPECIES *species );
 
+STRING *GetTypeInSpeciesNode( SPECIES *species );
 COMPARTMENT *GetCompartmentInSpeciesNode( SPECIES *species );
 UNIT_DEFINITION *GetSubstanceUnitsInSpeciesNode( SPECIES *species );
 UNIT_DEFINITION *GetSpatialSizeUnitsInSpeciesNode( SPECIES *species );
@@ -90,6 +92,7 @@ BOOL HasOnlySubstanceUnitsInSpeciesNode( SPECIES *species );
 BOOL HasBoundaryConditionInSpeciesNode( SPECIES *species );
 BOOL IsChargeSetInSpeciesNode( SPECIES *species );
 
+RET_VAL SetTypeInSpeciesNode( SPECIES *species, char *type );
 RET_VAL SetCompartmentInSpeciesNode( SPECIES *species, COMPARTMENT *compartment );
 RET_VAL SetSubstanceUnitsInSpeciesNode( SPECIES *species, UNIT_DEFINITION *substanceUnits );
 RET_VAL SetSpatialSizeUnitsInSpeciesNode( SPECIES *species, UNIT_DEFINITION *spatialSizeUnits );

@@ -833,6 +833,7 @@ static RET_VAL _PrintEventListInXHTML( LINKED_LIST *list, FILE *file ) {
 static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file ) {
     RET_VAL ret = SUCCESS;
     char *outside;
+    char *type;
     char empty[5];
     char *units;
     KINETIC_LAW *law;
@@ -845,13 +846,18 @@ static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file )
     } else {
       outside = empty;
     }
+    if (GetTypeInCompartment ( compartment ) != NULL) {
+      type = GetCharArrayOfString( GetTypeInCompartment( compartment ) );
+    } else {
+      type = empty;
+    }
     if (GetUnitInCompartment ( compartment ) != NULL) {
       units = GetCharArrayOfString( GetUnitDefinitionID( GetUnitInCompartment( compartment ) ) );
     } else {
       units = empty;
     }
     fprintf( file, REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT,
-	     GetCharArrayOfString( GetCompartmentID( compartment ) ),
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ), type,
 	     GetSpatialDimensionsInCompartment( compartment ) );
     if (GetInitialAssignmentInCompartment( compartment ) != NULL) {
       law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment );
@@ -906,7 +912,9 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
     double initialQuantity = 0.0;
     COMPARTMENT *compartment = NULL;
     char *units;
+    char *type;
     char empty[5];
+    char none[5];
     KINETIC_LAW *law;
     
     START_FUNCTION("_PrintSpeciesForXHTML");
@@ -918,14 +926,20 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
     } else {
       initialQuantity = GetInitialConcentrationInSpeciesNode( species );
     }
-    strcpy(empty,"none");
+    strcpy(none,"none");
     if (GetSubstanceUnitsInSpeciesNode ( species ) != NULL) {
       units = GetCharArrayOfString( GetUnitDefinitionID( GetSubstanceUnitsInSpeciesNode( species ) ) );
     } else {
-      units = empty;
+      units = none;
+    }
+    strcpy(empty,"");
+    if (GetTypeInSpeciesNode ( species ) != NULL) {
+      type = GetCharArrayOfString( GetTypeInSpeciesNode( species ) );
+    } else {
+      type = empty;
     }
     fprintf( file, REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT,
-	     GetCharArrayOfString( GetSpeciesNodeID( species ) ),
+	     GetCharArrayOfString( GetSpeciesNodeID( species ) ), type,
 	     GetCharArrayOfString( GetCompartmentID( compartment ) ) );
     if (GetInitialAssignmentInSpeciesNode( species ) != NULL) {
       law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species );

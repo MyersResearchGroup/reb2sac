@@ -932,6 +932,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
     UNIT_DEFINITION *unitDef = NULL;
     UNIT_MANAGER *unitManager = NULL;
     char *outside = NULL;
+    char *type = NULL;
     BOOL constant = TRUE;                
     COMPARTMENT *compartment = NULL;
     COMPARTMENT_MANAGER *manager = NULL;
@@ -981,6 +982,13 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
         
     if( ( outside = (char*)Compartment_getOutside( source ) ) != NULL ) {
         if( IS_FAILED( ( ret = SetOutsideInCompartment( compartment, outside ) ) ) ) {
+            END_FUNCTION("_HandleCompartment", ret );
+            return ret;
+        }
+    }
+
+    if( ( type = (char*)Compartment_getCompartmentType( source ) ) != NULL ) {
+        if( IS_FAILED( ( ret = SetTypeInCompartment( compartment, type ) ) ) ) {
             END_FUNCTION("_HandleCompartment", ret );
             return ret;
         }
@@ -1040,6 +1048,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     ASTNode_t *node = NULL;
     KINETIC_LAW *law = NULL;
     SBML_SYMTAB_MANAGER *manager = NULL;
+    char *type = NULL;
 
     START_FUNCTION("_CreateSpeciesNode");
     
@@ -1137,6 +1146,15 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
         charge = Species_getCharge( species );                
         TRACE_1( "\tsetting charge %i", charge );
         if( IS_FAILED( ( ret = SetChargeInSpeciesNode(speciesNode, charge ) ) ) ) {
+            END_FUNCTION("_CreateSpeciesNode", ret );
+            return ret;   
+        }
+    }
+
+    if( Species_getSpeciesType( species ) ) {
+        type = (char *)Species_getSpeciesType( species );                
+        TRACE_1( "\tsetting type %s", type );
+        if( IS_FAILED( ( ret = SetTypeInSpeciesNode(speciesNode, type ) ) ) ) {
             END_FUNCTION("_CreateSpeciesNode", ret );
             return ret;   
         }

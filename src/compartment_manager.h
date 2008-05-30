@@ -41,6 +41,7 @@ struct _COMPARTMENT {
     double currentSize;
     UNIT_DEFINITION *unit;
     STRING *outside;
+    STRING *type;
     COMPARTMENT *outsideCompartment;
     BOOL constant; 
     struct KINETIC_LAW *initialAssignment;
@@ -80,6 +81,9 @@ RET_VAL SetUnitInCompartment( COMPARTMENT *compartment, UNIT_DEFINITION *unit );
 
 STRING *GetOutsideInCompartment( COMPARTMENT *compartment );
 RET_VAL SetOutsideInCompartment( COMPARTMENT *compartment, char *id );
+
+STRING *GetTypeInCompartment( COMPARTMENT *compartment );
+RET_VAL SetTypeInCompartment( COMPARTMENT *compartment, char *type );
 
 struct KINETIC_LAW *GetInitialAssignmentInCompartment( COMPARTMENT *compartment );
 RET_VAL SetInitialAssignmentInCompartment( COMPARTMENT *compartment, struct KINETIC_LAW *law );

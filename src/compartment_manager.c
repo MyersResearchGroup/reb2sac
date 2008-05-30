@@ -268,6 +268,44 @@ RET_VAL SetOutsideInCompartment( COMPARTMENT *compartment, char *id ) {
 }
 
 
+STRING *GetTypeInCompartment( COMPARTMENT *compartment ) {
+    START_FUNCTION("GetTypeInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("GetTypeInCompartment", FAILING );
+        return NULL;
+    }
+    
+    END_FUNCTION("GetTypeInCompartment", SUCCESS );
+    return compartment->type;
+}
+
+
+RET_VAL SetTypeInCompartment( COMPARTMENT *compartment, char *type ) {
+    STRING *typeStr = NULL;
+    
+    START_FUNCTION("SetTypeInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("SetOTypeInCompartment", FAILING );
+        return FAILING;
+    }
+    
+    if( ( typeStr = CreateString( type ) ) == NULL ) {
+        END_FUNCTION("SetTypeInCompartment", FAILING );
+        return FAILING;
+    }
+    
+    if( compartment->type != NULL ) {
+        FreeString( &(compartment->type) );
+    }
+        
+    compartment->type = typeStr;
+    END_FUNCTION("SetOutsideInCompartment", SUCCESS );
+    return SUCCESS;
+}
+
+
 
 COMPARTMENT *GetOutsideCompartmentInCompartment( COMPARTMENT *compartment ) {
     START_FUNCTION("GetOutsideCompartmentInCompartment");
@@ -324,6 +362,8 @@ static COMPARTMENT *_CreateCompartment( COMPARTMENT_MANAGER *manager, char *id )
         return NULL;
     }
     compartment->initialAssignment = NULL;
+    compartment->outside = NULL;
+    compartment->type = NULL;
     if( IS_FAILED( PutInHashTable( GetCharArrayOfString( compartment->id ), GetStringLength( compartment->id ), (CADDR_T)compartment, manager->table ) ) ) {
         FREE( compartment );
         END_FUNCTION("_CreateCompartment", FAILING );

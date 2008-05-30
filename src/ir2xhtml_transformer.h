@@ -209,25 +209,25 @@
 "</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_FORMAT \
-"<table border=\"2\"><tr><th>Compartment ID</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Outside</th><th>Constant</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Compartment ID</th><th>Type</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Outside</th><th>Constant</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_COMPARTMENT_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT \
-"<tr><td>%s</td><td><center>%d</center></td><td><center>"
+"<tr><td>%s</td><td>%s</td><td><center>%d</center></td><td><center>"
 
 #define REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT \
 "</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_SPECIES_FORMAT \
-"<table border=\"2\"><tr><th>Species ID</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Species ID</th><th>Type</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_SPECIES_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%s</td><td><center>"
+"<tr><td>%s</td><td>%s</td><td>%s</td><td><center>"
 
 #define REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT \
 "</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
