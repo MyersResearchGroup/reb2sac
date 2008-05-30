@@ -123,6 +123,16 @@ LINKED_LIST *GetReactionsAsProductInSpeciesNode( SPECIES *species ) {
 
 
 
+STRING *GetTypeInSpeciesNode( SPECIES *species ) {
+    START_FUNCTION("GetTypeInSpeciesNode");
+    if( species == NULL ) {
+        END_FUNCTION("GetTypeInSpeciesNode", FAILING );
+        return NULL;
+    }
+    END_FUNCTION("GetTypeInSpeciesNode", SUCCESS );
+    return species->type;
+}
+
 COMPARTMENT *GetCompartmentInSpeciesNode( SPECIES *species ) {
     START_FUNCTION("GetCompartmentInSpeciesNode");
     if( species == NULL ) {
@@ -269,6 +279,29 @@ double GetConcentrationInSpeciesNode( SPECIES *species ) {
     return species->quantity.concentration;
 }
 
+
+RET_VAL SetTypeInSpeciesNode( SPECIES *species, char *type ) {
+    RET_VAL ret = SUCCESS;
+    STRING *typeStr;
+
+    START_FUNCTION("SetTypeInSpeciesNode");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetTypeInSpeciesNode", "input species node is NULL" );
+    }
+    
+    if( ( typeStr = CreateString( type ) ) == NULL ) {
+        END_FUNCTION("SetTypeInSpeciesNode", FAILING );
+        return FAILING;
+    }
+    
+    if( species->type != NULL ) {
+        FreeString( &(species->type) );
+    }
+
+    species->type = typeStr;
+    END_FUNCTION("SetTypeInSpeciesNode", SUCCESS );
+    return ret;
+}
 
 RET_VAL SetCompartmentInSpeciesNode( SPECIES *species, COMPARTMENT *compartment ) {
     RET_VAL ret = SUCCESS;
