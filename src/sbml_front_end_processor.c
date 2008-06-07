@@ -1622,7 +1622,7 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    FREE( children );
 	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	    return law;
-	  } else if (strcmp(funcId,"exprand")==0) {
+	  } else if (strcmp(funcId,"exponential")==0) {
 	    if( num != 1 ) {
 	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	      return NULL;
