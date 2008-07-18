@@ -549,12 +549,16 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULA
 	concentrations[rec->compartmentsSize + rec->speciesSize + i] = param;
     }
     for (i = 0; i < rec->eventsSize; i++) {
-      if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator, 
+      SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
+      /* 
+      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
       } else {
 	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-      }
+      } 
+      */
     }
 
     if (change)
@@ -724,14 +728,17 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
       eventFired = FALSE;
       for (i = 0; i < rec->eventsSize; i++) {
 	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
-	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
-	  firstEventTime = nextEventTime;
-	}
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
-	if ((nextEventTime != -1.0) && (time >= nextEventTime)) {
-	  fireEvent( rec->eventArray[i], rec );
-	  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
-	  eventFired = TRUE;
+	if (nextEventTime != -1.0) {
+	  if  (time >= nextEventTime) {
+	    fireEvent( rec->eventArray[i], rec );
+	    SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	    eventFired = TRUE;
+	  } else {
+	    if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	      firstEventTime = nextEventTime;
+	    }
+	  }
 	}
 	if (!triggerEnabled) {
 	  if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator, 
