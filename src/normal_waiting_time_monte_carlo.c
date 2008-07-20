@@ -44,6 +44,8 @@ static RET_VAL _Print( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateNodeValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
+static RET_VAL _UpdateReactionRateUpdateTimeForSpecies( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, SPECIES* species );
+static RET_VAL _UpdateAllReactionRateUpdateTimes( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, double time );
 
 static int _ComparePropensity( REACTION *a, REACTION *b );
 static BOOL _IsTerminationConditionMet( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
@@ -166,11 +168,10 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
             
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
-    if (rec->reactionsSize==0) {
-        return ErrorReport( FAILING, "_InitializeRecord", "no reactions in the model" );
-    }
-    if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
+    if (rec->reactionsSize > 0) {
+      if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
+      }
     }
     i = 0;
     ResetCurrentElement( list );
@@ -236,8 +237,10 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
-    if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
+    if (rec->speciesSize > 0) {
+      if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
+      }
     }
     i = 0;
     ResetCurrentElement( list );
@@ -563,7 +566,10 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
       } 
       */
     }
-
+    if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, 0 ) ) ) ) {
+      return ret;                
+    }
+    
     if (change)
       return CHANGE;
     return ret;            
@@ -733,11 +739,13 @@ static RET_VAL _CalculateTotalPropensities( NORMAL_WAITING_TIME_MONTE_CARLO_RECO
     UINT32 size = rec->reactionsSize;
     double total = 0.0;
     REACTION **reactionArray = rec->reactionArray;    
-    
-    total = GetReactionRate( reactionArray[0] );
-    for( i = 1; i < size; i++ ) {
+
+    if (size > 0) {
+      total = GetReactionRate( reactionArray[0] );
+      for( i = 1; i < size; i++ ) {
         total += GetReactionRate( reactionArray[i] );     
-    }         
+      }         
+    }
     rec->totalPropensities = total;        
     TRACE_1( "the total propensity is %f", total );
     return ret;            
@@ -757,7 +765,7 @@ static RET_VAL _CalculatePropensities( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *r
         reaction = reactionArray[i];
         updatedTime = GetReactionRateUpdatedTime( reaction );
         if( IS_REAL_EQUAL( updatedTime, time ) ) {
-            if( IS_FAILED( ( ret = _CalculatePropensity( rec, reactionArray[i] ) ) ) ) {
+            if( IS_FAILED( ( ret = _CalculatePropensity( rec, reaction ) ) ) ) {
                 return ret;        
             }
         }
@@ -1022,14 +1030,17 @@ static void fireEvent( EVENT *event, NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
       amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
       //printf("conc = %g\n",amount);
       SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+      _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
       amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
       //printf("conc = %g\n",amount);
       SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+      _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     } else {
       amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
       //printf("conc = %g\n",amount);
       SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+      _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     }
   }
 }
@@ -1049,10 +1060,13 @@ static void ExecuteAssignments( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
       j = GetRuleIndex( rec->ruleArray[i] );
       if ( varType == SPECIES_RULE ) {
 	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	_UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
       } else if ( varType == COMPARTMENT_RULE ) {
 	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	_UpdateAllReactionRateUpdateTimes( rec, rec->time );
       } else {
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	_UpdateAllReactionRateUpdateTimes( rec, rec->time );
       }
     }
   }
@@ -1102,10 +1116,13 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
 	j = GetRuleIndex( rec->ruleArray[i] );
 	if ( varType == SPECIES_RULE ) {
 	  SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	  _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
 	} else if ( varType == COMPARTMENT_RULE ) {
 	  SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	  _UpdateAllReactionRateUpdateTimes( rec, rec->time );
 	} else {
 	  SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	  _UpdateAllReactionRateUpdateTimes( rec, rec->time );
 	}
       }
     }
@@ -1155,16 +1172,60 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
     return ret;            
 }
 
-static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
+static RET_VAL _UpdateAllReactionRateUpdateTimes( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, double time ) {
+  RET_VAL ret = SUCCESS;
+  UINT i;
+  
+  for (i = 0; i < rec->reactionsSize; i++) {
+    if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( rec->reactionArray[i], time ) ) ) ) {
+      return ret;                
+    }
+  }
+  return ret;
+}
+
+static RET_VAL _UpdateReactionRateUpdateTimeForSpecies( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, SPECIES* species ) {
     RET_VAL ret = SUCCESS;
     double time = rec->time;
-    double rate = 0.0;
-    SPECIES *species = NULL;
-    IR_EDGE *edge = NULL;
     IR_EDGE *updateEdge = NULL;
     REACTION *reaction = NULL;
-    LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
+        
+    updateEdges = GetReactantEdges( (IR_NODE*)species );
+    ResetCurrentElement( updateEdges );
+    while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
+      reaction = GetReactionInIREdge( updateEdge );
+      if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
+	return ret;                
+      }
+    }                
+    
+    updateEdges = GetModifierEdges( (IR_NODE*)species );
+    ResetCurrentElement( updateEdges );
+    while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
+      reaction = GetReactionInIREdge( updateEdge );
+      if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
+	return ret;                
+      }
+    }                
+    
+    updateEdges = GetProductEdges( (IR_NODE*)species );
+    ResetCurrentElement( updateEdges );
+    while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
+      reaction = GetReactionInIREdge( updateEdge );
+      if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
+	return ret;                
+      }
+    }                
+    return ret;
+}
+
+static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
+    RET_VAL ret = SUCCESS;
+    double rate = 0.0;
+    IR_EDGE *edge = NULL;
+    LINKED_LIST *edges = NULL;
+    SPECIES *species = NULL;
 
     if (rec->nextReaction == NULL) {
       return ret;
@@ -1173,66 +1234,18 @@ static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RE
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
-        
-        updateEdges = GetReactantEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetModifierEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetProductEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
+	if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTimeForSpecies( rec, species ) ) ) ) {
+	  return ret;                
+	}
     }    
         
     edges = GetProductEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
-        
-        updateEdges = GetReactantEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetModifierEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetProductEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
+	if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTimeForSpecies( rec, species ) ) ) ) {
+	  return ret;                
+	}
     }    
     return ret;            
 }
