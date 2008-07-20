@@ -42,6 +42,8 @@ static RET_VAL _Print( GILLESPIE_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateNodeValues( GILLESPIE_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec );
+static RET_VAL _UpdateReactionRateUpdateTimeForSpecies( GILLESPIE_MONTE_CARLO_RECORD *rec, SPECIES* species );
+static RET_VAL _UpdateAllReactionRateUpdateTimes( GILLESPIE_MONTE_CARLO_RECORD *rec, double time );
 
 static int _ComparePropensity( REACTION *a, REACTION *b );
 static BOOL _IsTerminationConditionMet( GILLESPIE_MONTE_CARLO_RECORD *rec );
@@ -569,7 +571,10 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
       } 
       */
     }
-
+    if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, 0 ) ) ) ) {
+      return ret;                
+    }
+    
     if (change)
       return CHANGE;
     return ret;            
@@ -768,7 +773,7 @@ static RET_VAL _CalculatePropensities( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
             if( IS_FAILED( ( ret = _CalculatePropensity( rec, reaction ) ) ) ) {
                 return ret;        
             }
-        }
+	}
     }
 #if 0    
     /* qsort is not good way to sort an array which is nearly sorted. */
@@ -825,6 +830,10 @@ static RET_VAL _CalculatePropensity( GILLESPIE_MONTE_CARLO_RECORD *rec, REACTION
             if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
                 return ret;         
             }
+#ifdef DEBUG
+            printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
+                GetReactionRate( reaction ) );
+#endif                   
             return SUCCESS;         
         }                
     }    
@@ -1028,14 +1037,17 @@ static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec ) {
       amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
       //printf("conc = %g\n",amount);
       SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+      _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
       amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
       //printf("conc = %g\n",amount);
       SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+      _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     } else {
       amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
       //printf("conc = %g\n",amount);
       SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+      _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     }
   }
 }
@@ -1055,10 +1067,13 @@ static void ExecuteAssignments( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
       j = GetRuleIndex( rec->ruleArray[i] );
       if ( varType == SPECIES_RULE ) {
 	SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	_UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
       } else if ( varType == COMPARTMENT_RULE ) {
 	SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	_UpdateAllReactionRateUpdateTimes( rec, rec->time );
       } else {
 	SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	_UpdateAllReactionRateUpdateTimes( rec, rec->time );
       }
     }
   }
@@ -1108,10 +1123,13 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
 	j = GetRuleIndex( rec->ruleArray[i] );
 	if ( varType == SPECIES_RULE ) {
 	  SetAmountInSpeciesNode( rec->speciesArray[j], amount );
+	  _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
 	} else if ( varType == COMPARTMENT_RULE ) {
 	  SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
+	  _UpdateAllReactionRateUpdateTimes( rec, rec->time );
 	} else {
 	  SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
+	  _UpdateAllReactionRateUpdateTimes( rec, rec->time );
 	}
       }
     }
@@ -1160,16 +1178,60 @@ static RET_VAL _UpdateSpeciesValues( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
     return ret;            
 }
 
-static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
+static RET_VAL _UpdateAllReactionRateUpdateTimes( GILLESPIE_MONTE_CARLO_RECORD *rec, double time ) {
+  RET_VAL ret = SUCCESS;
+  UINT i;
+  
+  for (i = 0; i < rec->reactionsSize; i++) {
+    if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( rec->reactionArray[i], time ) ) ) ) {
+      return ret;                
+    }
+  }
+  return ret;
+}
+
+static RET_VAL _UpdateReactionRateUpdateTimeForSpecies( GILLESPIE_MONTE_CARLO_RECORD *rec, SPECIES* species ) {
     RET_VAL ret = SUCCESS;
     double time = rec->time;
-    double rate = 0.0;
-    SPECIES *species = NULL;
-    IR_EDGE *edge = NULL;
     IR_EDGE *updateEdge = NULL;
     REACTION *reaction = NULL;
-    LINKED_LIST *edges = NULL;
     LINKED_LIST *updateEdges = NULL;
+        
+    updateEdges = GetReactantEdges( (IR_NODE*)species );
+    ResetCurrentElement( updateEdges );
+    while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
+      reaction = GetReactionInIREdge( updateEdge );
+      if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
+	return ret;                
+      }
+    }                
+    
+    updateEdges = GetModifierEdges( (IR_NODE*)species );
+    ResetCurrentElement( updateEdges );
+    while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
+      reaction = GetReactionInIREdge( updateEdge );
+      if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
+	return ret;                
+      }
+    }                
+    
+    updateEdges = GetProductEdges( (IR_NODE*)species );
+    ResetCurrentElement( updateEdges );
+    while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
+      reaction = GetReactionInIREdge( updateEdge );
+      if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
+	return ret;                
+      }
+    }                
+    return ret;
+}
+
+static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
+    RET_VAL ret = SUCCESS;
+    double rate = 0.0;
+    IR_EDGE *edge = NULL;
+    LINKED_LIST *edges = NULL;
+    SPECIES *species = NULL;
 
     if (rec->nextReaction == NULL) {
       return ret;
@@ -1178,66 +1240,18 @@ static RET_VAL _UpdateReactionRateUpdateTime( GILLESPIE_MONTE_CARLO_RECORD *rec 
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
-        
-        updateEdges = GetReactantEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetModifierEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetProductEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
+	if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTimeForSpecies( rec, species ) ) ) ) {
+	  return ret;                
+	}
     }    
         
     edges = GetProductEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );        
-        
-        updateEdges = GetReactantEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetModifierEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
-    
-        updateEdges = GetProductEdges( (IR_NODE*)species );
-        ResetCurrentElement( updateEdges );
-        while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-            reaction = GetReactionInIREdge( updateEdge );
-            if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-                return ret;                
-            }
-        }                
+	if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTimeForSpecies( rec, species ) ) ) ) {
+	  return ret;                
+	}
     }    
     return ret;            
 }
