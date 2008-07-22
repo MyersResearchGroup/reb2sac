@@ -565,6 +565,13 @@ static RET_VAL _InitializeSimulation( EMC_SIMULATION_RECORD *rec, int runNum ) {
       } 
       */
     }
+    size = rec->reactionsSize;
+    for( i = 0; i < size; i++ ) {
+      reaction = reactionArray[i];
+      if( IS_FAILED( ( ret = ResetReactionFireCount( reaction ) ) ) ) {
+	return ret;
+      }
+    }
     if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, 0 ) ) ) ) {
       return ret;                
     }
