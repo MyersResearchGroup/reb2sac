@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<project name="build reb2sac" default="reb2sac">
+    <description>
+        ANT adaptor for GNU rx's configure/make process.
+    </description>
+
+    <target name="reb2sac" description="build reb2sac">
+        <exec executable="sh">
+            <arg value="install-reb2sac-linux.sh"/>
+        </exec>
+    </target>
+
+	<target name="clean" description="remove everything">
+        <exec executable="make">
+            <arg value="distclean"/>
+        </exec>
+    </target>
+
+</project>
