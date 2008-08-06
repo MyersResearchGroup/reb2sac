@@ -60,17 +60,17 @@ DLLSCOPE RET_VAL STDCALL DoBunkerMonteCarloAnalysis( BACK_END_PROCESSOR *backend
     UINT timeout = 0;
 
     START_FUNCTION("DoBunkerMonteCarloAnalysis");
-    
+
     if( !_IsModelConditionSatisfied( ir ) ) {
         return ErrorReport( FAILING, "DoBunkerMonteCarloAnalysis", "Bunker method cannot be applied to the model" );
     }
-    
+
     if( IS_FAILED( ( ret = _InitializeRecord( &rec, backend, ir ) ) ) )  {
         return ErrorReport( ret, "DoBunkerMonteCarloAnalysis", "initialization of the record failed" );
     }
-    
 
-    runs = rec.runs;    
+
+    runs = rec.runs;
     for( i = 1; i <= runs; i++ ) {
         SeedRandomNumberGenerators( rec.seed );
         rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
@@ -90,37 +90,37 @@ DLLSCOPE RET_VAL STDCALL DoBunkerMonteCarloAnalysis( BACK_END_PROCESSOR *backend
         }
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoBunkerMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i );
-        }         
+        }
 	printf("Run = %d\n",i);
 	fflush(stdout);
     }
     END_FUNCTION("DoBunkerMonteCarloAnalysis", SUCCESS );
-    return ret;            
+    return ret;
 }
 
 DLLSCOPE RET_VAL STDCALL CloseBunkerMonteCarloAnalyzer( BACK_END_PROCESSOR *backend ) {
     RET_VAL ret = SUCCESS;
     BUNKER_MONTE_CARLO_RECORD *rec = (BUNKER_MONTE_CARLO_RECORD *)(backend->_internal1);
-        
+
     START_FUNCTION("CloseBunkerMonteCarloAnalyzer");
-    
+
     if( IS_FAILED( ( ret = _CleanRecord( rec ) ) ) )  {
         return ErrorReport( ret, "CloseBunkerMonteCarloAnalyzer", "cleaning of the record failed" );
     }
-        
+
     END_FUNCTION("CloseBunkerMonteCarloAnalyzer",  SUCCESS );
-    return ret;            
+    return ret;
 }
 
 
 static BOOL _IsModelConditionSatisfied( IR *ir ) {
     REACTION *reaction = NULL;
     LINKED_LIST *reactions = NULL;
-    
+
     reactions = ir->GetListOfReactionNodes( ir );
     while( ( reaction = (REACTION*)GetNextFromLinkedList( reactions ) ) != NULL ) {
         if( IsReactionReversibleInReactionNode( reaction ) ) {
-            TRACE_0("the input model contains reversible reaction(s), and cannot be used for Bunker method" );            
+            TRACE_0("the input model contains reversible reaction(s), and cannot be used for Bunker method" );
             return FALSE;
         }
     }
@@ -161,8 +161,8 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
-#endif    
-            
+#endif
+
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
     //    if (rec->reactionsSize==0) {
@@ -177,9 +177,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
       reactions[i] = reaction;
-      i++;        
+      i++;
     }
-    rec->reactionArray = reactions;    
+    rec->reactionArray = reactions;
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
@@ -195,9 +195,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
         ruleArray[i] = rule;
-        i++;        
+        i++;
     }
-    rec->ruleArray = ruleArray;    
+    rec->ruleArray = ruleArray;
 
     if( ( symTab = ir->GetGlobalSymtab( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the symbol table" );
@@ -213,9 +213,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
         symbolArray[i] = symbol;
-        i++;        
+        i++;
     }
-    rec->symbolArray = symbolArray;    
+    rec->symbolArray = symbolArray;
 
     if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
@@ -231,10 +231,10 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
         compartmentArray[i] = compartment;
-        i++;        
+        i++;
     }
-    rec->compartmentArray = compartmentArray;    
-    
+    rec->compartmentArray = compartmentArray;
+
     list = ir->GetListOfSpeciesNodes( ir );
     rec->speciesSize = GetLinkedListSize( list );
     if (rec->speciesSize > 0) {
@@ -246,9 +246,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
-        i++;        
+        i++;
     }
-    rec->speciesArray = speciesArray;    
+    rec->speciesArray = speciesArray;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -259,7 +259,7 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
 	    SetRuleVarType( ruleArray[i], SPECIES_RULE );
 	    SetRuleIndex( ruleArray[i], j );
 	    break;
-	  } 
+	  }
 	}
 	for (j = 0; j < rec->compartmentsSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
@@ -267,7 +267,7 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
 	    SetRuleVarType( ruleArray[i], COMPARTMENT_RULE );
 	    SetRuleIndex( ruleArray[i], j );
 	    break;
-	  } 
+	  }
 	}
 	for (j = 0; j < rec->symbolsSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
@@ -275,15 +275,15 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
 	    SetRuleVarType( ruleArray[i], PARAMETER_RULE );
 	    SetRuleIndex( ruleArray[i], j );
 	    break;
-	  } 
+	  }
 	}
       }
     }
-    
+
     if( ( rec->evaluator = CreateKineticLawEvaluater() ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
-    }                
-    
+    }
+
     properties = compRec->properties;
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
         rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
@@ -292,8 +292,8 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
       if( IS_FAILED( ( ret = StrToUINT32( (UINT32*)&(rec->startIndex), valueString ) ) ) ) {
 	rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
       }
-    }    
-    
+    }
+
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -301,7 +301,7 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
         if( IS_FAILED( ( ret = StrToFloat( &(rec->timeLimit), valueString ) ) ) ) {
             rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
         }
-    }    
+    }
 
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_STEP ) ) == NULL ) {
         rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
@@ -310,8 +310,8 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
         if( IS_FAILED( ( ret = StrToFloat( &(rec->timeStep), valueString ) ) ) ) {
             rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
         }
-    }    
-    
+    }
+
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
         rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
     }
@@ -319,20 +319,20 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
         if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
             rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
         }
-    }    
+    }
 
 #if GET_SEED_FROM_COMMAND_LINE
     options = compRec->options;
     if( ( valueString = options->GetProperty( options, "random.seed" ) ) == NULL ) {
         rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
-    } 
-    else {        
+    }
+    else {
         if( IS_FAILED( ( ret = StrToUINT32( &(rec->seed), valueString ) ) ) ) {
             rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
         }
         TRACE_1("seed from command line is %i", rec->seed );
     }
-#else                   
+#else
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_RANDOM_SEED ) ) == NULL ) {
         rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
     }
@@ -341,8 +341,8 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
             rec->seed = DEFAULT_MONTE_CARLO_SIMULATION_RANDOM_SEED_VALUE;
         }
     }
-#endif        
-    
+#endif
+
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_RUNS ) ) == NULL ) {
         rec->runs = DEFAULT_MONTE_CARLO_SIMULATION_RUNS_VALUE;
     }
@@ -350,17 +350,17 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
         if( IS_FAILED( ( ret = StrToUINT32( &(rec->runs), valueString ) ) ) ) {
             rec->runs = DEFAULT_MONTE_CARLO_SIMULATION_RUNS_VALUE;
         }
-    }    
-    
+    }
+
     if( ( rec->outDir = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_OUT_DIR ) ) == NULL ) {
         rec->outDir = DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE;
     }
-    
+
     if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
 						  speciesArray, rec->speciesSize,
 						  symbolArray, rec->symbolsSize ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
-    }                
+    }
 
     if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the constraint manager" );
@@ -376,12 +376,12 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
         constraintArray[i] = constraint;
-        i++;        
+        i++;
     }
-    rec->constraintArray = constraintArray;    
-    
-    if( ( rec->decider = 
-        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize, 
+    rec->constraintArray = constraintArray;
+
+    if( ( rec->decider =
+        CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize,
 					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, rec->timeLimit ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
@@ -400,9 +400,9 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
     ResetCurrentElement( list );
     while( ( event = (EVENT*)GetNextFromLinkedList( list ) ) != NULL ) {
         eventArray[i] = event;
-        i++;        
+        i++;
     }
-    rec->eventArray = eventArray;    
+    rec->eventArray = eventArray;
 
     for (i = 0; i < rec->eventsSize; i++) {
       list = GetEventAssignments( rec->eventArray[i] );
@@ -414,7 +414,7 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
 	    SetEventAssignmentVarType( eventAssignment, SPECIES_EVENT_ASSIGNMENT );
 	    SetEventAssignmentIndex( eventAssignment, j );
 	    break;
-	  } 
+	  }
 	}
 	for (j = 0; j < rec->compartmentsSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(eventAssignment->var),
@@ -430,14 +430,14 @@ static RET_VAL _InitializeRecord( BUNKER_MONTE_CARLO_RECORD *rec, BACK_END_PROCE
 	    SetEventAssignmentVarType( eventAssignment, PARAMETER_EVENT_ASSIGNMENT );
 	    SetEventAssignmentIndex( eventAssignment, j );
 	    break;
-	  } 
+	  }
 	}
       }
     }
-        
+
     backend->_internal1 = (CADDR_T)rec;
-    
-    return ret;            
+
+    return ret;
 }
 
 static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum ) {
@@ -460,13 +460,13 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
     REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     KINETIC_LAW *law = NULL;
     BOOL change = FALSE;
-    
-    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );        
+
+    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
-        return ret;            
+        return ret;
     }
     if( IS_FAILED( (  ret = printer->PrintHeader( printer ) ) ) ) {
-        return ret;            
+        return ret;
     }
     rec->time = 0.0;
     rec->nextPrintTime = 0.0;
@@ -478,16 +478,16 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 	    amount = GetInitialAmountInSpeciesNode( species );
 	  }
 	  else {
-	    amount = GetInitialAmountInSpeciesNode( species ); 
+	    amount = GetInitialAmountInSpeciesNode( species );
 	  }
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    amount = GetRealValueFromKineticLaw(law); 
+	    amount = GetRealValueFromKineticLaw(law);
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    amount = (double)GetIntValueFromKineticLaw(law); 
-	  } 
+	    amount = (double)GetIntValueFromKineticLaw(law);
+	  }
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
 	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
 	      SetInitialAmountInSpeciesNode( species, amount );
@@ -496,17 +496,17 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 	  }
 	  else {
 	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
-	      SetInitialAmountInSpeciesNode( species, amount ); 
+	      SetInitialAmountInSpeciesNode( species, amount );
 	      change = TRUE;
 	    }
 	  }
 	  FreeKineticLaw( &(law) );
 	}
         if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
-            return ret;            
+            return ret;
         }
     }
-    size = rec->compartmentsSize;        
+    size = rec->compartmentsSize;
     for( i = 0; i < size; i++ ) {
         compartment = compartmentArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
@@ -515,10 +515,10 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    compSize = GetRealValueFromKineticLaw(law); 
+	    compSize = GetRealValueFromKineticLaw(law);
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    compSize = (double)GetIntValueFromKineticLaw(law); 
-	  } 
+	    compSize = (double)GetIntValueFromKineticLaw(law);
+	  }
 	  if (GetSizeInCompartment( compartment ) != compSize) {
 	    SetSizeInCompartment( compartment, compSize );
 	    change = TRUE;
@@ -526,10 +526,10 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 	  FreeKineticLaw( &(law) );
 	}
         if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
-            return ret;            
+            return ret;
         }
     }
-    size = rec->symbolsSize;        
+    size = rec->symbolsSize;
     for( i = 0; i < size; i++ ) {
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
@@ -538,10 +538,10 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    param = GetRealValueFromKineticLaw(law); 
+	    param = GetRealValueFromKineticLaw(law);
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    param = (double)GetIntValueFromKineticLaw(law); 
-	  } 
+	    param = (double)GetIntValueFromKineticLaw(law);
+	  }
 	  if( GetRealValueInSymbol( symbol ) != param ) {
 	    SetRealValueInSymbol( symbol, param );
 	    change = TRUE;
@@ -549,20 +549,18 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
 	  FreeKineticLaw( &(law) );
 	}
 	if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, param ) ) ) ) {
-	  return ret;            
+	  return ret;
 	}
     }
     for (i = 0; i < rec->eventsSize; i++) {
-      SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      /* SetTriggerEnabledInEvent( rec->eventArray[i], FALSE ); */
       /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
-      /* 
-      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-	SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+    	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
       } else {
-	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-      } 
-      */
+    	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+      }
     }
     size = rec->reactionsSize;
     for( i = 0; i < size; i++ ) {
@@ -572,12 +570,12 @@ static RET_VAL _InitializeSimulation( BUNKER_MONTE_CARLO_RECORD *rec, int runNum
       }
     }
     if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, 0 ) ) ) ) {
-      return ret;                
+      return ret;
     }
-    
+
     if (change)
       return CHANGE;
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
@@ -593,7 +591,7 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     int nextEvent = 0;
     double nextEventTime = 0;
-    
+
     printer = rec->printer;
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
@@ -617,7 +615,7 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
         if( IS_FAILED( ( ret = _CalculateTotalPropensities( rec ) ) ) ) {
 	  return ret;
         }
-        if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {            
+        if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
 	  TRACE_1( "the total propensity is 0 at iteration %i", i );
 	  rec->t = maxTime - rec->time;
 	  rec->time = maxTime;
@@ -627,10 +625,10 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
 	    return ret;
 	  }
 	  if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-	    return ret;            
+	    return ret;
 	  }
         }
-        else { 
+        else {
 	  if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
 	    return ret;
 	  }
@@ -644,7 +642,7 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
 	      return ret;
 	    }
 	    if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-	      return ret;            
+	      return ret;
 	    }
 	  } else {
 	    if (rec->time < timeLimit) {
@@ -657,47 +655,47 @@ static RET_VAL _RunSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
 	      }
 	    } else {
 	      if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-		return ret;            
+		return ret;
 	      }
 	    }
 	  }
         }
     }
-/*    
+/*
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->timeLimit ) ) ) ) {
         return ret;
     }
 */
     if( rec->time >= timeLimit ) {
         rec->time = timeLimit;
-    } 
+    }
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
       return ret;
     }
-    
+
     if( IS_FAILED( ( ret = printer->PrintEnd( printer ) ) ) ) {
         return ret;
     }
-    
+
     if( IS_FAILED( ( ret = _CleanSimulation( rec ) ) ) ) {
         return ret;
     }
-        
-    return ret;            
+
+    return ret;
 }
 
 static RET_VAL _CleanSimulation( BUNKER_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     /* something goes wrong if I put fclose here */
 
-#if 0 
+#if 0
     if( 0 != fclose( rec->out ) ) {
         TRACE_0("file close error" );
-        
+
         rec->out = NULL;
-    }  
+    }
 #endif
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _CleanRecord( BUNKER_MONTE_CARLO_RECORD *rec ) {
@@ -706,30 +704,30 @@ static RET_VAL _CleanRecord( BUNKER_MONTE_CARLO_RECORD *rec ) {
     FILE *file = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
-    
-    sprintf( filename, "%s%csim-rep.txt", rec->outDir, FILE_SEPARATOR );        
+
+    sprintf( filename, "%s%csim-rep.txt", rec->outDir, FILE_SEPARATOR );
     if( ( file = fopen( filename, "w" ) ) == NULL ) {
         return ErrorReport( FAILING, "_CleanRecord", "could not create a report file" );
     }
     if( IS_FAILED( ( ret = decider->Report( decider, file ) ) ) ) {
-        return ret;            
-    }    
+        return ret;
+    }
     fclose( file );
-    
+
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
     }
     if( rec->reactionArray != NULL ) {
-        FREE( rec->reactionArray );    
+        FREE( rec->reactionArray );
     }
     if( rec->speciesArray != NULL ) {
-        FREE( rec->speciesArray );    
+        FREE( rec->speciesArray );
     }
-        
+
     printer->Destroy( printer );
     decider->Destroy( decider );
-    
-    return ret;            
+
+    return ret;
 }
 
 static BOOL _IsTerminationConditionMet( BUNKER_MONTE_CARLO_RECORD *rec ) {
@@ -743,17 +741,17 @@ static RET_VAL _CalculateTotalPropensities( BUNKER_MONTE_CARLO_RECORD *rec ) {
     UINT32 i = 0;
     UINT32 size = rec->reactionsSize;
     double total = 0.0;
-    REACTION **reactionArray = rec->reactionArray;    
+    REACTION **reactionArray = rec->reactionArray;
 
     if (size > 0) {
       total = GetReactionRate( reactionArray[0] );
       for( i = 1; i < size; i++ ) {
-        total += GetReactionRate( reactionArray[i] );     
-      }         
+        total += GetReactionRate( reactionArray[i] );
+      }
     }
-    rec->totalPropensities = total;        
+    rec->totalPropensities = total;
     TRACE_1( "the total propensity is %f", total );
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _CalculatePropensities( BUNKER_MONTE_CARLO_RECORD *rec ) {
@@ -763,19 +761,19 @@ static RET_VAL _CalculatePropensities( BUNKER_MONTE_CARLO_RECORD *rec ) {
     double time = rec->time;
     double updatedTime = 0.0;
     REACTION *reaction = NULL;
-    REACTION **reactionArray = rec->reactionArray;    
-    
-    size = rec->reactionsSize;    
+    REACTION **reactionArray = rec->reactionArray;
+
+    size = rec->reactionsSize;
     for( i = 0; i < size; i++ ) {
         reaction = reactionArray[i];
         updatedTime = GetReactionRateUpdatedTime( reaction );
         if( IS_REAL_EQUAL( updatedTime, time ) ) {
             if( IS_FAILED( ( ret = _CalculatePropensity( rec, reaction ) ) ) ) {
-                return ret;        
+                return ret;
             }
         }
     }
-#if 0    
+#if 0
     /* qsort is not good way to sort an array which is nearly sorted. */
     qsort( rec->reactionArray, size, sizeof(REACTION*), (int(*)(const void *, const void *))_ComparePropensity );
 #endif
@@ -785,15 +783,15 @@ static RET_VAL _CalculatePropensities( BUNKER_MONTE_CARLO_RECORD *rec ) {
         printf( "(%s, %f), ", GetCharArrayOfString( GetReactionNodeName( rec->reactionArray[i] ) ), GetReactionRate( rec->reactionArray[i] ) );
     }
     printf( NEW_LINE );
-#endif                   
-    return ret;          
+#endif
+    return ret;
 }
 
 
 static RET_VAL _CalculatePropensity( BUNKER_MONTE_CARLO_RECORD *rec, REACTION *reaction ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
-    long amount = 0;    
+    long amount = 0;
     double propensity = 0.0;
     double time = rec->time;
     SPECIES *species = NULL;
@@ -801,7 +799,7 @@ static RET_VAL _CalculatePropensity( BUNKER_MONTE_CARLO_RECORD *rec, REACTION *r
     LINKED_LIST *edges = NULL;
     KINETIC_LAW *law = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
-        
+
     edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
@@ -810,55 +808,55 @@ static RET_VAL _CalculatePropensity( BUNKER_MONTE_CARLO_RECORD *rec, REACTION *r
         amount = (long)GetAmountInSpeciesNode( species );
         if( amount < stoichiometry ) {
             if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
-                return ret;         
+                return ret;
             }
 #ifdef DEBUG
-            printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
+            printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                 GetReactionRate( reaction ) );
-#endif                   
-            return SUCCESS;         
-        }                
-    }    
-#if 0    
+#endif
+            return SUCCESS;
+        }
+    }
+#if 0
     edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         stoichiometry = (long)GetStoichiometryInIREdge( edge );
-        species = GetSpeciesInIREdge( edge );        
+        species = GetSpeciesInIREdge( edge );
         amount = GetAmountInSpeciesNode( species );
         if( amount < stoichiometry ) {
             if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
-                return ret;         
+                return ret;
             }
-            return SUCCESS;         
-        }                
-    }    
+            return SUCCESS;
+        }
+    }
 #endif
-    
-    evaluator = rec->evaluator;    
+
+    evaluator = rec->evaluator;
     law = GetKineticLawInReactionNode( reaction );
     propensity = evaluator->EvaluateWithCurrentAmounts( evaluator, law );
     if( propensity <= 0.0 ) {
         if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
-            return ret;         
+            return ret;
         }
     }
-    /* in case nan */    
+    /* in case nan */
     else if( !( propensity < DBL_MAX ) ) {
         if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
-            return ret;         
+            return ret;
         }
     }
     else {
         if( IS_FAILED( ( ret = SetReactionRate( reaction, propensity ) ) ) ) {
-            return ret;         
+            return ret;
         }
     }
 #ifdef DEBUG
-    printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
+    printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
         GetReactionRate( reaction ) );
-#endif                   
-    return ret;         
+#endif
+    return ret;
 }
 
 
@@ -866,18 +864,18 @@ static RET_VAL _FindNextReactionTime( BUNKER_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     double random = 0.0;
     double t = 0.0;
-    
+
     random = GetNextUnitUniformRandomNumber();
     /* in bunker's method, just use mean value for time */
     t = 1.0 / rec->totalPropensities;
     rec->time += t;
     rec->t = t;
     if( rec->time > rec->timeLimit ) {
-        rec->t -= rec->time - rec->timeLimit; 
+        rec->t -= rec->time - rec->timeLimit;
         rec->time = rec->timeLimit;
     }
     TRACE_1( "time to next reaction is %f", t );
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _FindNextReaction( BUNKER_MONTE_CARLO_RECORD *rec ) {
@@ -889,33 +887,33 @@ static RET_VAL _FindNextReaction( BUNKER_MONTE_CARLO_RECORD *rec ) {
     double sum = 0.0;
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
-    
+
     random = GetNextUnitUniformRandomNumber();
     threshold = random * rec->totalPropensities;
-    
+
     for( i = 0; i < size; i++ ) {
-        sum += GetReactionRate( reactionArray[i] );                
+        sum += GetReactionRate( reactionArray[i] );
         if( sum >= threshold ) {
             break;
         }
     }
-    
-    rec->nextReaction = reactionArray[i];    
+
+    rec->nextReaction = reactionArray[i];
     TRACE_1( "next reaction is %s", GetCharArrayOfString( GetReactionNodeName( rec->nextReaction ) ) );
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _Update( BUNKER_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
 
     if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-        return ret;            
+        return ret;
     }
     if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
-        return ret;            
-    }         
-    
-    return ret;            
+        return ret;
+    }
+
+    return ret;
 }
 
 
@@ -933,23 +931,23 @@ static RET_VAL _Print( BUNKER_MONTE_CARLO_RECORD *rec ) {
       if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
 	return ret;
       }
-      nextPrintTime += printInterval; 
-    }     
+      nextPrintTime += printInterval;
+    }
     rec->nextPrintTime = nextPrintTime;
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _UpdateNodeValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
-    
+
     if( IS_FAILED( ( ret = _UpdateSpeciesValues( rec ) ) ) ) {
-        return ret;            
+        return ret;
     }
     if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTime( rec ) ) ) ) {
-        return ret;            
+        return ret;
     }
-    
-    return ret;            
+
+    return ret;
 }
 
 static double fireEvents( BUNKER_MONTE_CARLO_RECORD *rec, double time ) {
@@ -977,17 +975,17 @@ static double fireEvents( BUNKER_MONTE_CARLO_RECORD *rec, double time ) {
 	  }
 	}
 	if (!triggerEnabled) {
-	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
 	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
-	      deltaTime = 0; 
-	    } 
+	      deltaTime = 0;
+	    }
 	    else {
-	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
 	    }
-	    if (deltaTime > 0) { 
+	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
@@ -1001,7 +999,7 @@ static double fireEvents( BUNKER_MONTE_CARLO_RECORD *rec, double time ) {
 	    }
 	  }
 	} else {
-	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	  }
@@ -1017,7 +1015,7 @@ static double fireEvents( BUNKER_MONTE_CARLO_RECORD *rec, double time ) {
 static void fireEvent( EVENT *event, BUNKER_MONTE_CARLO_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
-  double amount = 0.0;    
+  double amount = 0.0;
   UINT j;
   BYTE varType;
 
@@ -1034,12 +1032,12 @@ static void fireEvent( EVENT *event, BUNKER_MONTE_CARLO_RECORD *rec ) {
       SetAmountInSpeciesNode( rec->speciesArray[j], amount );
       _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );  
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
       //printf("conc = %g\n",amount);
       SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
       _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     } else {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );   
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
       //printf("conc = %g\n",amount);
       SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
       _UpdateAllReactionRateUpdateTimes( rec, rec->time );
@@ -1056,7 +1054,7 @@ static void ExecuteAssignments( BUNKER_MONTE_CARLO_RECORD *rec ) {
 
   for (i = 0; i < rec->rulesSize; i++) {
     if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
       varType = GetRuleVarType( rec->ruleArray[i] );
       j = GetRuleIndex( rec->ruleArray[i] );
@@ -1077,13 +1075,13 @@ static void ExecuteAssignments( BUNKER_MONTE_CARLO_RECORD *rec ) {
 static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     long stoichiometry = 0;
-    double amount = 0;    
+    double amount = 0;
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
     REACTION *reaction = rec->nextReaction;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
-    double change = 0;    
+    double change = 0;
     UINT i = 0;
     UINT j = 0;
     double deltaTime;
@@ -1092,7 +1090,7 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
-	change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, 
+	change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 							     (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	varType = GetRuleVarType( rec->ruleArray[i] );
 	j = GetRuleIndex( rec->ruleArray[i] );
@@ -1137,15 +1135,15 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
         species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) - (double)stoichiometry;
-        TRACE_3( "the amount of %s decreases from %g to %g", 
-		 GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
+        TRACE_3( "the amount of %s decreases from %g to %g",
+		 GetCharArrayOfString( GetSpeciesNodeName( species ) ),
 		 GetAmountInSpeciesNode( species ),
 		 amount );
         SetAmountInSpeciesNode( species, amount );
         if( IS_FAILED( ( ret = evaluator->SetSpeciesValue( evaluator, species, amount ) ) ) ) {
             return ret;
-        }        
-      }    
+        }
+      }
       edges = GetProductEdges( (IR_NODE*)reaction );
       ResetCurrentElement( edges );
       while( ( edge = GetNextEdge( edges ) ) != NULL ) {
@@ -1153,12 +1151,12 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
         species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
         amount = GetAmountInSpeciesNode( species ) + (double)stoichiometry;
-        TRACE_3( "the amount of %s increases from %g to %g", 
-		 GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
+        TRACE_3( "the amount of %s increases from %g to %g",
+		 GetCharArrayOfString( GetSpeciesNodeName( species ) ),
 		 GetAmountInSpeciesNode( species ),
 		 amount );
         SetAmountInSpeciesNode( species, amount );
-      }    
+      }
     }
 
     for (j = 0; j < rec->symbolsSize; j++) {
@@ -1170,16 +1168,16 @@ static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec ) {
 
     ExecuteAssignments( rec );
 
-    return ret;            
+    return ret;
 }
 
 static RET_VAL _UpdateAllReactionRateUpdateTimes( BUNKER_MONTE_CARLO_RECORD *rec, double time ) {
   RET_VAL ret = SUCCESS;
   UINT i;
-  
+
   for (i = 0; i < rec->reactionsSize; i++) {
     if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( rec->reactionArray[i], time ) ) ) ) {
-      return ret;                
+      return ret;
     }
   }
   return ret;
@@ -1191,33 +1189,33 @@ static RET_VAL _UpdateReactionRateUpdateTimeForSpecies( BUNKER_MONTE_CARLO_RECOR
     IR_EDGE *updateEdge = NULL;
     REACTION *reaction = NULL;
     LINKED_LIST *updateEdges = NULL;
-        
+
     updateEdges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
       reaction = GetReactionInIREdge( updateEdge );
       if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-	return ret;                
+	return ret;
       }
-    }                
-    
+    }
+
     updateEdges = GetModifierEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
       reaction = GetReactionInIREdge( updateEdge );
       if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-	return ret;                
+	return ret;
       }
-    }                
-    
+    }
+
     updateEdges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
       reaction = GetReactionInIREdge( updateEdge );
       if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
-	return ret;                
+	return ret;
       }
-    }                
+    }
     return ret;
 }
 
@@ -1234,35 +1232,35 @@ static RET_VAL _UpdateReactionRateUpdateTime( BUNKER_MONTE_CARLO_RECORD *rec ) {
     edges = GetReactantEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        species = GetSpeciesInIREdge( edge );        
+        species = GetSpeciesInIREdge( edge );
 	if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTimeForSpecies( rec, species ) ) ) ) {
-	  return ret;                
+	  return ret;
 	}
-    }    
-        
+    }
+
     edges = GetProductEdges( (IR_NODE*)rec->nextReaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        species = GetSpeciesInIREdge( edge );        
+        species = GetSpeciesInIREdge( edge );
 	if( IS_FAILED( ( ret = _UpdateReactionRateUpdateTimeForSpecies( rec, species ) ) ) ) {
-	  return ret;                
+	  return ret;
 	}
-    }    
-    return ret;            
+    }
+    return ret;
 }
 
 static int _ComparePropensity( REACTION *a, REACTION *b ) {
     double d1 = 0.0;
     double d2 = 0.0;
-    
+
     d1 = GetReactionRate( a );
     d2 = GetReactionRate( b );
-    
+
     if( IS_REAL_EQUAL( d1, d2 ) ) {
         return 0;
     }
     return ( d1 < d2 ) ? -1 : 1;
 }
 
- 
- 
+
+
