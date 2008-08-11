@@ -112,7 +112,7 @@ typedef union YYSTYPE {
     double value;
     SAD_AST *ast;
 } YYSTYPE;
-/* Line 1318 of yacc.c.  */
+/* Line 1274 of yacc.c.  */
 #line 117 "analysis_def_parser.tab.h"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

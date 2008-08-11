@@ -199,7 +199,7 @@ typedef union YYSTYPE {
     double value;
     SAD_AST *ast;
 } YYSTYPE;
-/* Line 190 of yacc.c.  */
+/* Line 185 of yacc.c.  */
 #line 204 "analysis_def_parser.tab.c"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
