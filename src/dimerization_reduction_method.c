@@ -160,6 +160,10 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
     }
     
     dimer = GetSpeciesInIREdge( edge );
+    if( IsKeepFlagSetInSpeciesNode( monomer ) && IsKeepFlagSetInSpeciesNode( dimer ) ) {
+        END_FUNCTION("_IsConditionSatisfied", SUCCESS );
+        return FALSE;
+    }
     
     /*
     * dimer D, which is the product of R, is produced only in R
