@@ -1034,7 +1034,7 @@ static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec ) {
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
