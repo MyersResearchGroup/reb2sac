@@ -428,6 +428,18 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
 
         case KINETIC_LAW_OP_GEQ:
 	  *result = (leftValue >= rightValue);
+	  /*
+	  if (*result == 0) {
+	    if ( left->valueType == KINETIC_LAW_VALUE_TYPE_SYMBOL ) {
+	      if (strcmp(GetCharArrayOfString( GetSymbolID( GetSymbolFromKineticLaw( left ) ) ), "t") == 0) {
+		*result = (rightValue - leftValue);
+		if (*result == 1.0) { 
+		  *result = 1.0000001;
+		}
+	      }
+	    }
+	  }
+	  */
         break;
 
         case KINETIC_LAW_OP_GT:

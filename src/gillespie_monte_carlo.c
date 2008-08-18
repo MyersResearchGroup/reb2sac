@@ -292,6 +292,10 @@ static RET_VAL _InitializeRecord( GILLESPIE_MONTE_CARLO_RECORD *rec, BACK_END_PR
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
     }
 
+    if( ( rec->findNextTime = CreateKineticLawFind_Next_Time() ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create find next time" );
+    }
+
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
         rec->startIndex = DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX;
     }
@@ -986,6 +990,12 @@ static double fireEvents( GILLESPIE_MONTE_CARLO_RECORD *rec, double time ) {
 	    }
 	  }
 	}
+	nextEventTime = rec->time + 
+	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
+	}
 	if (!triggerEnabled) {
 	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
@@ -1014,7 +1024,7 @@ static double fireEvents( GILLESPIE_MONTE_CARLO_RECORD *rec, double time ) {
 	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-	  }
+	  } 
 	}
       }
       if (eventFired) {
@@ -1034,7 +1044,7 @@ static void fireEvent( EVENT *event, GILLESPIE_MONTE_CARLO_RECORD *rec ) {
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);

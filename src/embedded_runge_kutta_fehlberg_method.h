@@ -57,6 +57,7 @@ typedef struct {
     double timeStep;
     double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
+    KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
     UINT32 seed;
     UINT32 runs; 
     char *outDir; 
