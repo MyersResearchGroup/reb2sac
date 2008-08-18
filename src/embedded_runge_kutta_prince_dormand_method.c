@@ -265,6 +265,10 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
     }
 
+    if( ( rec->findNextTime = CreateKineticLawFind_Next_Time() ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create find next time" );
+    }
+
     properties = compRec->properties;
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_ABSOLUTE_ERROR ) ) == NULL ) {
       rec->absoluteError = DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR;
@@ -737,6 +741,12 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
 	      firstEventTime = nextEventTime;
 	    }
 	  }
+	}
+	nextEventTime = time + 
+	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
 	}
 	if (!triggerEnabled) {
 	  if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,

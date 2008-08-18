@@ -25,6 +25,7 @@
 #include "back_end_processor.h"
 #include "IR.h"
 #include "kinetic_law_evaluater.h"
+#include "kinetic_law_find_next_time.h"
 #include "strconv.h"
 #include "simulation_printer.h"
 #include "simulation_run_termination_decider.h"

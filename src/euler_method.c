@@ -272,6 +272,10 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
     }
 
+    if( ( rec->findNextTime = CreateKineticLawFind_Next_Time() ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create find next time" );
+    }
+
     properties = compRec->properties;
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
@@ -564,17 +568,21 @@ static RET_VAL _RunSimulation( EULER_SIMULATION_RECORD *rec ) {
 
     printer = rec->printer;
     decider = rec->decider;
+    nextEventTime = fireEvents( rec, rec->time );
+    if (nextEventTime==-2.0) {
+      return FAILING;
+    }
     while( !(decider->IsTerminationConditionMet( decider, NULL, rec->time )) ) {
-	nextEventTime = fireEvents( rec, rec->time );
-	if (nextEventTime==-2.0) {
-	  return FAILING;
-	}
         if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
             return ret;
         }
         if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
             return ret;
         }
+	nextEventTime = fireEvents( rec, rec->time );
+	if (nextEventTime==-2.0) {
+	  return FAILING;
+	}
 	rec->time += rec->timeStep;
 	if ((nextEventTime > 0) && (nextEventTime < rec->time)) {
 	  rec->time = nextEventTime;
@@ -722,6 +730,12 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	      firstEventTime = nextEventTime;
 	    }
 	  }
+	}
+	nextEventTime = time + 
+	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
 	}
 	if (!triggerEnabled) {
 	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,

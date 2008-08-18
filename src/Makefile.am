@@ -21,7 +21,7 @@ noinst_HEADERS = \
 				gnuplot_dat_simulation_printer.h hash_table.h	hse2_back_end_processor.h \
 				hse_back_end_processor_common.h	hse_back_end_processor_def.h hse_back_end_processor.h	hse_back_end_processor_util.h \
 				hse_logical_statement_handler.h	hse_transformation_checker.h implicit_gear1_method.h	implicit_gear2_method.h \
-				implicit_runge_kutta_4_method.h	ir2ctmc_transformer.h ir2xhtml_transformer.h IR.h ir_node.h	kinetic_law_evaluater.h \
+				implicit_runge_kutta_4_method.h	ir2ctmc_transformer.h ir2xhtml_transformer.h IR.h ir_node.h	kinetic_law_evaluater.h kinetic_law_find_next_time.h \
 				kinetic_law.h law_of_mass_action_util.h	linked_list.h log.h logical_species_node.h \
 				markov_analysis_result_reporter.h markov_chain_analysis_properties.h	markov_chain.h \
 				nary_level_back_end_process.h nary_order_decider.h	nary_order_transformation_method.h \
@@ -62,7 +62,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	implicit_gear1_method.c implicit_gear2_method.c implicit_runge_kutta_4_method.c \
 	inducer_structure_transformation_method.c ir2ctmc_transformer.c ir2xhtml_transformer.c IR.c ir_node.c \
 	irrelevant_species_elimination_method.c kinetic_law.c kinetic_law_constants_simplifier.c \
-	kinetic_law_evaluater.c law_of_mass_action_util.c linked_list.c log.c logical_species_node.c \
+	kinetic_law_evaluater.c kinetic_law_find_next_time.c law_of_mass_action_util.c linked_list.c log.c logical_species_node.c \
 	main.c markov_analysis_result_reporter.c markov_chain.c \
 	max_concentration_reaction_adder.c modifier_constant_propagation_abstraction_method.c \
 	modifier_structure_transformation_method.c multiple_products_reaction_elimination_method.c \

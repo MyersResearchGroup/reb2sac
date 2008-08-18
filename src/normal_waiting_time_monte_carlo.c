@@ -284,6 +284,10 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
         return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
     }
 
+    if( ( rec->findNextTime = CreateKineticLawFind_Next_Time() ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create find next time" );
+    }
+
     properties = compRec->properties;
 
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_START_INDEX ) ) == NULL ) {
@@ -978,6 +982,12 @@ static double fireEvents( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, double ti
 	      firstEventTime = nextEventTime;
 	    }
 	  }
+	}
+	nextEventTime = rec->time + 
+	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
 	}
 	if (!triggerEnabled) {
 	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
