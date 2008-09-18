@@ -472,6 +472,7 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
         species = speciesArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	    //compSize = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
 	    concentration = GetInitialAmountInSpeciesNode( species );
 	  }
 	  else {
@@ -851,6 +852,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     UINT32 compartmentsSize = rec->compartmentsSize;
     long stoichiometry = 0;
     double concentration = 0.0;
+    double size = 0.0;
     double deltaTime = 0.0;
     double rate = 0.0;
     IR_EDGE *edge = NULL;
@@ -871,6 +873,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     /* Update values from y[] */
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
+	//	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
 	if (f[i] != 0.0) {
 	  if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, y[i] ) ) ) ) {
             return GSL_FAILURE;
@@ -927,8 +930,9 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
-        concentration = GetConcentrationInSpeciesNode( species );
-        TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ),
+        //concentration = GetConcentrationInSpeciesNode( species );
+	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ),
             concentration );
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
@@ -950,6 +954,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                ((double)stoichiometry * rate));
         }
+	//	f[i] /= size;
         TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;

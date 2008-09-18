@@ -526,6 +526,9 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
     }
         
     switch( GetUnaryOpTypeFromKineticLaw( kineticLaw ) ) {
+        case KINETIC_LAW_UNARY_OP_NEG:
+	  result = (-1)*childValue;
+        break;
         case KINETIC_LAW_UNARY_OP_NOT:
 	  result = !childValue;
         break;
@@ -999,6 +1002,9 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
     }
     
     switch( GetUnaryOpTypeFromKineticLaw( kineticLaw ) ) {
+        case KINETIC_LAW_UNARY_OP_NEG:
+	  result = (-1)*childValue;
+        break;
         case KINETIC_LAW_UNARY_OP_NOT:
 	  result = !childValue;
         break;

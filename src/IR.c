@@ -2348,6 +2348,9 @@ static RET_VAL _PrintUnaryOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *fi
         case KINETIC_LAW_UNARY_OP_NOT:
             fprintf( file, "<not/>%s", NEW_LINE );
         break;
+        case KINETIC_LAW_UNARY_OP_NEG:
+            fprintf( file, "<minus/>%s", NEW_LINE );
+        break;
         case KINETIC_LAW_UNARY_OP_EXP:
             fprintf( file, "<exp/>%s", NEW_LINE );
         break;

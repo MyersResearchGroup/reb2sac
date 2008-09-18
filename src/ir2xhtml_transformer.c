@@ -1172,6 +1172,7 @@ static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETI
     case KINETIC_LAW_UNARY_OP_FLOOR:
     case KINETIC_LAW_UNARY_OP_CEILING:
     case KINETIC_LAW_UNARY_OP_NOT:
+    case KINETIC_LAW_UNARY_OP_NEG:
     case KINETIC_LAW_UNARY_OP_EXP:
     case KINETIC_LAW_UNARY_OP_EXPRAND:
     case KINETIC_LAW_UNARY_OP_POISSON:
@@ -1244,6 +1245,8 @@ static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETI
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_LN_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_NOT ) { 
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_NOT_FORMAT );
+	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_NEG ) { 
+	      fprintf( file, REB2SAC_XHTML_MATHML_OP_NEG_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_EXPRAND ) { 
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_EXPRAND_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_POISSON ) { 

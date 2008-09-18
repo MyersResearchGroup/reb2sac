@@ -898,6 +898,9 @@ static RET_VAL _VisitUnaryOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, K
     
     opType = GetUnaryOpTypeFromKineticLaw( kineticLaw );     
     switch( opType ) {
+        case KINETIC_LAW_UNARY_OP_NEG:
+	  *result = (-1)*childValue;
+	break;
         case KINETIC_LAW_UNARY_OP_NOT:
 	  *result = childValue;
 	break;
