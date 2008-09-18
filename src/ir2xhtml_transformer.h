@@ -106,6 +106,7 @@
 #define REB2SAC_XHTML_MATHML_OP_BERNOULLI_FORMAT "<mo>bernoulli</mo>"
 
 #define REB2SAC_XHTML_MATHML_OP_NOT_FORMAT "<mo>&not;</mo>"
+#define REB2SAC_XHTML_MATHML_OP_NEG_FORMAT "<mo>-</mo>"
 #define REB2SAC_XHTML_MATHML_OP_AND_FORMAT "<mo>&and;</mo>"
 #define REB2SAC_XHTML_MATHML_OP_OR_FORMAT "<mo>&or;</mo>"
 #define REB2SAC_XHTML_MATHML_OP_XOR_FORMAT "<mo>&oplus;</mo>"

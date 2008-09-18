@@ -509,6 +509,9 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
     
     opType = GetUnaryOpTypeFromKineticLaw( kineticLaw );     
     switch( opType ) {
+        case KINETIC_LAW_UNARY_OP_NEG:
+	  *result = (-1)*childValue;
+        break;
         case KINETIC_LAW_UNARY_OP_NOT:
 	  *result = !childValue;
         break;
@@ -780,6 +783,9 @@ static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINET
     
     opType = GetUnaryOpTypeFromKineticLaw( kineticLaw );     
     switch( opType ) {
+        case KINETIC_LAW_UNARY_OP_NEG:
+	  *result = (-1)*childValue;
+        break;
         case KINETIC_LAW_UNARY_OP_NOT:
 	  *result = !childValue;
         break;

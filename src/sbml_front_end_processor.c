@@ -61,6 +61,7 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
 static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *reactionNode, REACTION_LAW *reactionLaw, Model_t *model, Reaction_t *reaction );
 static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformOpKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
+static KINETIC_LAW *_TransformNegKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformIntValueKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
@@ -1373,10 +1374,17 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
     }
     
     if( ASTNode_isOperator( source ) ) {
-        if( ( law = _TransformOpKineticLaw( frontend, source, manager, table ) ) == NULL ) {
+        if ( ( ASTNode_getType( source ) == AST_MINUS ) && ( ASTNode_getNumChildren( source ) ) == 1 ) {
+	  if( ( law = _TransformNegKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
             return NULL;
-        }                 
+	  }                 
+        } else {
+	  if( ( law = _TransformOpKineticLaw( frontend, source, manager, table ) ) == NULL ) {
+            END_FUNCTION("_TransformKineticLaw", FAILING );
+            return NULL;
+	  }         
+	}        
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }
@@ -1529,6 +1537,26 @@ static KINETIC_LAW *_TransformOpKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNo
     return NULL;
 }
 
+static KINETIC_LAW *_TransformNegKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table ) {
+    KINETIC_LAW *law = NULL;
+    KINETIC_LAW *child = NULL;
+    ASTNodeType_t type = AST_UNKNOWN;
+    ASTNode_t *childNode = NULL;
+    
+    START_FUNCTION("_TransformNegKineticLaw");
+
+    childNode = ASTNode_getChild( source, 0 );
+    if( ( child = _TransformKineticLaw( frontend, childNode, manager, table ) ) == NULL ) {
+      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+      return NULL;
+    }  
+    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_NEG, child ) ) == NULL ) {
+      END_FUNCTION("_TransformNegKineticLaw", FAILING );
+      return NULL;
+    }
+    END_FUNCTION("_TransformNegKineticLaw", SUCCESS );
+    return law;
+}
 
 static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table ) {
     int i = 0;
