@@ -472,7 +472,8 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULA
         species = speciesArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	    concentration = GetInitialAmountInSpeciesNode( species );
+	    compSize = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	    concentration = GetInitialAmountInSpeciesNode( species ) / compSize;
 	  }
 	  else {
 	    concentration = GetInitialConcentrationInSpeciesNode( species );
@@ -851,6 +852,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     UINT32 compartmentsSize = rec->compartmentsSize;
     long stoichiometry = 0;
     double concentration = 0.0;
+    double size = 0.0;
     double deltaTime = 0.0;
     double rate = 0.0;
     IR_EDGE *edge = NULL;
@@ -956,6 +958,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
+	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
         concentration = GetConcentrationInSpeciesNode( species );
         TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ),
             concentration );
@@ -979,6 +982,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                ((double)stoichiometry * rate));
         }
+	f[i] /= size;
         TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), change );
     }
     return GSL_SUCCESS;

@@ -472,8 +472,8 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
         species = speciesArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	    //compSize = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
-	    concentration = GetInitialAmountInSpeciesNode( species );
+	    compSize = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	    concentration = GetInitialAmountInSpeciesNode( species ) / compSize;
 	  }
 	  else {
 	    concentration = GetInitialConcentrationInSpeciesNode( species );
@@ -930,7 +930,6 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
-        //concentration = GetConcentrationInSpeciesNode( species );
 	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
 	TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ),
             concentration );
@@ -954,7 +953,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                ((double)stoichiometry * rate));
         }
-	//	f[i] /= size;
+	f[i] /= size;
         TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;
