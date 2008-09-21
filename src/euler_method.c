@@ -467,7 +467,8 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
         species = speciesArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	    concentration = GetInitialAmountInSpeciesNode( species );
+	    compSize = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	    concentration = GetInitialAmountInSpeciesNode( species ) / compSize;
 	  }
 	  else {
 	    concentration = GetInitialConcentrationInSpeciesNode( species );
@@ -836,6 +837,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     UINT32 speciesSize = rec->speciesSize;
     long stoichiometry = 0;
     double concentration = 0.0;
+    double size = 0.0;
     double change = 0.0;
     double deltaTime = rec->timeStep;
     double rate = 0.0;
@@ -914,7 +916,8 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
                ((double)stoichiometry * rate));
         }
 
-        concentration += (change * deltaTime);
+	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+        concentration += (change * deltaTime) / size;
         if( concentration < 0.0 ) {
             concentration = 0.0;
         }
