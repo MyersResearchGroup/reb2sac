@@ -109,12 +109,12 @@ static BOOL _EvaluateConstraints( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER 
 
     for (i = 0; i < decider->constraintsSize; i++) {
       if (decider->useConcentrations) {
-	if (decider->evaluator->EvaluateWithCurrentConcentrations( decider->evaluator, (KINETIC_LAW*)GetMathInConstraint( decider->constraintArray[i] ) ) ) {
+	if (!decider->evaluator->EvaluateWithCurrentConcentrations( decider->evaluator, (KINETIC_LAW*)GetMathInConstraint( decider->constraintArray[i] ) ) ) {
 	  decider->countArray[i]++;
 	  condition = TRUE;
 	} 
       } else {
-	if (decider->evaluator->EvaluateWithCurrentAmounts( decider->evaluator, (KINETIC_LAW*)GetMathInConstraint( decider->constraintArray[i] ) ) ) {
+	if (!decider->evaluator->EvaluateWithCurrentAmounts( decider->evaluator, (KINETIC_LAW*)GetMathInConstraint( decider->constraintArray[i] ) ) ) {
 	  decider->countArray[i]++;
 	  condition = TRUE;
 	} 
