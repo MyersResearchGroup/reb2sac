@@ -100,6 +100,18 @@ BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym ) {
     return sym->isConstant;
 }
 
+BOOL PrintSymbol( REB2SAC_SYMBOL *sym ) {
+    START_FUNCTION("PrintSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("PrintSymbol", FAILING );
+        return FALSE;
+    }
+        
+    END_FUNCTION("PrintSymbol", SUCCESS );
+    return sym->print;
+}
+
 BOOL IsRealValueSymbol( REB2SAC_SYMBOL *sym ) {
     START_FUNCTION("IsSymbolConstant");
 
@@ -141,6 +153,21 @@ RET_VAL SetUnitsInSymbol( REB2SAC_SYMBOL *sym, UNIT_DEFINITION *units ) {
     sym->units = units;
     
     END_FUNCTION("SetUnitsInSymbol", SUCCESS );
+    return SUCCESS;
+}
+
+RET_VAL SetPrintSymbol( REB2SAC_SYMBOL *sym, BOOL print ) {
+    
+    START_FUNCTION("SetPrintSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("SetPrintSymbol", FAILING );
+        return FAILING;
+    }
+    
+    sym->print = print;
+    
+    END_FUNCTION("SetPrintSymbol", SUCCESS );
     return SUCCESS;
 }
 

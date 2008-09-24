@@ -346,6 +346,32 @@ RET_VAL SetCompartmentConstant( COMPARTMENT *compartment, BOOL constant ) {
     return SUCCESS;
 }
 
+BOOL PrintCompartment( COMPARTMENT *compartment ) {
+    START_FUNCTION("PrintCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("PrintCompartment", FAILING );
+        return FALSE;
+    }
+    
+    END_FUNCTION("PrintCompartment", SUCCESS );
+    return compartment->print;
+}
+
+
+RET_VAL SetPrintCompartment( COMPARTMENT *compartment, BOOL print ) {
+    START_FUNCTION("SetPrintCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("SetPrintCompartment", FAILING );
+        return FAILING;
+    }
+    
+    compartment->print = print;
+    END_FUNCTION("SetPrintCompartment", SUCCESS );
+    return SUCCESS;
+}
+
 
 static COMPARTMENT *_CreateCompartment( COMPARTMENT_MANAGER *manager, char *id ) {
     COMPARTMENT *compartment = NULL;
