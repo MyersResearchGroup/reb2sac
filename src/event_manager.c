@@ -137,6 +137,13 @@ UINT32 GetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef ) {
     return eventAssignDef->index;
 }
 
+double GetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef ) {
+    START_FUNCTION("GetEventAssignmentNextValue");
+            
+    END_FUNCTION("GetEventAssignmentNextValue", SUCCESS );
+    return eventAssignDef->nextValue;
+}
+
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime ) {
     START_FUNCTION("SetNextEventTimeInEvent");
   
@@ -164,6 +171,17 @@ RET_VAL SetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef, UINT32 index 
     eventAssignDef->index = index;
 
     END_FUNCTION("SetEventAssignmentIndex", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef, double nextValue ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetEventAssignmentNextValue");
+
+    eventAssignDef->nextValue = nextValue;
+
+    END_FUNCTION("SetEventAssignmentNextValue", SUCCESS );
     return ret;
 }
 

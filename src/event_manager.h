@@ -45,6 +45,7 @@ typedef struct {
 typedef struct {
     STRING *var;
     KINETIC_LAW *assignment;
+    double nextValue;
     BYTE varType;
     UINT32 index;
 } EVENT_ASSIGNMENT;
@@ -75,8 +76,10 @@ void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
 
 BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef );
 UINT32 GetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef );
+double GetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef );
 RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varType );
 RET_VAL SetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef, UINT32 index );
+RET_VAL SetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef, double nextValue );
 
 
 EVENT_MANAGER *GetEventManagerInstance( COMPILER_RECORD_T *record );
