@@ -109,6 +109,8 @@ RET_VAL SetInitialAssignmentInSpeciesNode( SPECIES *species, struct KINETIC_LAW 
 BOOL IsKeepFlagSetInSpeciesNode( SPECIES *species );
 RET_VAL SetKeepFlagInSpeciesNode( SPECIES *species, BOOL flag );
 
+BOOL IsPrintFlagSetInSpeciesNode( SPECIES *species );
+RET_VAL SetPrintFlagInSpeciesNode( SPECIES *species, BOOL flag );
 
 RET_VAL ReleaseResourcesInSpeciesNode( SPECIES *species );
 

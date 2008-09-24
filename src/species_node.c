@@ -27,6 +27,7 @@
 #define SPECIES_NODE_FLAG_HAS_BOUNDARY_CONDITION 0x08
 #define SPECIES_NODE_FLAG_CHARGE 0x10
 #define SPECIES_NODE_FLAG_KEEP 0x20
+#define SPECIES_NODE_FLAG_PRINT 0x40
 
 static IR_NODE *_Clone( IR_NODE *species );    
 static char * _GetType(  );                                                                              
@@ -226,7 +227,6 @@ BOOL IsChargeSetInSpeciesNode( SPECIES *species ) {
     END_FUNCTION("IsChargeSetInSpeciesNode", SUCCESS );
     return ( ( ( species->flags & SPECIES_NODE_FLAG_CHARGE ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
 }
-
 
 int GetChargeInSpeciesNode( SPECIES *species ) {
     START_FUNCTION("GetChargeInSpeciesNode");
@@ -500,7 +500,33 @@ RET_VAL SetKeepFlagInSpeciesNode( SPECIES *species, BOOL flag ) {
     return ret;
 }
 
+RET_VAL SetPrintFlagInSpeciesNode( SPECIES *species, BOOL flag ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetPrintFlagInSpeciesNode");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetPrintFlagInSpeciesNode", "input species node is NULL" );
+    }
+    if( flag ) {
+        species->flags = ( species->flags | SPECIES_NODE_FLAG_PRINT );
+    }
+    else {
+        species->flags = ( species->flags & (~SPECIES_NODE_FLAG_PRINT) );
+    }
+    
+    END_FUNCTION("SetPrintFlagInSpeciesNode", SUCCESS );
+    return ret;
+}
 
+BOOL IsPrintFlagSetInSpeciesNode( SPECIES *species ) {
+    START_FUNCTION("IsPrintSetInSpeciesNode");
+    if( species == NULL ) {
+        END_FUNCTION("IsPrintSetInSpeciesNode", FAILING );
+        return FALSE;
+    }
+    END_FUNCTION("IsPrintSetInSpeciesNode", SUCCESS );
+    return ( ( ( species->flags & SPECIES_NODE_FLAG_PRINT ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
+}
 
 RET_VAL ReleaseResourcesInSpeciesNode( SPECIES *species ) {
     RET_VAL ret = SUCCESS;

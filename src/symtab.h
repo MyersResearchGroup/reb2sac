@@ -43,6 +43,7 @@ typedef struct {
     double currentRealValue;
     BYTE type;
     BOOL isConstant;
+    BOOL print;
     UNIT_DEFINITION *units;
     struct KINETIC_LAW *initialAssignment;    
 } REB2SAC_SYMBOL;
@@ -58,6 +59,8 @@ RET_VAL SetUnitsInSymbol( REB2SAC_SYMBOL *sym, UNIT_DEFINITION *units );
 struct KINETIC_LAW *GetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym, struct KINETIC_LAW *law );
 BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym );
+BOOL PrintSymbol( REB2SAC_SYMBOL *sym );
+RET_VAL SetPrintSymbol( REB2SAC_SYMBOL *sym, BOOL print );
 
 struct _REB2SAC_SYMTAB {
     REB2SAC_SYMTAB *parent;
