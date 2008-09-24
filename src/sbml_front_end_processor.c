@@ -355,7 +355,6 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     double Pvalue;
     SPECIES *speciesNode;
     COMPARTMENT *compartmentNode;
-    double initialValue;
     REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
     REB2SAC_SYMBOL *symbol = NULL;
 
@@ -382,9 +381,7 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
 	return ErrorReport( FAILING, "_HandleInitialAssignments", "failed to create initial assignment for %s", id );        
       }
       if( ( symbol = symtab->Lookup( symtab, id ) ) != NULL ) {
-	if ( GetRealValueInSymbol( symbol ) != initialValue ) {
-	  SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)law );
-	}
+	SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)law );
       }
       for ( j = 0; j < sizeS; j++ ) {
 	speciesNode = (SPECIES*)GetElementByIndex(j,listS);
@@ -429,7 +426,6 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
     double Pvalue;
     SPECIES *speciesNode;
     COMPARTMENT *compartmentNode;
-    double initialValue;
     REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
     REB2SAC_SYMBOL *symbol = NULL;
 
@@ -457,9 +453,7 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
 	  return ErrorReport( FAILING, "_HandleRuleAssignments", "failed to create initial assignment for rule %s", id );        
 	}
 	if( ( symbol = symtab->Lookup( symtab, id ) ) != NULL ) {
-	  if ( GetRealValueInSymbol( symbol ) != initialValue ) {
-	    SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)law );
-	  }
+	  SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)law );
 	}
 	for ( j = 0; j < sizeS; j++ ) {
 	  speciesNode = (SPECIES*)GetElementByIndex(j,listS);
@@ -1355,6 +1349,9 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
         END_FUNCTION("_CreateKineticLaw", ret );
         return ret;   
     }   
+    if( IS_FAILED( ( ret = manager->SetLocal( manager, NULL ) ) ) ) {
+        return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
+    }     
                                             
     END_FUNCTION("_CreateKineticLaw", SUCCESS );
     return ret;   
