@@ -35,6 +35,8 @@ typedef struct {
 #define REB2SAC_ABSTRACTION_METHOD_KEY_PREFIX "reb2sac.abstraction.method."
 #define REB2SAC_INTERESTING_SPECIES_KEY_PREFIX "reb2sac.interesting.species."
 
+#define REB2SAC_PRINT_VARIABLES "reb2sac.print.variables"
+
 
 #define REB2SAC_RNAP_MIN_CONCENTRATION_THRESHOLD_KEY "reb2sac.rnap.min.concentration.threshold"
 #define DEFAULT_REB2SAC_RNAP_MIN_CONCENTRATION_THRESHOLD ((double)20.0)

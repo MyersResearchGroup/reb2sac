@@ -21,6 +21,7 @@
 
 static ABSTRACTION_METHOD** _GetRegisteredMethods( ABSTRACTION_ENGINE *abstractionEngine );
 static RET_VAL _PutKeepFlagInSpeciesNodes( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
+static RET_VAL _PutPrintFlagInNodes( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
 static RET_VAL _Abstract( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
 static RET_VAL _Abstract_DEBUG( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
 
@@ -129,6 +130,185 @@ static RET_VAL _PutKeepFlagInSpeciesNodes( ABSTRACTION_ENGINE *abstractionEngine
     return ret;
 }
 
+static RET_VAL _PutPrintFlagInNodes( ABSTRACTION_ENGINE *abstractionEngine, IR *ir ) {
+    RET_VAL ret = SUCCESS;
+    char *speciesName = NULL;
+    SPECIES *species;
+    LINKED_LIST *list = NULL;
+    ABSTRACTION_METHOD_MANAGER *manager = NULL;
+    REB2SAC_PROPERTIES *properties = NULL;
+    char *valueString = NULL;
+    char *curPtr = NULL;
+    char *nextPtr = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMTAB *symTab;
+    
+    START_FUNCTION("_PutPrintFlagInSpeciesNodes");
+    
+    properties = abstractionEngine->record->properties;
+    manager = abstractionEngine->manager;
+
+    if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the compartment manager" );
+    }
+    if( ( symTab = ir->GetGlobalSymtab( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the symbol table" );
+    }
+
+    if( ( valueString = properties->GetProperty( properties, REB2SAC_PRINT_VARIABLES ) ) != NULL ) {
+      list = compartmentManager->CreateListOfCompartments( compartmentManager );
+      ResetCurrentElement( list );
+      while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetPrintCompartment( compartment, FALSE ) ) ) ) {
+	  END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	  return ret;
+	}
+      }
+      list = ir->GetListOfSpeciesNodes( ir );
+      ResetCurrentElement( list );
+      while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetPrintFlagInSpeciesNode( species, FALSE ) ) ) ) {
+	  END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	  return ret;
+	}
+      }
+      list = symTab->GenerateListOfSymbols( symTab );
+      ResetCurrentElement( list );
+      while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetPrintSymbol( symbol, FALSE ) ) ) ) {
+	  END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	  return ret;
+	}
+      }
+
+      curPtr = valueString;
+      nextPtr = strchr(curPtr,',');
+      while (nextPtr) {
+	(*nextPtr) = '\0';
+	list = compartmentManager->CreateListOfCompartments( compartmentManager );
+	ResetCurrentElement( list );
+	while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  if( strcmp( GetCharArrayOfString( GetCompartmentID( compartment ) ), curPtr ) == 0 ) {
+	    if( IS_FAILED( ( ret = SetPrintCompartment( compartment, TRUE ) ) ) ) {
+	      END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	      return ret;
+	    }
+	  }
+	}
+	list = ir->GetListOfSpeciesNodes( ir );
+	ResetCurrentElement( list );
+	while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  speciesName = GetCharArrayOfString( GetSpeciesNodeName( species ) );
+	  if( strcmp( speciesName, curPtr ) == 0 ) {
+	    if( IS_FAILED( ( ret = SetPrintFlagInSpeciesNode( species, TRUE ) ) ) ) {
+	      END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	      return ret;
+	    }
+	    if( IS_FAILED( ( ret = SetKeepFlagInSpeciesNode( species, TRUE ) ) ) ) {
+	      END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	      return ret;
+	    }
+	  }
+	}
+	list = symTab->GenerateListOfSymbols( symTab );
+	ResetCurrentElement( list );
+	while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  if( strcmp( GetCharArrayOfString( GetSymbolID( symbol ) ), curPtr ) == 0 ) {
+	    if( IS_FAILED( ( ret = SetPrintSymbol( symbol, TRUE ) ) ) ) {
+	      END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	      return ret;
+	    }
+	  }
+	}
+
+	curPtr=nextPtr+2;
+	nextPtr = strchr(curPtr,',');
+      }
+
+      list = compartmentManager->CreateListOfCompartments( compartmentManager );
+      ResetCurrentElement( list );
+      while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( strcmp( GetCharArrayOfString( GetCompartmentID( compartment ) ), curPtr ) == 0 ) {
+	  if( IS_FAILED( ( ret = SetPrintCompartment( compartment, TRUE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	}
+      }
+      list = ir->GetListOfSpeciesNodes( ir );
+      ResetCurrentElement( list );
+      while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+	speciesName = GetCharArrayOfString( GetSpeciesNodeName( species ) );
+	if( strcmp( speciesName, curPtr ) == 0 ) {
+	  if( IS_FAILED( ( ret = SetPrintFlagInSpeciesNode( species, TRUE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	  if( IS_FAILED( ( ret = SetKeepFlagInSpeciesNode( species, TRUE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	}
+      }
+      list = symTab->GenerateListOfSymbols( symTab );
+      ResetCurrentElement( list );
+      while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( strcmp( GetCharArrayOfString( GetSymbolID( symbol ) ), curPtr ) == 0 ) {
+	  if( IS_FAILED( ( ret = SetPrintSymbol( symbol, TRUE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	}
+      }
+
+    } else {
+      list = compartmentManager->CreateListOfCompartments( compartmentManager );
+      ResetCurrentElement( list );
+      while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if (IsCompartmentConstant( compartment )) {
+	  if( IS_FAILED( ( ret = SetPrintCompartment( compartment, FALSE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	} else {
+	  if( IS_FAILED( ( ret = SetPrintCompartment( compartment, TRUE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	}
+      }
+      list = ir->GetListOfSpeciesNodes( ir );
+      ResetCurrentElement( list );
+      while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetPrintFlagInSpeciesNode( species, TRUE ) ) ) ) {
+	  END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	  return ret;
+	}
+      }
+      list = symTab->GenerateListOfSymbols( symTab );
+      ResetCurrentElement( list );
+      while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if (!IsSymbolConstant( symbol ) && 
+	    !strcmp(GetCharArrayOfString(GetSymbolID( symbol )),"t")==0 &&
+	    !strcmp(GetCharArrayOfString(GetSymbolID( symbol )),"time")==0) {
+	  if( IS_FAILED( ( ret = SetPrintSymbol( symbol, TRUE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	} else {
+	  if( IS_FAILED( ( ret = SetPrintSymbol( symbol, FALSE ) ) ) ) {
+	    END_FUNCTION("_PutPrintFlagInSpeciesNodes", ret );
+	    return ret;
+	  }
+	}
+      }
+    }
+    END_FUNCTION("_PutPrintFlagInSpeciesNodes", SUCCESS );
+    return ret;
+}
+
 
 
 static RET_VAL _Abstract( ABSTRACTION_ENGINE *abstractionEngine, IR *ir ) {
@@ -175,6 +355,11 @@ static RET_VAL _Abstract( ABSTRACTION_ENGINE *abstractionEngine, IR *ir ) {
 
 
     if( IS_FAILED( ( ret = _PutKeepFlagInSpeciesNodes( abstractionEngine, ir ) ) ) ) {
+        END_FUNCTION("_Abstract", ret );
+        return ret;
+    }
+
+    if( IS_FAILED( ( ret = _PutPrintFlagInNodes( abstractionEngine, ir ) ) ) ) {
         END_FUNCTION("_Abstract", ret );
         return ret;
     }
