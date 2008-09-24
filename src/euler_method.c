@@ -42,6 +42,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec );
 static double fireEvents( EULER_SIMULATION_RECORD *rec, double time );
 static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec );
 static void ExecuteAssignments( EULER_SIMULATION_RECORD *rec );
+static void SetEventAssignmentsNextValues( EVENT *event, EULER_SIMULATION_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -123,6 +124,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
+    UINT32 numberSteps = 0;
     UINT32 size = 0;
     char buf[512];
     char *valueString = NULL;
@@ -287,7 +289,15 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     }
 
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
+      if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
         rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+      } else {
+        if( IS_FAILED( ( ret = StrToUINT32( &(numberSteps), valueString ) ) ) ) {
+            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+        } else {
+	  rec->printInterval = rec->timeLimit / numberSteps;
+	}
+      }
     }
     else {
         if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
@@ -462,12 +472,35 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
     }
     rec->time = 0.0;
     rec->nextPrintTime = 0.0;
+    size = rec->compartmentsSize;
+    for( i = 0; i < size; i++ ) {
+        compartment = compartmentArray[i];
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
+	  compSize = GetSizeInCompartment( compartment );
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    compSize = GetRealValueFromKineticLaw(law);
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    compSize = (double)GetIntValueFromKineticLaw(law);
+	  }
+	  if (GetSizeInCompartment( compartment ) != compSize) {
+	    SetSizeInCompartment( compartment, compSize );
+	    change = TRUE;
+	  }
+	  FreeKineticLaw( &(law) );
+	}
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;
+        }
+    }
     size = rec->speciesSize;
     for( i = 0; i < size; i++ ) {
         species = speciesArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	    compSize = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	    compSize = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
 	    concentration = GetInitialAmountInSpeciesNode( species ) / compSize;
 	  }
 	  else {
@@ -496,29 +529,6 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
 	  FreeKineticLaw( &(law) );
 	}
         if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, concentration ) ) ) ) {
-            return ret;
-        }
-    }
-    size = rec->compartmentsSize;
-    for( i = 0; i < size; i++ ) {
-        compartment = compartmentArray[i];
-	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
-	  compSize = GetSizeInCompartment( compartment );
-	} else {
-	  law = CloneKineticLaw( law );
-	  SimplifyInitialAssignment(law);
-	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    compSize = GetRealValueFromKineticLaw(law);
-	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    compSize = (double)GetIntValueFromKineticLaw(law);
-	  }
-	  if (GetSizeInCompartment( compartment ) != compSize) {
-	    SetSizeInCompartment( compartment, compSize );
-	    change = TRUE;
-	  }
-	  FreeKineticLaw( &(law) );
-	}
-        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
             return ret;
         }
     }
@@ -751,10 +761,12 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	    }
 	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
 	      }
 	    } else if (deltaTime == 0) {
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
 	      fireEvent( rec->eventArray[i], rec );
 	      eventFired = TRUE;
 	    } else {
@@ -776,6 +788,21 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
     return firstEventTime;
 }
 
+static void SetEventAssignmentsNextValues( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double concentration = 0.0;
+  UINT j;
+  BYTE varType;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
+    SetEventAssignmentNextValue( eventAssignment, concentration );
+  }
+}
+
 static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
@@ -790,17 +817,13 @@ static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
+    concentration = GetEventAssignmentNextValue( eventAssignment );
+    //printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
-      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-      //printf("conc = %g\n",concentration);
       SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
-      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-      //printf("conc = %g\n",concentration);
       SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
     } else {
-      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-      //printf("conc = %g\n",concentration);
       SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
     }
   }
@@ -815,7 +838,7 @@ static void ExecuteAssignments( EULER_SIMULATION_RECORD *rec ) {
 
   for (i = 0; i < rec->rulesSize; i++) {
     if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-      concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
+      concentration = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 									 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
       varType = GetRuleVarType( rec->ruleArray[i] );
       j = GetRuleIndex( rec->ruleArray[i] );

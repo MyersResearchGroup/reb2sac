@@ -53,7 +53,7 @@ static BOOL _IsTerminationConditionMet( EMC_SIMULATION_RECORD *rec );
 static double fireEvents( EMC_SIMULATION_RECORD *rec, double time );
 static void fireEvent( EVENT *event, EMC_SIMULATION_RECORD *rec );
 static void ExecuteAssignments( EMC_SIMULATION_RECORD *rec );
-
+static void SetEventAssignmentsNextValues( EVENT *event, EMC_SIMULATION_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoEmcSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -136,6 +136,7 @@ static RET_VAL _InitializeRecord( EMC_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     UINT32 i = 0;
     UINT32 j = 0;
     UINT32 size = 0;
+    UINT32 numberSteps = 0;
     char buf[512];
     char *valueString = NULL;
     SPECIES *species = NULL;
@@ -317,12 +318,20 @@ static RET_VAL _InitializeRecord( EMC_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
         }
     }
 
-    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
-        rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
+    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
+      if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
+        rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+      } else {
+        if( IS_FAILED( ( ret = StrToUINT32( &(numberSteps), valueString ) ) ) ) {
+            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+        } else {
+	  rec->printInterval = rec->timeLimit / numberSteps;
+	}
+      }
     }
     else {
         if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
+            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
         }
     }
 
@@ -475,6 +484,29 @@ static RET_VAL _InitializeSimulation( EMC_SIMULATION_RECORD *rec, int runNum ) {
     }
     rec->time = 0.0;
     rec->nextPrintTime = 0.0;
+    size = rec->compartmentsSize;
+    for( i = 0; i < size; i++ ) {
+        compartment = compartmentArray[i];
+	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
+	  compSize = GetSizeInCompartment( compartment );
+	} else {
+	  law = CloneKineticLaw( law );
+	  SimplifyInitialAssignment(law);
+	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	    compSize = GetRealValueFromKineticLaw(law);
+	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	    compSize = (double)GetIntValueFromKineticLaw(law);
+	  }
+	  if (GetSizeInCompartment( compartment ) != compSize) {
+	    SetSizeInCompartment( compartment, compSize );
+	    change = TRUE;
+	  }
+	  FreeKineticLaw( &(law) );
+	}
+        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
+            return ret;
+        }
+    }
     size = rec->speciesSize;
     for( i = 0; i < size; i++ ) {
         species = speciesArray[i];
@@ -508,29 +540,6 @@ static RET_VAL _InitializeSimulation( EMC_SIMULATION_RECORD *rec, int runNum ) {
 	  FreeKineticLaw( &(law) );
 	}
         if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, amount ) ) ) ) {
-            return ret;
-        }
-    }
-    size = rec->compartmentsSize;
-    for( i = 0; i < size; i++ ) {
-        compartment = compartmentArray[i];
-	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
-	  compSize = GetSizeInCompartment( compartment );
-	} else {
-	  law = CloneKineticLaw( law );
-	  SimplifyInitialAssignment(law);
-	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    compSize = GetRealValueFromKineticLaw(law);
-	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    compSize = (double)GetIntValueFromKineticLaw(law);
-	  }
-	  if (GetSizeInCompartment( compartment ) != compSize) {
-	    SetSizeInCompartment( compartment, compSize );
-	    change = TRUE;
-	  }
-	  FreeKineticLaw( &(law) );
-	}
-        if( IS_FAILED( ( ret = SetCurrentSizeInCompartment( compartment, compSize ) ) ) ) {
             return ret;
         }
     }
@@ -983,10 +992,12 @@ static double fireEvents( EMC_SIMULATION_RECORD *rec, double time ) {
 	    }
 	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
 	      }
 	    } else if (deltaTime == 0) {
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
 	      fireEvent( rec->eventArray[i], rec );
 	      eventFired = TRUE;
 	    } else {
@@ -1008,6 +1019,21 @@ static double fireEvents( EMC_SIMULATION_RECORD *rec, double time ) {
     return firstEventTime;
 }
 
+static void SetEventAssignmentsNextValues( EVENT *event, EMC_SIMULATION_RECORD *rec ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double amount = 0.0;
+  UINT j;
+  BYTE varType;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+    SetEventAssignmentNextValue( eventAssignment, amount );
+  }
+}
+
 static void fireEvent( EVENT *event, EMC_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
@@ -1022,19 +1048,15 @@ static void fireEvent( EVENT *event, EMC_SIMULATION_RECORD *rec ) {
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
+    amount = GetEventAssignmentNextValue( eventAssignment );
+    //printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
-      //printf("conc = %g\n",amount);
       SetAmountInSpeciesNode( rec->speciesArray[j], amount );
       _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
-      //printf("conc = %g\n",amount);
       SetCurrentSizeInCompartment( rec->compartmentArray[j], amount );
       _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     } else {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
-      //printf("conc = %g\n",amount);
       SetCurrentRealValueInSymbol( rec->symbolArray[j], amount );
       _UpdateAllReactionRateUpdateTimes( rec, rec->time );
     }
