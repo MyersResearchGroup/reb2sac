@@ -30,8 +30,6 @@
 #include "simulation_printer.h"
 #include "simulation_run_termination_decider.h"
 
-
-
 #define ODE_SIMULATION_ABSOLUTE_ERROR "ode.simulation.absolute.error"
 #define DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR 1.0e-9
 
@@ -40,6 +38,9 @@
 
 #define ODE_SIMULATION_PRINT_INTERVAL "ode.simulation.print.interval"
 #define DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE 5.0
+
+#define ODE_SIMULATION_NUMBER_STEPS "ode.simulation.number.steps"
+#define DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE 10
 
 #define ODE_SIMULATION_TIME_STEP "ode.simulation.time.step"
 #define DEFAULT_ODE_SIMULATION_TIME_STEP 1.0
