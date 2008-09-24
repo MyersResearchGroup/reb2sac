@@ -93,19 +93,19 @@ static RET_VAL _PrintHeader( SIMULATION_PRINTER *printer ) {
     fprintf( out, "#(1, time)" );    
     j = 2;
     for( i = 0; i < compSize; i++ ) {
-      if (!IsCompartmentConstant( compartmentArray[i] )) {
+      if (PrintCompartment( compartmentArray[i] )) {
         fprintf( out, ", (%i, %s)", j,GetCharArrayOfString(GetCompartmentID( compartmentArray[i] )) );
 	j++;
       }
     }
     for( i = 0; i < size; i++ ) {
+      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
         fprintf( out, ", (%i, %s)", j, GetCharArrayOfString(GetSpeciesNodeName( speciesArray[i] )) );
 	j++;
+      }
     }                 
     for( i = 0; i < symSize; i++ ) {
-      if (!IsSymbolConstant( symbolArray[i] ) && 
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0 &&
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"time")==0) {
+      if (PrintSymbol( symbolArray[i] )) {
         fprintf( out, ", (%i, %s)", j, GetCharArrayOfString(GetSymbolID( symbolArray[i] )) );
 	j++;
       }
@@ -128,17 +128,17 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     
     fprintf( out, "%g", time );
     for( i = 0; i < compSize; i++ ) {
-      if (!IsCompartmentConstant( compartmentArray[i] )) {
+      if (PrintCompartment( compartmentArray[i] )) {
         fprintf( out, " %g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
       }
     }                 
     for( i = 0; i < size; i++ ) {
+      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
         fprintf( out, " %g", GetAmountInSpeciesNode( speciesArray[i] ) );
+      }
     }                 
     for( i = 0; i < symSize; i++ ) {
-      if (!IsSymbolConstant( symbolArray[i] ) && 
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0 &&
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"time")==0) {
+      if (PrintSymbol( symbolArray[i] )) {
         fprintf( out, " %g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
       }
     }                 
@@ -160,17 +160,17 @@ static RET_VAL _PrintConcentrationValues( SIMULATION_PRINTER *printer, double ti
     
     fprintf( out, "%g", time );
     for( i = 0; i < compSize; i++ ) {
-      if (!IsCompartmentConstant( compartmentArray[i] )) {
+      if (PrintCompartment( compartmentArray[i] )) {
         fprintf( out, " %g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
       }
     }                 
     for( i = 0; i < size; i++ ) {
+      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
         fprintf( out, " %g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
+      }
     }                 
     for( i = 0; i < symSize; i++ ) {
-      if (!IsSymbolConstant( symbolArray[i] ) && 
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"t")==0 &&
-	  !strcmp(GetCharArrayOfString(GetSymbolID( symbolArray[i] )),"time")==0) {
+      if (PrintSymbol( symbolArray[i] )) {
         fprintf( out, " %g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
       }
     }                 
