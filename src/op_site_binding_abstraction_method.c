@@ -124,7 +124,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         /*
             * every reaction R, where R uses S as a reactant, the stoichiometry of S is 1
             */
-        if( GetStoichiometryInIREdge( reactantEdge ) != 1 ) {
+        if( GetStoichiometryInIREdge( reactantEdge ) != 1.0 ) {
             END_FUNCTION("_IsConditionSatisfied", SUCCESS );
             return FALSE;
         }

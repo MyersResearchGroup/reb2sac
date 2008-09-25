@@ -368,7 +368,7 @@ edge
 
 
 
-DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, int stoichiometry  ) {
+DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     
@@ -398,7 +398,7 @@ DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *speci
     return edge;
 }
 
-DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *species, int stoichiometry  ) {
+DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     
@@ -428,7 +428,7 @@ DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *speci
     return edge;
 }
 
-DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, int stoichiometry  ) {
+DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     

@@ -27,9 +27,9 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *s
 
 static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, SPECIES *species );
 static RET_VAL _CombineProductionReactions( ABSTRACTION_METHOD *method, IR *ir, SPECIES *species );
-static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, long stoichiometry );
+static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, double stoichiometry );
 static RET_VAL _AddModifiers( ABSTRACTION_METHOD *method, IR *ir, REACTION *production, REACTION *degradation );
-static KINETIC_LAW *_GenerateReplacementForDegradation( ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ); 
+static KINETIC_LAW *_GenerateReplacementForDegradation( ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ); 
 static UINT32 _FindAmplifier( ABSTRACTION_METHOD_MANAGER *manager );
 
 
@@ -87,7 +87,7 @@ static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod2( ABSTRACTION_M
 }      
 
 static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species ) {
-    long stoichiometry = -1;
+    double stoichiometry = -1;
     SPECIES *reactant = NULL;
     SPECIES *product = NULL;
     IR_EDGE *edge = NULL;
@@ -209,7 +209,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *s
 
 static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, SPECIES *species ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0;
+    double stoichiometry = 0;
     REACTION *newReaction = NULL;
     KINETIC_LAW *newKineticLaw = NULL;
     REACTION *reaction = NULL;
@@ -258,7 +258,7 @@ static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, 
 
 static RET_VAL _CombineProductionReactions(ABSTRACTION_METHOD *method, IR *ir, SPECIES *species ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0;
+    double stoichiometry = 0;
     REACTION *newReaction = NULL;
     KINETIC_LAW *newKineticLaw = NULL;
     REACTION *reaction = NULL;
@@ -306,7 +306,7 @@ static RET_VAL _CombineProductionReactions(ABSTRACTION_METHOD *method, IR *ir, S
     return SUCCESS;        
 }
 
-static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, long stoichiometry ) {
+static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     KINETIC_LAW *temp1 = NULL;
     KINETIC_LAW *temp2 = NULL;
@@ -315,7 +315,7 @@ static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES
     
     temp1 = CreateOpKineticLaw( KINETIC_LAW_OP_DIVIDE, CloneKineticLaw( degradationKineticLaw ), CloneKineticLaw( productionKineticLaw ) );
     temp1 = CreateOpKineticLaw( KINETIC_LAW_OP_PLUS, CreateRealValueKineticLaw( 1.0 ), temp1 );
-    temp1 = CreateOpKineticLaw( KINETIC_LAW_OP_POW, temp1, CreateRealValueKineticLaw( (stoichiometry>>1) + 1.0 ) );
+    temp1 = CreateOpKineticLaw( KINETIC_LAW_OP_POW, temp1, CreateRealValueKineticLaw( ((long)stoichiometry>>1) + 1.0 ) );
     temp1 = CreateOpKineticLaw( KINETIC_LAW_OP_MINUS, temp1, CreateRealValueKineticLaw( 1.0 ) );
     newKineticLaw = CreateOpKineticLaw( KINETIC_LAW_OP_DIVIDE, CloneKineticLaw( degradationKineticLaw ), temp1 );
     
@@ -356,12 +356,12 @@ static RET_VAL _AddModifiers( ABSTRACTION_METHOD *method, IR *ir, REACTION *prod
 
 
 static KINETIC_LAW *_GenerateReplacementForDegradation( 
-ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ) {
+ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );
     replacement = CreateOpKineticLaw( KINETIC_LAW_OP_MINUS, replacement, 
-        CreateRealValueKineticLaw( (double)(stoichiometry>>1) ) );
+				      CreateRealValueKineticLaw( (double)((long)stoichiometry>>1) ) );
     return replacement;                          
 }
 

@@ -319,12 +319,12 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
         }
     }
 
-    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
+    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
       if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+        rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
       } else {
         if( IS_FAILED( ( ret = StrToUINT32( &(numberSteps), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+            rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
         } else {
 	  rec->printInterval = rec->timeLimit / numberSteps;
 	}
@@ -332,7 +332,7 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     }
     else {
         if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+            rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
         }
     }
 
@@ -805,8 +805,8 @@ static RET_VAL _CalculatePropensities( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *r
 
 static RET_VAL _CalculatePropensity( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, REACTION *reaction ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0;
-    long amount = 0;
+    double stoichiometry = 0;
+    double amount = 0;
     double propensity = 0.0;
     double time = rec->time;
     SPECIES *species = NULL;
@@ -818,9 +818,9 @@ static RET_VAL _CalculatePropensity( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
     edges = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        stoichiometry = (long)GetStoichiometryInIREdge( edge );
+        stoichiometry = GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
-        amount = (long)GetAmountInSpeciesNode( species );
+        amount = GetAmountInSpeciesNode( species );
         if( amount < stoichiometry ) {
             if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
                 return ret;
@@ -836,7 +836,7 @@ static RET_VAL _CalculatePropensity( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
     edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        stoichiometry = (long)GetStoichiometryInIREdge( edge );
+        stoichiometry = GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
         amount = GetAmountInSpeciesNode( species );
         if( amount < stoichiometry ) {
@@ -1111,7 +1111,7 @@ static void ExecuteAssignments( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
 
 static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0;
+    double stoichiometry = 0;
     double amount = 0;
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
@@ -1168,10 +1168,10 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
       edges = GetReactantEdges( (IR_NODE*)reaction );
       ResetCurrentElement( edges );
       while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        stoichiometry = (long)GetStoichiometryInIREdge( edge );
+        stoichiometry = GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
-        amount = GetAmountInSpeciesNode( species ) - (double)stoichiometry;
+        amount = GetAmountInSpeciesNode( species ) - stoichiometry;
         TRACE_3( "the amount of %s decreases from %g to %g",
 		 GetCharArrayOfString( GetSpeciesNodeName( species ) ),
 		 GetAmountInSpeciesNode( species ),
@@ -1185,10 +1185,10 @@ static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec
       edges = GetProductEdges( (IR_NODE*)reaction );
       ResetCurrentElement( edges );
       while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        stoichiometry = (long)GetStoichiometryInIREdge( edge );
+        stoichiometry = GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
-        amount = GetAmountInSpeciesNode( species ) + (double)stoichiometry;
+        amount = GetAmountInSpeciesNode( species ) + stoichiometry;
         TRACE_3( "the amount of %s increases from %g to %g",
 		 GetCharArrayOfString( GetSpeciesNodeName( species ) ),
 		 GetAmountInSpeciesNode( species ),

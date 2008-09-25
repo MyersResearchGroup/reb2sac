@@ -33,12 +33,12 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *s
 
 static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, SPECIES *species );
 static RET_VAL _CombineProductionReactions( ABSTRACTION_METHOD *method, IR *ir, SPECIES *species );
-static RET_VAL _AdjustProductionKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, long stoichiometry );
-static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, long stoichiometry );
+static RET_VAL _AdjustProductionKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, double stoichiometry );
+static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, double stoichiometry );
 static RET_VAL _AddModifiers( ABSTRACTION_METHOD *method, IR *ir, REACTION *production, REACTION *degradation );
-static KINETIC_LAW *_GenerateReplacementForProduction( ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ); 
-static KINETIC_LAW *_GenerateReplacementForDegradation( ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ); 
-static RET_VAL _AdjustInitialAmount( ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry );
+static KINETIC_LAW *_GenerateReplacementForProduction( ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ); 
+static KINETIC_LAW *_GenerateReplacementForDegradation( ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ); 
+static RET_VAL _AdjustInitialAmount( ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry );
 
 
 ABSTRACTION_METHOD *BirthDeathGenerationMethod5Constructor(  ABSTRACTION_METHOD_MANAGER *manager ) {
@@ -90,7 +90,7 @@ static RET_VAL _ApplyBirthDeathGenerationMethod5( ABSTRACTION_METHOD *method, IR
 }      
 
 static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species ) {
-    long stoichiometry = -1;
+    double stoichiometry = -1;
     SPECIES *reactant = NULL;
     SPECIES *product = NULL;
     IR_EDGE *edge = NULL;
@@ -167,7 +167,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
 
 static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *species ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0L;
+    double stoichiometry = 0L;
     IR_EDGE *productionEdge = NULL;
     IR_EDGE *degradationEdge = NULL;    
     REACTION *production = NULL;
@@ -216,7 +216,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, SPECIES *s
 
 static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, SPECIES *species ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0;
+    double stoichiometry = 0;
     REACTION *newReaction = NULL;
     KINETIC_LAW *newKineticLaw = NULL;
     REACTION *reaction = NULL;
@@ -265,7 +265,7 @@ static RET_VAL _CombineDegradationReactions(ABSTRACTION_METHOD *method, IR *ir, 
 
 static RET_VAL _CombineProductionReactions(ABSTRACTION_METHOD *method, IR *ir, SPECIES *species ) {
     RET_VAL ret = SUCCESS;
-    long stoichiometry = 0;
+    double stoichiometry = 0;
     REACTION *newReaction = NULL;
     KINETIC_LAW *newKineticLaw = NULL;
     REACTION *reaction = NULL;
@@ -316,7 +316,7 @@ static RET_VAL _CombineProductionReactions(ABSTRACTION_METHOD *method, IR *ir, S
 
 static RET_VAL _AdjustProductionKineticLaw( 
 ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, 
-KINETIC_LAW *degradationKineticLaw, long stoichiometry ) {
+KINETIC_LAW *degradationKineticLaw, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     KINETIC_LAW *newKineticLaw = NULL;
     KINETIC_LAW *replacement = NULL;
@@ -333,7 +333,7 @@ KINETIC_LAW *degradationKineticLaw, long stoichiometry ) {
     return SUCCESS;
 }
 
-static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, long stoichiometry ) {
+static RET_VAL _AdjustDegradationKineticLaw( ABSTRACTION_METHOD *method, SPECIES *species, REACTION *reaction, KINETIC_LAW *productionKineticLaw, KINETIC_LAW *degradationKineticLaw, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     KINETIC_LAW *newKineticLaw = NULL;
     KINETIC_LAW *replacement = NULL;
@@ -392,43 +392,43 @@ static RET_VAL _AddModifiers( ABSTRACTION_METHOD *method, IR *ir, REACTION *prod
 
 
 static KINETIC_LAW *_GenerateReplacementForProduction( 
-ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ) {
+ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );
 #if 0    
     replacement = CreateOpKineticLaw( KINETIC_LAW_OP_MINUS, replacement, 
-        CreateRealValueKineticLaw( (double)( (stoichiometry>>2) + 1) ) );
+				      CreateRealValueKineticLaw( (double)( ((long)stoichiometry>>2) + 1) ) );
 #endif        
     return replacement;                          
 }
 
 
 static KINETIC_LAW *_GenerateReplacementForDegradation( 
-ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ) {
+ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );
     replacement = CreateOpKineticLaw( KINETIC_LAW_OP_MINUS, replacement, 
-        CreateRealValueKineticLaw( (double)( (stoichiometry>>1)) ) );
+				      CreateRealValueKineticLaw( (double)( ((long)stoichiometry>>1)) ) );
     return replacement;                          
 }
 
-static RET_VAL _AdjustInitialAmount( ABSTRACTION_METHOD *method, SPECIES *species, long stoichiometry ) {
+static RET_VAL _AdjustInitialAmount( ABSTRACTION_METHOD *method, SPECIES *species, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     long value = 0;
     double initialQuantity = 0.0;
     
     if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
         value = (long)GetInitialAmountInSpeciesNode( species );
-        value = value + (stoichiometry>>1);
+        value = value + ((long)stoichiometry>>1);
         if( IS_FAILED( ( ret = SetInitialAmountInSpeciesNode( species, (double)value ) ) ) ) {
             return ret;
         }        
     }
     else {
         value = (long)GetInitialConcentrationInSpeciesNode( species );
-        value = value + (stoichiometry>>1);
+        value = value + ((long)stoichiometry>>1);
         if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( species, (double)value ) ) ) ) {
             return ret;
         }        

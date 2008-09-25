@@ -78,14 +78,14 @@ CADDR_T GetTempFromIRNode( IR_NODE *node );
 
 typedef struct {
     IR_NODE *species;
-    int stoichiometry;
+    double stoichiometry;
     IR_NODE *reaction;    
 } IR_EDGE;
 
 
-DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, int stoichiometry  );
-DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *species, int stoichiometry  );
-DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, int stoichiometry  );
+DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
+DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
+DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
 DLLSCOPE RET_VAL STDCALL FreeReactantEdge( IR_EDGE **edge );
 DLLSCOPE RET_VAL STDCALL FreeModifierEdge( IR_EDGE **edge );
 DLLSCOPE RET_VAL STDCALL FreeProductEdge( IR_EDGE **edge );

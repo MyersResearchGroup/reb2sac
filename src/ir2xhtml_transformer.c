@@ -386,7 +386,7 @@ static RET_VAL _PrintListOfModifiersInXHTML( LINKED_LIST *list, FILE *file ) {
 
 static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     RET_VAL ret = SUCCESS;
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
     
@@ -400,7 +400,7 @@ static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     
     species = GetSpeciesInIREdge( edge );
     stoichiometry = GetStoichiometryInIREdge( edge );
-    if( stoichiometry == 1 ) {    
+    if( stoichiometry == 1.0 ) {    
         fprintf( file, REB2SAC_XHTML_SPECIES_FORMAT, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
     }
     else {
@@ -410,7 +410,7 @@ static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
         stoichiometry = GetStoichiometryInIREdge( edge );
-        if( stoichiometry == 1 ) {
+        if( stoichiometry == 1.0 ) {
             fprintf( file, REB2SAC_XHTML_MORE_SPECIES_FORMAT, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
         }
         else {

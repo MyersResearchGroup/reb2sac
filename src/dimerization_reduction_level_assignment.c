@@ -130,7 +130,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
         return FALSE;
     }
     edge = GetHeadEdge( list );
-    if( GetStoichiometryInIREdge( edge ) != 2 ) {
+    if( GetStoichiometryInIREdge( edge ) != 2.0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
@@ -153,7 +153,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, REACTION *reactio
         return FALSE;
     }
     edge = GetHeadEdge( list );
-    if( GetStoichiometryInIREdge( edge ) != 1 ) {
+    if( GetStoichiometryInIREdge( edge ) != 1.0 ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }

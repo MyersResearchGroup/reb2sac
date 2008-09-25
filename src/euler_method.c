@@ -858,7 +858,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     UINT32 i = 0;
     UINT32 j = 0;
     UINT32 speciesSize = rec->speciesSize;
-    long stoichiometry = 0;
+    double stoichiometry = 0.0;
     double concentration = 0.0;
     double size = 0.0;
     double change = 0.0;
@@ -921,22 +921,22 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = (long)GetStoichiometryInIREdge( edge );
+            stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            change -= ((double)stoichiometry * rate);
+            change -= (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               -((double)stoichiometry * rate));
+               -(stoichiometry * rate));
         }
         edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = (long)GetStoichiometryInIREdge( edge );
+            stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            change += ((double)stoichiometry * rate);
+            change += (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               ((double)stoichiometry * rate));
+               (stoichiometry * rate));
         }
 
 	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );

@@ -60,13 +60,16 @@ struct _SBML_SYMTAB_MANAGER {
 struct _SBML_SYMTAB_MANAGER {    
     ListOf_t *global;
     ListOf_t *local;
+    char *localID;
     COMPILER_RECORD_T *record;
     
     RET_VAL (*SetGlobal)( SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
     RET_VAL (*SetLocal)(  SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
+    RET_VAL (*SetLocalID)(  SBML_SYMTAB_MANAGER *manager, char *localID );
     BOOL (*LookupValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
     BOOL (*LookupGlobalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
     BOOL (*LookupLocalValue)( SBML_SYMTAB_MANAGER *manager, char *id, double *value, char **units );
+    BOOL (*LookupLocalID)(  SBML_SYMTAB_MANAGER *manager, char **localID );
     RET_VAL (*PutParametersInGlobalSymtab)( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab, UNIT_MANAGER *unitManager );    
 };
 
