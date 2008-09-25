@@ -21,8 +21,8 @@
 
 static char * _GetStoichiometryAmplificationMethod3ID( ABSTRACTION_METHOD *method );
 static RET_VAL _ApplyStoichiometryAmplificationMethod3( ABSTRACTION_METHOD *method, IR *ir );      
-static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ); 
-static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ); 
+static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ); 
+static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ); 
 static KINETIC_LAW *_CreateNormalization( UINT32 amplifier ); 
 static UINT32 _FindAmplifier( ABSTRACTION_METHOD_MANAGER *manager );
 
@@ -154,14 +154,14 @@ static UINT32 _FindAmplifier( ABSTRACTION_METHOD_MANAGER *manager ) {
     return DEFAULT_REB2SAC_STOICHIOMETRY_AMPLIFIER;
 }
 
-static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ) {
+static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );
     return replacement;              
 }
 
-static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ) {
+static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );

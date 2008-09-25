@@ -23,9 +23,11 @@ static SBML_SYMTAB_MANAGER manager;
 
 static RET_VAL _SetGlobal( SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
 static RET_VAL _SetLocal( SBML_SYMTAB_MANAGER *manager, ListOf_t *params );
+static RET_VAL _SetLocalID( SBML_SYMTAB_MANAGER *manager, char *localID );
 static BOOL _LookupValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
 static BOOL _LookupGlobalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value );    
 static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *value, char **unitsID );    
+static BOOL _LookupLocalID( SBML_SYMTAB_MANAGER *manager, char **localID );    
 static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab, UNIT_MANAGER *unitManager );    
 
 
@@ -38,9 +40,11 @@ SBML_SYMTAB_MANAGER *GetSymtabManagerInstance( COMPILER_RECORD_T *record ) {
             
         manager.SetGlobal = _SetGlobal;
         manager.SetLocal = _SetLocal;
+        manager.SetLocalID = _SetLocalID;
         manager.LookupValue = _LookupValue; 
         manager.LookupGlobalValue = _LookupGlobalValue;
         manager.LookupLocalValue = _LookupLocalValue;
+        manager.LookupLocalID = _LookupLocalID;
         manager.PutParametersInGlobalSymtab = _PutParametersInGlobalSymtab;
     }
         
@@ -79,11 +83,20 @@ static RET_VAL _SetGlobal( SBML_SYMTAB_MANAGER *manager, ListOf_t *params ) {
 
 
 static RET_VAL _SetLocal( SBML_SYMTAB_MANAGER *manager, ListOf_t *params ) {
-    START_FUNCTION("_SetGlobal");
+    START_FUNCTION("_SetLocal");
 
     manager->local = params;
 
-    END_FUNCTION("_SetGlobal", SUCCESS );
+    END_FUNCTION("_SetLocal", SUCCESS );
+    return SUCCESS;
+}
+
+static RET_VAL _SetLocalID( SBML_SYMTAB_MANAGER *manager, char *localID ) {
+    START_FUNCTION("_SetLocalID");
+
+    manager->localID = localID;
+
+    END_FUNCTION("_SetLocalID", SUCCESS );
     return SUCCESS;
 }
 
@@ -183,6 +196,12 @@ static BOOL _LookupLocalValue( SBML_SYMTAB_MANAGER *manager, char *id, double *v
     }
     END_FUNCTION("_LookupLocalValue", SUCCESS );
     return FALSE;
+}
+
+static BOOL _LookupLocalID( SBML_SYMTAB_MANAGER *manager, char **localID ) {
+  
+  *localID = manager->localID;
+  return TRUE;
 }
 
 static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2SAC_SYMTAB *globalSymtab, UNIT_MANAGER *unitManager ) {

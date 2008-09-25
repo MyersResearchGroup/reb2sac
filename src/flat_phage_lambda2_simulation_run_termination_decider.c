@@ -217,7 +217,7 @@ static FLAT_PHAGE_LAMBDA2_SPECIES_OF_INTEREST_ARRAY *
 _CreateSpeciesArrayOfInterest( char *nameOfSpeciesOfInterest, SPECIES **speciesArray, int size ) {
     int i = 0;
     int listSize = 0;
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     int multiplier = 0;
     SPECIES *species = NULL;
     SPECIES *relevantSpecies = NULL;
@@ -270,7 +270,7 @@ _CreateSpeciesArrayOfInterest( char *nameOfSpeciesOfInterest, SPECIES **speciesA
             return NULL;                
         }
         element->species = relevantSpecies;
-        if( stoichiometry != 1 ) {
+        if( stoichiometry != 1.0 ) {
             element->number =  multiplier; 
         }
         else {

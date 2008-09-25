@@ -22,8 +22,8 @@
 static char * _GetDegradationStoichiometryAmplificationMethod3ID( ABSTRACTION_METHOD *method );
 static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod3( ABSTRACTION_METHOD *method, IR *ir );      
 static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION *reaction );
-static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ); 
-static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry );
+static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ); 
+static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry );
 static UINT32 _FindAmplifier( ABSTRACTION_METHOD_MANAGER *manager );
 
 
@@ -62,7 +62,7 @@ static char * _GetDegradationStoichiometryAmplificationMethod3ID( ABSTRACTION_ME
 static RET_VAL _ApplyDegradationStoichiometryAmplificationMethod3( ABSTRACTION_METHOD *method, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT32 amplifier = (UINT32)(method->_internal1);
-    UINT32 stoichiometry = 0;
+    double stoichiometry = 0;
     SPECIES *species = NULL;
     KINETIC_LAW *kineticLaw = NULL;
     KINETIC_LAW *replacement = NULL;
@@ -147,7 +147,7 @@ static UINT32 _FindAmplifier( ABSTRACTION_METHOD_MANAGER *manager ) {
     return DEFAULT_REB2SAC_DEGRADATION_STOICHIOMETRY_AMPLIFIER;
 }
 
-static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ) {
+static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );
@@ -159,7 +159,7 @@ static KINETIC_LAW *_CreateReactantReplacement( SPECIES *species, UINT32 amplifi
 }
 
 
-static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, UINT32 stoichiometry ) {
+static KINETIC_LAW *_CreateProductReplacement( SPECIES *species, UINT32 amplifier, double stoichiometry ) {
     KINETIC_LAW *replacement = NULL;
     
     replacement = CreateSpeciesKineticLaw( species );

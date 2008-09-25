@@ -112,7 +112,7 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION 
 static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *reaction ) {
     RET_VAL ret = SUCCESS;
     char buf[1024];
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     STRING *newName = NULL;
     STRING *originalName = NULL;
     KINETIC_LAW *kineticLaw = NULL;

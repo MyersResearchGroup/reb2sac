@@ -209,7 +209,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
         /*
         * every reaction R1, where R1 uses S as a reactant, the stoichiometry of S is 1.
         */
-        if( GetStoichiometryInIREdge( edge ) != 1 ) {
+        if( GetStoichiometryInIREdge( edge ) != 1.0 ) {
             END_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied", SUCCESS );
             return FALSE;
         }

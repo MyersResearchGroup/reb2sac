@@ -433,7 +433,7 @@ static RET_VAL _AddProductionTransition( IR2CTMC_TRANSFORMER *transformer, CTMC_
     int targetState = state;    
     int current = 0;
     int *currentArray = transformer->currentArray;
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     double rate = 0.0;
     double deltaLevel = 0.0;
     double reactionRate = 0.0;
@@ -458,7 +458,7 @@ static RET_VAL _AddProductionTransition( IR2CTMC_TRANSFORMER *transformer, CTMC_
         stoichiometry = GetStoichiometryInIREdge( edge );
         reaction = GetReactionInIREdge( edge );
         reactionRate = GetReactionRate( reaction );
-        rate += ((double)stoichiometry * reactionRate);
+        rate += (stoichiometry * reactionRate);
     }
     
     if( IS_REAL_EQUAL( rate, 0.0 ) ) {
@@ -483,7 +483,7 @@ static RET_VAL _AddDegradationTransition( IR2CTMC_TRANSFORMER *transformer, CTMC
     int targetState = state;    
     int current = 0;
     int *currentArray = transformer->currentArray;
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     double rate = 0.0;
     double deltaLevel = 0.0;
     double reactionRate = 0.0;
@@ -508,7 +508,7 @@ static RET_VAL _AddDegradationTransition( IR2CTMC_TRANSFORMER *transformer, CTMC
         stoichiometry = GetStoichiometryInIREdge( edge );
         reaction = GetReactionInIREdge( edge );
         reactionRate = GetReactionRate( reaction );
-        rate += ((double)stoichiometry * reactionRate);
+        rate += (stoichiometry * reactionRate);
     }
     
     if( IS_REAL_EQUAL( rate, 0.0 ) ) {
@@ -652,7 +652,7 @@ static RET_VAL _GenerateCurrentRate( KINETIC_LAW_EVALUATER *evaluator, REACTION 
     if( GetLinkedListSize( list ) > 0 ) {
         /** at most one reactant */
         edge = GetHeadEdge( list );
-        stoichiometry = (double)GetStoichiometryInIREdge( edge );
+        stoichiometry = GetStoichiometryInIREdge( edge );
         species = GetSpeciesInIREdge( edge );
         level = _GetLevelInSpecies( species );
         if( level < stoichiometry ) {

@@ -219,7 +219,7 @@ static BOOL _IsEnzymeKineticRapidEquilibrium1ConditionSatisfied( ABSTRACTION_MET
         /*
         * every reaction R1, where R1 uses S as a reactant, the stoichiometry of S is 1.
         */
-        if( GetStoichiometryInIREdge( edge ) != 1 ) {
+        if( GetStoichiometryInIREdge( edge ) != 1.0 ) {
             END_FUNCTION("_IsEnzymeKineticRapidEquilibrium1ConditionSatisfied", SUCCESS );
             return FALSE;
         }

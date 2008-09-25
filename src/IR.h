@@ -91,13 +91,13 @@ struct _IR {
     
     
     
-    RET_VAL (*AddReactantEdge)( IR *ir, REACTION *reaction, SPECIES *reactant, int stoichiometry );
+    RET_VAL (*AddReactantEdge)( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry );
     RET_VAL (*RemoveReactantEdge)( IR *ir, IR_EDGE **reactantEdge );
     
-    RET_VAL (*AddModifierEdge)( IR *ir, REACTION *reaction, SPECIES *modifier, int stoichiometry );
+    RET_VAL (*AddModifierEdge)( IR *ir, REACTION *reaction, SPECIES *modifier, double stoichiometry );
     RET_VAL (*RemoveModifierEdge)( IR *ir, IR_EDGE **modifierEdge );
             
-    RET_VAL (*AddProductEdge)( IR *ir, REACTION *reaction, SPECIES *product, int stoichiometry );
+    RET_VAL (*AddProductEdge)( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry );
     RET_VAL (*RemoveProductEdge)( IR *ir, IR_EDGE **productEdge );
     
     void (*ResetChangeFlag)( IR *ir );
@@ -131,9 +131,9 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record );
 RET_VAL FreeIR( IR *ir );
 
 DLLSCOPE SPECIES * STDCALL GetSpeciesInIREdge( IR_EDGE *edge );
-DLLSCOPE int STDCALL GetStoichiometryInIREdge( IR_EDGE *edge );
+DLLSCOPE double STDCALL GetStoichiometryInIREdge( IR_EDGE *edge );
 DLLSCOPE REACTION * STDCALL GetReactionInIREdge( IR_EDGE *edge );  
-DLLSCOPE RET_VAL STDCALL SetStoichiometryInIREdge( IR_EDGE *edge, int stoichiometry );
+DLLSCOPE RET_VAL STDCALL SetStoichiometryInIREdge( IR_EDGE *edge, double stoichiometry );
 
 
 END_C_NAMESPACE

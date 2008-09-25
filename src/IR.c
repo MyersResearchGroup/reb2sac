@@ -57,13 +57,13 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
         
 
 
-static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, int stoichiometry );
+static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry );
 static RET_VAL _RemoveReactantEdge( IR *ir, IR_EDGE **reactantEdge );
 
-static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, int stoichiometry );
+static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, double stoichiometry );
 static RET_VAL _RemoveModifierEdge( IR *ir, IR_EDGE **modifierEdge );
         
-static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, int stoichiometry );
+static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry );
 static RET_VAL _RemoveProductEdge( IR *ir, IR_EDGE **productEdge );
 
 
@@ -292,7 +292,7 @@ DLLSCOPE SPECIES * STDCALL GetSpeciesInIREdge( IR_EDGE *edge ) {
     return (edge == NULL) ? NULL : (SPECIES*)(edge->species);
 }
 
-DLLSCOPE int STDCALL GetStoichiometryInIREdge( IR_EDGE *edge ) {
+DLLSCOPE double STDCALL GetStoichiometryInIREdge( IR_EDGE *edge ) {
     return (edge == NULL) ? 0 : edge->stoichiometry;
 }
 
@@ -300,7 +300,7 @@ DLLSCOPE REACTION * STDCALL GetReactionInIREdge( IR_EDGE *edge ) {
     return (edge == NULL) ? NULL : (REACTION*)(edge->reaction);
 }
 
-DLLSCOPE RET_VAL STDCALL SetStoichiometryInIREdge( IR_EDGE *edge, int stoichiometry ) {
+DLLSCOPE RET_VAL STDCALL SetStoichiometryInIREdge( IR_EDGE *edge, double stoichiometry ) {
     edge->stoichiometry = stoichiometry;
     return SUCCESS;
 }
@@ -697,7 +697,7 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
 /*********************/
 
 
-static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, int stoichiometry ) {
+static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     LINKED_LIST *list = NULL;
@@ -751,7 +751,7 @@ static RET_VAL _RemoveReactantEdge( IR *ir, IR_EDGE **edge ) {
 }
 
 
-static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, int stoichiometry ) {
+static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     LINKED_LIST *list = NULL;
     IR_EDGE *edge = NULL;
@@ -802,7 +802,7 @@ static RET_VAL _RemoveModifierEdge( IR *ir, IR_EDGE **edge ) {
     return ret;    
 }
         
-static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, int stoichiometry ) {
+static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     LINKED_LIST *list = NULL;
     IR_EDGE *edge = NULL;
@@ -1065,7 +1065,7 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 num = 0;
-    int stoichiometry = 0;
+    double stoichiometry = 0;
     STRING *kineticLawString = NULL;
     LINKED_LIST *speciesList = NULL;
     LINKED_LIST *reactionList = NULL;
@@ -1108,12 +1108,12 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
             while( ( edge = (IR_EDGE*)GetNextFromLinkedList( edgeList ) ) != NULL ) {
                 speciesNode = GetSpeciesInIREdge( edge );
                 stoichiometry = GetStoichiometryInIREdge( edge );
-                if( stoichiometry == 1 ) {
+                if( stoichiometry == 1.0 ) {
                     fprintf( file, "\t%s -> %s [label = \"r\", dir=both];" NEW_LINE, 
                         GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ), GetCharArrayOfString( GetReactionNodeID( reactionNode ) ));
                 }
                 else {
-                    fprintf( file, "\t%s -> %s [label = \"%i,r\", dir=both];" NEW_LINE, 
+                    fprintf( file, "\t%s -> %s [label = \"%g,r\", dir=both];" NEW_LINE, 
                         GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ), GetCharArrayOfString( GetReactionNodeID( reactionNode ) ), stoichiometry );
                 }
             }
@@ -1123,12 +1123,12 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
             while( ( edge = (IR_EDGE*)GetNextFromLinkedList( edgeList ) ) != NULL ) {
                 speciesNode = GetSpeciesInIREdge( edge );
                 stoichiometry = GetStoichiometryInIREdge( edge );
-                if( stoichiometry == 1 ) {
+                if( stoichiometry == 1.0 ) {
                     fprintf( file, "\t%s -> %s [label = \"p\", dir=both];" NEW_LINE, 
                         GetCharArrayOfString( GetReactionNodeID( reactionNode ) ), GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) )  );
                 }
                 else {
-                    fprintf( file, "\t%s -> %s [label = \"%i,p\", dir=both];" NEW_LINE, 
+                    fprintf( file, "\t%s -> %s [label = \"%g,p\", dir=both];" NEW_LINE, 
                         GetCharArrayOfString( GetReactionNodeID( reactionNode ) ), GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ), stoichiometry  );
                 }
             }
@@ -1139,12 +1139,12 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
             while( ( edge = (IR_EDGE*)GetNextFromLinkedList( edgeList ) ) != NULL ) {
                 speciesNode = GetSpeciesInIREdge( edge );
                 stoichiometry = GetStoichiometryInIREdge( edge );
-                if( stoichiometry == 1 ) {
+                if( stoichiometry == 1.0 ) {
                     fprintf( file, "\t%s -> %s [label = \"r\"];" NEW_LINE, 
                         GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ), GetCharArrayOfString( GetReactionNodeID( reactionNode ) ) );
                 }
                 else {
-                    fprintf( file, "\t%s -> %s [label = \"%i,r\"];" NEW_LINE, 
+                    fprintf( file, "\t%s -> %s [label = \"%g,r\"];" NEW_LINE, 
                         GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ), GetCharArrayOfString( GetReactionNodeID( reactionNode ) ), stoichiometry );
                 }
             }
@@ -1154,12 +1154,12 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
             while( ( edge = (IR_EDGE*)GetNextFromLinkedList( edgeList ) ) != NULL ) {
                 speciesNode = GetSpeciesInIREdge( edge );
                 stoichiometry = GetStoichiometryInIREdge( edge );
-                if( stoichiometry == 1 ) {
+                if( stoichiometry == 1.0 ) {
                     fprintf( file, "\t%s -> %s [label = \"p\"];" NEW_LINE, 
                         GetCharArrayOfString( GetReactionNodeID( reactionNode ) ), GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ) );
                 }
                 else {
-                    fprintf( file, "\t%s -> %s [label = \"%i, p\"];" NEW_LINE, 
+                    fprintf( file, "\t%s -> %s [label = \"%g, p\"];" NEW_LINE, 
                         GetCharArrayOfString( GetReactionNodeID( reactionNode ) ), GetCharArrayOfString( GetSpeciesNodeID( speciesNode ) ), stoichiometry );
                 }
             }
@@ -1199,12 +1199,12 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
             while( ( edge = (IR_EDGE*)GetNextFromLinkedList( edgeList ) ) != NULL ) {
                 speciesNode = GetSpeciesInIREdge( edge );
                 stoichiometry = GetStoichiometryInIREdge( edge );
-                if( stoichiometry == 1 ) {
+                if( stoichiometry == 1.0 ) {
                     fprintf( file, "\tx%X -> x%X [label = \"r\", dir=both];" NEW_LINE, 
                              speciesNode, reactionNode );
                 }
                 else {
-                    fprintf( file, "\tx%X -> x%X [label = \"%i,r\", dir=both];" NEW_LINE, 
+                    fprintf( file, "\tx%X -> x%X [label = \"%g,r\", dir=both];" NEW_LINE, 
                              speciesNode, reactionNode, stoichiometry );
                 }
             }
@@ -1219,7 +1219,7 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
                              reactionNode, speciesNode );
                 }
                 else {
-                    fprintf( file, "\tx%X -> x%X [label = \"%i,p\", dir=both];" NEW_LINE, 
+                    fprintf( file, "\tx%X -> x%X [label = \"%g,p\", dir=both];" NEW_LINE, 
                              reactionNode, speciesNode, stoichiometry  );
                 }
             }
@@ -1235,7 +1235,7 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
                              speciesNode, reactionNode );
                 }
                 else {
-                    fprintf( file, "\tx%X -> x%X [label = \"%i,r\"];" NEW_LINE, 
+                    fprintf( file, "\tx%X -> x%X [label = \"%g,r\"];" NEW_LINE, 
                              speciesNode, reactionNode, stoichiometry );
                 }
             }
@@ -1250,7 +1250,7 @@ static RET_VAL _GenerateDotFile( IR *ir, FILE *file ) {
                              reactionNode, speciesNode );
                 }
                 else {
-                    fprintf( file, "\tx%X -> x%X [label = \"%i, p\"];" NEW_LINE, 
+                    fprintf( file, "\tx%X -> x%X [label = \"%g, p\"];" NEW_LINE, 
                              reactionNode, speciesNode, stoichiometry );
                 }
             }
@@ -2007,7 +2007,7 @@ static RET_VAL _PrintReactionForSBML( REACTION *reaction, FILE *file, UINT32 tab
         while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
             _PrintTab( file, tabCount + 2 );            
-            fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%i\"/>" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), edge->stoichiometry  );    
+            fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%g\"/>" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), edge->stoichiometry  );    
         }
         _PrintTab( file, tabCount + 1 );
         fprintf( file, "</listOfReactants>%s",  NEW_LINE );
@@ -2022,7 +2022,7 @@ static RET_VAL _PrintReactionForSBML( REACTION *reaction, FILE *file, UINT32 tab
         while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
             _PrintTab( file, tabCount + 2 );            
-            fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%i\"/>" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), edge->stoichiometry  );    
+            fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%g\"/>" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), edge->stoichiometry  );    
         }
         _PrintTab( file, tabCount + 1 );
         fprintf( file, "</listOfProducts>%s",  NEW_LINE );

@@ -523,7 +523,7 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
 	    concentration = (double)GetIntValueFromKineticLaw(law);
 	  }
-	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	  if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
 	    if (GetInitialAmountInSpeciesNode( species ) != concentration) {
 	      SetInitialAmountInSpeciesNode( species, concentration );
 	      change = TRUE;
@@ -882,7 +882,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     UINT32 j = 0;
     UINT32 speciesSize = rec->speciesSize;
     UINT32 compartmentsSize = rec->compartmentsSize;
-    long stoichiometry = 0;
+    double stoichiometry = 0.0;
     double concentration = 0.0;
     double size = 0.0;
     double deltaTime = 0.0;
@@ -968,26 +968,31 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = (long)GetStoichiometryInIREdge( edge );
+            stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            f[i] -= ((double)stoichiometry * rate);
+	    if( !IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	      f[i] -= (stoichiometry * rate)/size;
+	    } else {
+	      f[i] -= (stoichiometry * rate);
+	    }
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               -((double)stoichiometry * rate));
+               -(stoichiometry * rate));
         }
         edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = (long)GetStoichiometryInIREdge( edge );
+            stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            f[i] += ((double)stoichiometry * rate);
+	    if( !IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	      f[i] += (stoichiometry * rate)/size;
+	    } else {
+	      f[i] += (stoichiometry * rate);
+	    }
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               ((double)stoichiometry * rate));
+               (stoichiometry * rate));
         }
-	if(HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  f[i] /= size;
-	}
         TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;

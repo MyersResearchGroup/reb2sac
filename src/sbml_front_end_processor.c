@@ -1329,6 +1329,9 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
     if( IS_FAILED( ( ret = manager->SetLocal( manager, list ) ) ) ) {
         return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
     }     
+    if( IS_FAILED( ( ret = manager->SetLocalID( manager, Reaction_getId( reaction ) ) ) ) ) {
+        return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
+    }     
         
     node = (ASTNode_t*)KineticLaw_getMath( source );
     if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
@@ -2296,6 +2299,8 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
     UNIT_MANAGER *unitManager = NULL;
     UNIT_DEFINITION *units = NULL;
     char *unitsID;
+    char *localID;
+    char buf[256];
 
     START_FUNCTION("_TransformSymKineticLaw");
     
@@ -2309,7 +2314,9 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
     }
     if( manager->LookupLocalValue( manager, sym, &realValue, &unitsID ) ) {
         symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
-        if( ( symbol = symtab->AddRealValueSymbol( symtab, sym, realValue, TRUE ) ) == NULL ) {
+	manager->LookupLocalID( manager, &localID );
+	sprintf(buf,"%s_%s",localID,sym);
+        if( ( symbol = symtab->AddRealValueSymbol( symtab, buf, realValue, TRUE ) ) == NULL ) {
             END_FUNCTION("_TransformSymKineticLaw", FAILING );
             return NULL;
         }
@@ -2441,7 +2448,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     UINT reactantsNum = 0;
     UINT productsNum = 0;
     UINT modifierNum = 0;
-    int stoichiometry = 0;
+    double stoichiometry = 0;
     char *species = NULL;    
     ListOf_t *reactants = NULL;
     ListOf_t *modifiers = NULL;
@@ -2474,12 +2481,12 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  }
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    stoichiometry = (int)GetRealValueFromKineticLaw(law); 
+	    stoichiometry = GetRealValueFromKineticLaw(law); 
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    stoichiometry = GetIntValueFromKineticLaw(law); 
+	    stoichiometry = (double)GetIntValueFromKineticLaw(law); 
 	  } 
 	} else {
-	  stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
+	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
 	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
@@ -2506,12 +2513,12 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  }
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
-	    stoichiometry = (int)GetRealValueFromKineticLaw(law); 
+	    stoichiometry = GetRealValueFromKineticLaw(law); 
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
-	    stoichiometry = GetIntValueFromKineticLaw(law); 
+	    stoichiometry = (double)GetIntValueFromKineticLaw(law); 
 	  } 
 	} else {
-	  stoichiometry = (int)SpeciesReference_getStoichiometry( speciesRef );
+	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
 	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {

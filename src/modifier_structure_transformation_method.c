@@ -55,7 +55,7 @@ static char * _GetModifierStructureTransformationMethodID( ABSTRACTION_METHOD *m
 
 static RET_VAL _ApplyModifierStructureTransformationMethod( ABSTRACTION_METHOD *method, IR *ir ) {
     RET_VAL ret = SUCCESS;
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     SPECIES *reactant = NULL;
     SPECIES *product = NULL;
     REACTION *reaction = NULL;

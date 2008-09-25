@@ -47,7 +47,7 @@ static RET_VAL _HandleReactionR( ABSTRACTION_METHOD *method, IR *ir, IR_EDGE *ed
 static RET_VAL _AddInhibitorInKineticLaw( REACTION *reaction, SPECIES *inhibitor ); 
 static RET_VAL _AddActivatorInKineticLaw( REACTION *reaction, SPECIES *activator ); 
 static RET_VAL _AddNormalizationInKineticLaw( REACTION *reaction, double criticalConDelta ); 
-static RET_VAL _AddNormalizationInSymbolKineticLaw( REACTION *reaction, KINETIC_LAW *value2, KINETIC_LAW *value1, int stoichiometry );
+static RET_VAL _AddNormalizationInSymbolKineticLaw( REACTION *reaction, KINETIC_LAW *value2, KINETIC_LAW *value1, double stoichiometry );
 
 static RET_VAL _FindCriticalConcentrationLevelsFromPropertiesFile( ABSTRACTION_METHOD *method, SPECIES *species, LINKED_LIST *list );
 static int _GetCriticalConcentrationLevelsSpecificationType( ABSTRACTION_METHOD *method, SPECIES *species );
@@ -147,12 +147,12 @@ static RET_VAL _ApplyNaryOrderUnaryTransformationMethod( ABSTRACTION_METHOD *met
         list =  GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( list );    
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
-            edge->stoichiometry = 1;
+            edge->stoichiometry = 1.0;
         }
         list = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( list );    
         while( ( edge = GetNextEdge( list ) ) != NULL ) {
-            edge->stoichiometry = 1;
+            edge->stoichiometry = 1.0;
         }
     }
 #endif        
@@ -707,7 +707,7 @@ static RET_VAL _HandleReactionP( ABSTRACTION_METHOD *method, IR *ir, IR_EDGE *ed
     int i = 0;
     int j = 0;
     int len = 0;   
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     char buf[REB2SAC_LOGICAL_REACTION_NAME_SIZE];
     double logicalConcentration = 0.0;
     STRING *newName = NULL;
@@ -870,7 +870,7 @@ static RET_VAL _HandleReactionR( ABSTRACTION_METHOD *method, IR *ir, IR_EDGE *ed
     int i = 0;
     int j = 0;
     int len = 0;   
-    int stoichiometry = 0;
+    double stoichiometry = 0.0;
     char buf[REB2SAC_LOGICAL_REACTION_NAME_SIZE];
     double logicalConcentration = 0.0;
     STRING *newName = NULL;
@@ -1140,7 +1140,7 @@ static RET_VAL _AddNormalizationInKineticLaw( REACTION *reaction, double critica
     return ret;
 }
 
-static RET_VAL _AddNormalizationInSymbolKineticLaw( REACTION *reaction, KINETIC_LAW *value2, KINETIC_LAW *value1, int stoichiometry ) {
+static RET_VAL _AddNormalizationInSymbolKineticLaw( REACTION *reaction, KINETIC_LAW *value2, KINETIC_LAW *value1, double stoichiometry ) {
     RET_VAL ret = SUCCESS;
     KINETIC_LAW *kineticLaw = NULL;   
     KINETIC_LAW *normalization = NULL;
@@ -1159,7 +1159,7 @@ static RET_VAL _AddNormalizationInSymbolKineticLaw( REACTION *reaction, KINETIC_
             return ErrorReport( FAILING, "_AddNormalizationInKineticLaw", "could not create normalization" );
         }
     }
-    if( ( normalization = CreateOpKineticLaw( KINETIC_LAW_OP_DIVIDE, CreateRealValueKineticLaw( (double)stoichiometry ), normalization ) ) == NULL ) {
+    if( ( normalization = CreateOpKineticLaw( KINETIC_LAW_OP_DIVIDE, CreateRealValueKineticLaw( stoichiometry ), normalization ) ) == NULL ) {
         return ErrorReport( FAILING, "_AddNormalizationInKineticLaw", "could not create normalization" );
     }
 #ifdef DEBUG

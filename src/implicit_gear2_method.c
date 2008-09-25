@@ -880,7 +880,7 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR2_SIMUL
     UINT32 j = 0;
     UINT32 speciesSize = rec->speciesSize;
     UINT32 compartmentsSize = rec->compartmentsSize;
-    long stoichiometry = 0;
+    double stoichiometry = 0.0;
     double concentration = 0.0;
     double size = 0.0;
     double deltaTime = 0.0;
@@ -966,22 +966,22 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR2_SIMUL
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = (long)GetStoichiometryInIREdge( edge );
+            stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            f[i] -= ((double)stoichiometry * rate);
+            f[i] -= (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               -((double)stoichiometry * rate));
+               -(stoichiometry * rate));
         }
         edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = (long)GetStoichiometryInIREdge( edge );
+            stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            f[i] += ((double)stoichiometry * rate);
+            f[i] += (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               ((double)stoichiometry * rate));
+               (stoichiometry * rate));
         }
 	f[i] /= size;
         TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), change );
