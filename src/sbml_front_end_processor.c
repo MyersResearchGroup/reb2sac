@@ -1069,6 +1069,21 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
         END_FUNCTION("_CreateSpeciesNode", ret );
         return ret;   
     }  
+                
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CreateSpeciesNode", "could not get an instance of compartment manager" );
+    }
+    id = (char*)Species_getCompartment( species );
+    if( id != NULL ) {
+        if( ( compartment = compartmentManager->LookupCompartment( compartmentManager, id ) ) == NULL ) {
+            return ErrorReport( FAILING, "_CreateSpeciesNode", "compartment %s is not defined", id );
+        }
+        TRACE_1( "\tsetting compartment %s", id );
+        if( IS_FAILED( ( ret = SetCompartmentInSpeciesNode( speciesNode, compartment ) ) ) ) {
+            END_FUNCTION("_CreateSpeciesNode", ret );
+            return ret;   
+        }
+    }        
 
     if( Species_isSetInitialAmount( species ) ) {
         initialQuantity = Species_getInitialAmount( species );
@@ -1116,22 +1131,6 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
         }
         TRACE_1( "\tsetting spatial size units %s", id );
         if( IS_FAILED( ( ret = SetSpatialSizeUnitsInSpeciesNode( speciesNode, units ) ) ) ) {
-            END_FUNCTION("_CreateSpeciesNode", ret );
-            return ret;   
-        }
-    }        
-
-                
-    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CreateSpeciesNode", "could not get an instance of compartment manager" );
-    }
-    id = (char*)Species_getCompartment( species );
-    if( id != NULL ) {
-        if( ( compartment = compartmentManager->LookupCompartment( compartmentManager, id ) ) == NULL ) {
-            return ErrorReport( FAILING, "_CreateSpeciesNode", "compartment %s is not defined", id );
-        }
-        TRACE_1( "\tsetting compartment %s", id );
-        if( IS_FAILED( ( ret = SetCompartmentInSpeciesNode( speciesNode, compartment ) ) ) ) {
             END_FUNCTION("_CreateSpeciesNode", ret );
             return ret;   
         }
