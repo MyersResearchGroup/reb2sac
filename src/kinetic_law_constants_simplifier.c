@@ -208,7 +208,7 @@ static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
       }
       else if( IsSpeciesKineticLaw( child ) ) {
 	species = GetSpeciesFromKineticLaw( child );
-	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  childValue = GetInitialAmountInSpeciesNode( species );
 	} else {
 	  childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -242,7 +242,7 @@ static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
 	}
 	else if( IsSpeciesKineticLaw( child ) ) {
 	  species = GetSpeciesFromKineticLaw( child );
-	  if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    childValue = GetInitialAmountInSpeciesNode( species );
 	  } else {
 	    childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -280,7 +280,7 @@ static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
       }
       else if( IsSpeciesKineticLaw( child ) ) {
 	species = GetSpeciesFromKineticLaw( child );
-	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  childValue = GetInitialAmountInSpeciesNode( species );
 	} else {
 	  childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -344,7 +344,7 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
     }
     else if( IsSpeciesKineticLaw( left ) ) {
       species = GetSpeciesFromKineticLaw( left );
-      if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	leftValue = GetInitialAmountInSpeciesNode( species );
       } else {
 	leftValue = GetInitialConcentrationInSpeciesNode( species );
@@ -373,7 +373,7 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
     } 
     else if( IsSpeciesKineticLaw( right ) ) {
       species = GetSpeciesFromKineticLaw( right );
-      if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	rightValue = GetInitialAmountInSpeciesNode( species );
       } else {
 	rightValue = GetInitialConcentrationInSpeciesNode( species );
@@ -514,7 +514,7 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
     }
     else if( IsSpeciesKineticLaw( child ) ) {
       species = GetSpeciesFromKineticLaw( child );
-      if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	childValue = GetInitialAmountInSpeciesNode( species );
       } else {
 	childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -709,7 +709,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       else if( IsSpeciesKineticLaw( child ) ) {
 	species = GetSpeciesFromKineticLaw( child );
-	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  childValue = GetInitialAmountInSpeciesNode( species );
 	} else {
 	  childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -743,7 +743,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 	}
 	else if( IsSpeciesKineticLaw( child ) ) {
 	  species = GetSpeciesFromKineticLaw( child );
-	  if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    childValue = GetInitialAmountInSpeciesNode( species );
 	  } else {
 	    childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -781,7 +781,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       else if( IsSpeciesKineticLaw( child ) ) {
 	species = GetSpeciesFromKineticLaw( child );
-	if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  childValue = GetInitialAmountInSpeciesNode( species );
 	} else {
 	  childValue = GetInitialConcentrationInSpeciesNode( species );
@@ -1219,7 +1219,7 @@ static RET_VAL _VisitSpeciesToSimplify( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
     START_FUNCTION("_VisitSpeciesToSimplify");
 
     species = GetSpeciesFromKineticLaw( kineticLaw );
-    if (IsInitialQuantityInAmountInSpeciesNode( species )) {
+    if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
       result = GetInitialAmountInSpeciesNode( species );
     } else {
       result = GetInitialConcentrationInSpeciesNode( species );
