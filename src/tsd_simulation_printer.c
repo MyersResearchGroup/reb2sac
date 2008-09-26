@@ -131,7 +131,11 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     }                 
     for( i = 0; i < size; i++ ) {
       if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
-        fprintf( out, ",%g", GetAmountInSpeciesNode( speciesArray[i] ) );
+	if( IsInitialQuantityInAmountInSpeciesNode( speciesArray[i] ) ) {
+	  fprintf( out, ", %g", GetAmountInSpeciesNode( speciesArray[i] ) );
+	} else {
+	  fprintf( out, ", %g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
+	}
       }
     }                 
     for( i = 0; i < symSize; i++ ) {
