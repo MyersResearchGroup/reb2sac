@@ -1063,7 +1063,11 @@ static RET_VAL _VisitSpeciesToEvaluateWithCurrentAmounts( KINETIC_LAW_VISITOR *v
     result = (double*)(visitor->_internal2);
     species = GetSpeciesFromKineticLaw( kineticLaw );
     
-    value = GetAmountInSpeciesNode( species );
+    if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
+      value = GetAmountInSpeciesNode( species );
+    } else {
+      value = GetConcentrationInSpeciesNode( species );
+    }
     *result = value; 
     
     return SUCCESS;
@@ -1080,7 +1084,12 @@ static RET_VAL _VisitSpeciesToEvaluateWithCurrentConcentrations( KINETIC_LAW_VIS
     result = (double*)(visitor->_internal2);
     species = GetSpeciesFromKineticLaw( kineticLaw );
     
-    value = GetConcentrationInSpeciesNode( species );
+    
+    if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
+      value = GetAmountInSpeciesNode( species );
+    } else {
+      value = GetConcentrationInSpeciesNode( species );
+    }
     //printf("Looking up %s found %g\n",
     //	   GetCharArrayOfString(GetSpeciesNodeID( species )),value);
     *result = value; 
