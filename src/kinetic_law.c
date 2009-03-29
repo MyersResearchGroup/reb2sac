@@ -2310,6 +2310,7 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     parentOpType = parent->value.op.opType;
     if( ( parentOpType == KINETIC_LAW_OP_POW ) ||
 	( parentOpType == KINETIC_LAW_OP_ROOT ) ||
+	( parentOpType == KINETIC_LAW_OP_DELAY ) ||
 	( parentOpType == KINETIC_LAW_OP_EQ ) ||
 	( parentOpType == KINETIC_LAW_OP_NEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_GEQ ) ||
@@ -2363,6 +2364,7 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     parentOpType = parent->value.op.opType;
     if( ( parentOpType == KINETIC_LAW_OP_POW ) ||
 	( parentOpType == KINETIC_LAW_OP_ROOT ) ||
+	( parentOpType == KINETIC_LAW_OP_DELAY ) ||
 	( parentOpType == KINETIC_LAW_OP_EQ ) ||
 	( parentOpType == KINETIC_LAW_OP_NEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_GEQ ) ||
@@ -2388,6 +2390,7 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
         childOpType = child->value.op.opType;
         if( ( childOpType == KINETIC_LAW_OP_POW ) ||
 	    ( childOpType == KINETIC_LAW_OP_ROOT ) ||
+	    ( childOpType == KINETIC_LAW_OP_DELAY ) ||
 	    ( childOpType == KINETIC_LAW_OP_EQ ) ||
 	    ( childOpType == KINETIC_LAW_OP_NEQ ) ||
 	    ( childOpType == KINETIC_LAW_OP_GEQ ) ||

@@ -130,6 +130,7 @@ static RET_VAL _PrintIntKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, 
 static RET_VAL _PrintRealKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, UINT32 tabCount );
 static RET_VAL _PrintSpeciesKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, UINT32 tabCount );
 static RET_VAL _PrintSymbolKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, UINT32 tabCount );
+static RET_VAL _PrintCompartmentKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, UINT32 tabCount );
 
 static RET_VAL _PrintCnInEnotationForSBML( FILE *file, UINT32 tabCount, double value );
 
@@ -2144,6 +2145,12 @@ static RET_VAL _DispatchKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, 
             return ret;
         }
     } 
+    else if( IsCompartmentKineticLaw( kineticLaw ) ) {
+        if( IS_FAILED( ( ret = _PrintCompartmentKineticLawForSBML( kineticLaw, file, tabCount  ) ) ) ) {
+            END_FUNCTION("_DispatchKineticLawForSBML", ret );    
+            return ret;
+        }
+    } 
     else if( IsIntValueKineticLaw( kineticLaw ) ) {
         if( IS_FAILED( ( ret = _PrintIntKineticLawForSBML( kineticLaw, file, tabCount  ) ) ) ) {
             END_FUNCTION("_DispatchKineticLawForSBML", ret );    
@@ -2191,7 +2198,7 @@ static RET_VAL _PrintOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
         case KINETIC_LAW_OP_NEQ:
             fprintf( file, "<neq/>%s", NEW_LINE );
         break;
-        case KINETIC_LAW_OP_AND:
+	/*        case KINETIC_LAW_OP_AND:
             fprintf( file, "<and/>%s", NEW_LINE );
         break;
         case KINETIC_LAW_OP_OR:
@@ -2199,7 +2206,7 @@ static RET_VAL _PrintOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
         break;
         case KINETIC_LAW_OP_XOR:
             fprintf( file, "<xor/>%s", NEW_LINE );
-        break;
+	    break;*/
         case KINETIC_LAW_OP_PLUS:
             fprintf( file, "<plus/>%s", NEW_LINE );
         break;
@@ -2214,6 +2221,9 @@ static RET_VAL _PrintOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
         break;
         case KINETIC_LAW_OP_POW:
             fprintf( file, "<power/>%s", NEW_LINE );
+        break;
+        case KINETIC_LAW_OP_DELAY:
+            fprintf( file, "<delay/>%s", NEW_LINE );
         break;
         case KINETIC_LAW_OP_ROOT:
             fprintf( file, "<root/>%s", NEW_LINE );
@@ -2380,43 +2390,89 @@ static RET_VAL _PrintPWKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
     int i;
 
     START_FUNCTION("_PrintPWKineticLawForSBML");
-
-    _PrintTab( file, tabCount );
-    fprintf( file, "<piecewise>%s", NEW_LINE );
-
+    
     children = GetPWChildrenFromKineticLaw( kineticLaw );
     size = GetLinkedListSize( children );
-    for (i = 0; i < size-1; i+=2) {
-      _PrintTab( file, tabCount + 1 );
-      fprintf( file, "<piece>%s", NEW_LINE );
-      child = (KINETIC_LAW*)GetElementByIndex( i, children );
-      if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
-        END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
-        return ret;
+    switch( GetPWTypeFromKineticLaw( kineticLaw ) ) {
+    case KINETIC_LAW_OP_PW:
+      _PrintTab( file, tabCount );
+      fprintf( file, "<piecewise>%s", NEW_LINE );
+      for (i = 0; i < size-1; i+=2) {
+	_PrintTab( file, tabCount + 1 );
+	fprintf( file, "<piece>%s", NEW_LINE );
+	child = (KINETIC_LAW*)GetElementByIndex( i, children );
+	if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
+	  END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i+1, children );
+	if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
+	  END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
+	  return ret;
+	}
+	_PrintTab( file, tabCount + 1 );
+	fprintf( file, "</piece>%s", NEW_LINE );
       }
-      child = (KINETIC_LAW*)GetElementByIndex( i+1, children );
-      if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
-        END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
-        return ret;
+      if (size % 2 == 1) {
+	_PrintTab( file, tabCount + 1 );
+	fprintf( file, "<otherwise>%s", NEW_LINE );
+	child = (KINETIC_LAW*)GetElementByIndex( size - 1, children );
+	if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
+	  END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
+	  return ret;
+	}
+	_PrintTab( file, tabCount + 1 );
+	fprintf( file, "</otherwise>%s", NEW_LINE );
       }
-      _PrintTab( file, tabCount + 1 );
-      fprintf( file, "</piece>%s", NEW_LINE );
+      _PrintTab( file, tabCount );
+      fprintf( file, "</piecewise>%s", NEW_LINE );
+      break;
+    case KINETIC_LAW_OP_AND:
+      _PrintTab( file, tabCount );
+      fprintf( file, "<apply>%s", NEW_LINE );
+      _PrintTab( file, tabCount );
+      fprintf( file, "<and/>%s", NEW_LINE );
+      for (i = 0; i < size; i++) {
+	child = (KINETIC_LAW*)GetElementByIndex( i, children );
+	if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 1 ) ) ) ) {
+	  END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
+	  return ret;
+	}
+      }
+      _PrintTab( file, tabCount );
+      fprintf( file, "</apply>%s", NEW_LINE );
+      break;
+    case KINETIC_LAW_OP_OR:
+      _PrintTab( file, tabCount );
+      fprintf( file, "<apply>%s", NEW_LINE );
+      _PrintTab( file, tabCount );
+      fprintf( file, "<or/>%s", NEW_LINE );
+      for (i = 0; i < size; i++) {
+	child = (KINETIC_LAW*)GetElementByIndex( i, children );
+	if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 1 ) ) ) ) {
+	  END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
+	  return ret;
+	}
+      }
+      _PrintTab( file, tabCount );
+      fprintf( file, "</apply>%s", NEW_LINE );
+      break;
+    case KINETIC_LAW_OP_XOR:
+      _PrintTab( file, tabCount );
+      fprintf( file, "<apply>%s", NEW_LINE );
+      _PrintTab( file, tabCount );
+      fprintf( file, "<xor/>%s", NEW_LINE );
+      for (i = 0; i < size; i++) {
+	child = (KINETIC_LAW*)GetElementByIndex( i, children );
+	if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 1 ) ) ) ) {
+	  END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
+	  return ret;
+	}
+      }
+      _PrintTab( file, tabCount );
+      fprintf( file, "</apply>%s", NEW_LINE );
+      break;
     }
-    if (size % 2 == 1) {
-      _PrintTab( file, tabCount + 1 );
-      fprintf( file, "<otherwise>%s", NEW_LINE );
-      child = (KINETIC_LAW*)GetElementByIndex( size - 1, children );
-      if( IS_FAILED( ( ret = _DispatchKineticLawForSBML( child, file, tabCount + 2 ) ) ) ) {
-        END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
-        return ret;
-      }
-      _PrintTab( file, tabCount + 1 );
-      fprintf( file, "</otherwise>%s", NEW_LINE );
-    }
-            
-    _PrintTab( file, tabCount );
-    fprintf( file, "</piecewise>%s", NEW_LINE );
-    
     END_FUNCTION("_PrintUnaryOpKineticLawForSBML", SUCCESS );    
     return ret;
 }
@@ -2469,6 +2525,21 @@ static RET_VAL _PrintSymbolKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *fil
     sym = GetSymbolFromKineticLaw( kineticLaw );
     _PrintTab( file, tabCount );
     fprintf( file, "<ci>%s</ci>%s", GetCharArrayOfString( GetSymbolID( sym ) ), NEW_LINE );
+    
+    END_FUNCTION("_PrintSymbolKineticLawForSBML", SUCCESS );    
+    return ret;
+}
+
+
+static RET_VAL _PrintCompartmentKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, UINT32 tabCount ) {
+    RET_VAL ret = SUCCESS;
+    REB2SAC_SYMBOL *sym = NULL;
+    
+    START_FUNCTION("_PrintSymbolKineticLawForSBML");
+    
+    sym = GetCompartmentFromKineticLaw( kineticLaw );
+    _PrintTab( file, tabCount );
+    fprintf( file, "<ci>%s</ci>%s", GetCharArrayOfString( GetCompartmentID( sym ) ), NEW_LINE );
     
     END_FUNCTION("_PrintSymbolKineticLawForSBML", SUCCESS );    
     return ret;

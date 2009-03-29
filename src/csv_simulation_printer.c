@@ -122,18 +122,12 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
     
     fprintf( out, "%g", time );
+    for( i = 0; i < size; i++ ) {
+      fprintf( out, ", %g", GetAmountInSpeciesNode( speciesArray[i] ) );
+    }                 
     for( i = 0; i < compSize; i++ ) {
       if (PrintCompartment( compartmentArray[i] )) {
         fprintf( out, ", %g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
-      }
-    }                 
-    for( i = 0; i < size; i++ ) {
-      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
-	if( IsInitialQuantityInAmountInSpeciesNode( speciesArray[i] ) ) {
-	  fprintf( out, ", %g", GetAmountInSpeciesNode( speciesArray[i] ) );
-	} else {
-	  fprintf( out, ", %g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
-	}
       }
     }                 
     for( i = 0; i < symSize; i++ ) {
@@ -158,14 +152,14 @@ static RET_VAL _PrintConcentrationValues( SIMULATION_PRINTER *printer, double ti
     REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
     
     fprintf( out, "%g", time );
+    for( i = 0; i < size; i++ ) {
+      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+	fprintf( out, ", %g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
+      }
+    }                 
     for( i = 0; i < compSize; i++ ) {
       if (PrintCompartment( compartmentArray[i] )) {
         fprintf( out, ", %g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
-      }
-    }                 
-    for( i = 0; i < size; i++ ) {
-      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
-        fprintf( out, ", %g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
       }
     }                 
     for( i = 0; i < symSize; i++ ) {

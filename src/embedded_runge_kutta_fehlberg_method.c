@@ -450,6 +450,7 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
     double concentration = 0.0;
+    double oldSize = 0.0;
     double compSize = 0.0;
     double param = 0.0;
     double *concentrations = rec->concentrations;
@@ -491,7 +492,17 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
 	    compSize = (double)GetIntValueFromKineticLaw(law);
 	  }
 	  if (GetSizeInCompartment( compartment ) != compSize) {
+	    oldSize = GetSizeInCompartment( compartment );
 	    SetSizeInCompartment( compartment, compSize );
+	    for (i = 0; i <  rec->speciesSize; i++) {
+	      species = speciesArray[i];
+	      if (GetCompartmentInSpeciesNode( species ) == compartment) {
+		if( !IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+		  concentration = GetInitialAmountInSpeciesNode( species );
+		  SetInitialAmountInSpeciesNode( species, concentration / oldSize * compSize );
+		}
+	      }
+	    }
 	    change = TRUE;
 	  }
 	  FreeKineticLaw( &(law) );
@@ -507,13 +518,12 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
 	    concentration = GetInitialAmountInSpeciesNode( species );
-	    if(HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	      compSize = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
-	      concentration = concentration / compSize;
-	    }
-	  }
+	    SetAmountInSpeciesNode( species, concentration );
+ 	  }
 	  else {
 	    concentration = GetInitialConcentrationInSpeciesNode( species );
+	    SetConcentrationInSpeciesNode( species, concentration );
+	    concentration = GetAmountInSpeciesNode( species );
 	  }
 	} else {
 	  law = CloneKineticLaw( law );
@@ -524,22 +534,29 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
 	    concentration = (double)GetIntValueFromKineticLaw(law);
 	  }
 	  if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
-	    if (GetInitialAmountInSpeciesNode( species ) != concentration) {
-	      SetInitialAmountInSpeciesNode( species, concentration );
+	    if (GetAmountInSpeciesNode( species ) != concentration) {
+	      SetAmountInSpeciesNode( species, concentration );
 	      change = TRUE;
 	    }
+	    SetInitialAmountInSpeciesNode( species, concentration );
 	  }
 	  else {
-	    if (GetInitialConcentrationInSpeciesNode( species ) != concentration) {
-	      SetInitialConcentrationInSpeciesNode( species, concentration );
+	    compSize = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) ); 
+	    if (compSize == -1.0) {
+	      compSize = 1.0;
+	    }
+	    if (GetAmountInSpeciesNode( species ) != concentration * compSize) {
+	      SetAmountInSpeciesNode( species, concentration * compSize );
 	      change = TRUE;
 	    }
+	    SetInitialConcentrationInSpeciesNode( species, concentration );
+	    concentration = concentration * compSize;
 	  }
 	  FreeKineticLaw( &(law) );
 	}
-        if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, concentration ) ) ) ) {
-            return ret;
-        }
+/*         if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, concentration ) ) ) ) { */
+/*             return ret; */
+/*         } */
         concentrations[i] = concentration;
     }
     size = rec->symbolsSize;
@@ -642,7 +659,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
 	  return FAILING;
 	}
       }
-      if (time > 0.0) printf("Time = %.2f\n",time);
+      if (time > 0.0) printf("Time = %g\n",time);
       fflush(stdout);
     }
     if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
@@ -837,8 +854,13 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
     concentration = GetEventAssignmentNextValue( eventAssignment );
     //printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
-      SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-      rec->concentrations[j] = concentration;
+	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
+	  SetAmountInSpeciesNode( rec->speciesArray[j], concentration );
+	  rec->concentrations[j] = concentration;
+	} else {
+	  SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	  rec->concentrations[j] = GetAmountInSpeciesNode(rec->speciesArray[j]);
+	}
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
       SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
       rec->concentrations[rec->speciesSize + j] = concentration;
@@ -863,8 +885,13 @@ static void ExecuteAssignments( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD 
       varType = GetRuleVarType( rec->ruleArray[i] );
       j = GetRuleIndex( rec->ruleArray[i] );
       if ( varType == SPECIES_RULE ) {
-	SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	rec->concentrations[j] = concentration;
+	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
+	  SetAmountInSpeciesNode( rec->speciesArray[j], concentration );
+	  rec->concentrations[j] = concentration;
+	} else {
+	  SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
+	  rec->concentrations[j] = GetAmountInSpeciesNode(rec->speciesArray[j]);
+	}
       } else if ( varType == COMPARTMENT_RULE ) {
 	SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
 	rec->concentrations[rec->speciesSize + j] = concentration;
@@ -905,10 +932,9 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     /* Update values from y[] */
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
-	//	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
 	if (f[i] != 0.0) {
-	  if( IS_FAILED( ( ret = SetConcentrationInSpeciesNode( species, y[i] ) ) ) ) {
-            return GSL_FAILURE;
+	  if( IS_FAILED( ( ret = SetAmountInSpeciesNode( species, y[i] ) ) ) ) {
+	    return GSL_FAILURE;
 	  }
 	}
 	f[i] = 0.0;
@@ -946,7 +972,12 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
 	varType = GetRuleVarType( rec->ruleArray[i] );
 	j = GetRuleIndex( rec->ruleArray[i] );
 	if ( varType == SPECIES_RULE ) {
-	  f[j] = rate;
+	  if (HasOnlySubstanceUnitsInSpeciesNode( speciesArray[j] )) {
+	    f[j] = rate;
+	  } else {
+	    size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( speciesArray[j] ) );
+	    f[j] = rate * size;
+	  }
 	} else if ( varType == COMPARTMENT_RULE ) {
 	  f[speciesSize + j] = rate;
 	} else {
@@ -971,11 +1002,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-	    if( !IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	      f[i] -= (stoichiometry * rate)/size;
-	    } else {
-	      f[i] -= (stoichiometry * rate);
-	    }
+	    f[i] -= (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                -(stoichiometry * rate));
         }
@@ -985,15 +1012,12 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-	    if( !IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-	      f[i] += (stoichiometry * rate)/size;
-	    } else {
-	      f[i] += (stoichiometry * rate);
-	    }
+	    f[i] += (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                (stoichiometry * rate));
         }
-        TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
+        TRACE_2( "change of %s is %g\n", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
+        //printf( "change of %s is %g\n", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;
 }

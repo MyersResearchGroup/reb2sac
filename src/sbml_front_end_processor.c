@@ -213,6 +213,15 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     if( ( sbmlSymtabManager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_GenerateIR", "error on getting symtab manager" ); 
     }
+
+    if( ( symtab->AddRealValueSymbol( symtab, "t", 0, FALSE ) ) == NULL ) {
+      return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
+			  "failed to put parameter t in global symtab" );
+    }     
+    if( ( symtab->AddRealValueSymbol( symtab, "time", 0, FALSE ) ) == NULL ) {
+      return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
+			  "failed to put parameter time in global symtab" );
+    }     
         
     if( IS_FAILED( ( ret = _HandleFunctionDefinitions( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
@@ -1387,7 +1396,7 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }
-    else if( ASTNode_isName( source ) ) {
+    else if( ASTNode_isName( source ) && (ASTNode_getType( source ) != AST_FUNCTION_DELAY)) {
         if( ( law = _TransformSymKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
             return NULL;
@@ -1411,7 +1420,7 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }    
-    else if(  ASTNode_isFunction( source ) || ASTNode_isLogical( source ) || ASTNode_isRelational( source ) ) {
+    else if(  ASTNode_isFunction( source ) || ASTNode_isLogical( source ) || ASTNode_isRelational( source ) || (ASTNode_getType( source ) == AST_FUNCTION_DELAY)) {
         if( ( law = _TransformFunctionKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
             return NULL;
@@ -1745,12 +1754,24 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
-        case AST_FUNCTION_PIECEWISE:                    
+        case AST_FUNCTION_PIECEWISE:
 	  childrenLL = CreateLinkedList();
 	  for (i = 0; i < num; i++) {
 	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
 	  }
 	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_PW, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_DELAY:                    
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_DELAY, children[0], children[1] ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
@@ -1782,38 +1803,62 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_LOGICAL_AND:
-	  if( num != 2 ) {
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_AND, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
 	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_AND, children[0], children[1] ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
-	  }
+	    } */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_LOGICAL_OR:
-	  if( num != 2 ) {
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_OR, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
 	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_OR, children[0], children[1] ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
-	  }
+	    }*/
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_LOGICAL_XOR:
-	  if( num != 2 ) {
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_XOR, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
 	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_XOR, children[0], children[1] ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
-	  }
+	    }*/
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
@@ -2302,7 +2347,24 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
     char buf[256];
 
     START_FUNCTION("_TransformSymKineticLaw");
-    
+
+    if (ASTNode_getType( source ) == AST_NAME_TIME) {
+      ASTNode_setName( source, "t" ); 
+      if (workingOnFunctions) {
+        symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
+        if( ( symbol = symtab->Lookup( symtab, "t" ) ) == NULL ) {
+            END_FUNCTION("_TransformSymKineticLaw", FAILING );
+            return NULL;
+        }
+        if( ( law = CreateSymbolKineticLaw( symbol ) ) == NULL ) {
+            END_FUNCTION("_TransformSymKineticLaw", FAILING );
+            return NULL;
+        }
+        TRACE_2( "sym %s = %f", GetCharArrayOfString( GetSymbolID( symbol ) ), realValue );
+        END_FUNCTION("_TransformSymKineticLaw", SUCCESS );
+        return law;
+      }
+    }    
     sym = (char*)ASTNode_getName( source );
     if (workingOnFunctions) {
       if( ( law = CreateFunctionSymbolKineticLaw( sym ) ) == NULL ) {

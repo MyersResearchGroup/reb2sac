@@ -221,14 +221,6 @@ static RET_VAL _PutParametersInGlobalSymtab( SBML_SYMTAB_MANAGER *manager, REB2S
 
     globalParams = manager->global;
     if( globalParams != NULL ) {
-      if( ( globalSymtab->AddRealValueSymbol( globalSymtab, "t", 0, FALSE ) ) == NULL ) {
-	return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
-			    "failed to put parameter %s in global symtab", id );
-      }     
-      if( ( globalSymtab->AddRealValueSymbol( globalSymtab, "time", 0, FALSE ) ) == NULL ) {
-	return ErrorReport( FAILING, "_PutParametersInGlobalSymtab", 
-			    "failed to put parameter %s in global symtab", id );
-      }     
       num = ListOf_size( globalParams );
       for( i = 0; i < num; i++ ) {
 	param = (Parameter_t*)ListOf_get( globalParams, i );

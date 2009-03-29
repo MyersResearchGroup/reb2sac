@@ -203,6 +203,9 @@ BOOL HasOnlySubstanceUnitsInSpeciesNode( SPECIES *species ) {
         END_FUNCTION("HasOnlySubstanceUnitsInSpeciesNode", FAILING );
         return FALSE;
     }
+    if (GetSpatialDimensionsInCompartment( GetCompartmentInSpeciesNode( species ) ) == 0) {
+      species->flags = ( species->flags | SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS );
+    }
     END_FUNCTION("HasOnlySubstanceUnitsInSpeciesNode", SUCCESS );
     return ( ( ( species->flags & SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
 }
@@ -250,13 +253,20 @@ double GetInitialAmountInSpeciesNode( SPECIES *species ) {
 }
 
 double GetInitialConcentrationInSpeciesNode( SPECIES *species ) {
+    double size = 1.0;
+
     START_FUNCTION("GetInitialConcentrationInSpeciesNode");
     if( species == NULL ) {
         END_FUNCTION("GetInitialConcentrationInSpeciesNode", FAILING );
         return 0.0;
     }
     END_FUNCTION("GetInitialConcentrationInSpeciesNode", SUCCESS );
-    return species->initialQuantity.concentration;
+    size = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+    if (size == -1.0) {
+      return species->initialQuantity.concentration;
+    } else {
+      return species->initialQuantity.amount / size;
+    }
 }
 
 double GetAmountInSpeciesNode( SPECIES *species ) {
@@ -270,13 +280,20 @@ double GetAmountInSpeciesNode( SPECIES *species ) {
 }
 
 double GetConcentrationInSpeciesNode( SPECIES *species ) {
+    double size = 1.0;
+
     START_FUNCTION("GetConcentrationInSpeciesNode");
     if( species == NULL ) {
         END_FUNCTION("GetConcentrationInSpeciesNode", FAILING );
         return 0.0;
     }
     END_FUNCTION("GetConcentrationInSpeciesNode", SUCCESS );
-    return species->quantity.concentration;
+    size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+    if (size == -1.0) {
+      return species->quantity.concentration;
+    } else {
+      return species->quantity.amount / size;
+    }
 }
 
 
@@ -360,6 +377,7 @@ RET_VAL SetInitialAmountInSpeciesNode( SPECIES *species, double initialAmount ) 
     if( species == NULL ) {
         return ErrorReport( FAILING, "SetInitialAmountInSpeciesNode", "input species node is NULL" );
     }
+
     species->flags = ( species->flags | SPECIES_NODE_FLAG_IS_AMOUNT );
     species->initialQuantity.amount = initialAmount;
     END_FUNCTION("SetInitialAmountInSpeciesNode", SUCCESS );
@@ -368,13 +386,17 @@ RET_VAL SetInitialAmountInSpeciesNode( SPECIES *species, double initialAmount ) 
 
 RET_VAL SetInitialConcentrationInSpeciesNode( SPECIES *species, double initialConcentration) {
     RET_VAL ret = SUCCESS;
-    
+    double size = 1.0;
+
     START_FUNCTION("SetInitialConcentrationInSpeciesNode");
     if( species == NULL ) {
         return ErrorReport( FAILING, "SetInitialConcentrationInSpeciesNode", "input species node is NULL" );
     }
+
+    size = GetSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+    species->initialQuantity.amount = initialConcentration * size;
     species->flags = ( species->flags & (~SPECIES_NODE_FLAG_IS_AMOUNT) );
-    species->initialQuantity.concentration = initialConcentration;
+    //species->initialQuantity.concentration = initialConcentration;
     END_FUNCTION("SetInitialConcentrationInSpeciesNode", SUCCESS );
     return ret;
 }
@@ -393,12 +415,17 @@ RET_VAL SetAmountInSpeciesNode( SPECIES *species, double amount ) {
 
 RET_VAL SetConcentrationInSpeciesNode( SPECIES *species, double concentration) {
     RET_VAL ret = SUCCESS;
+    double size = 1.0;
     
     START_FUNCTION("SetConcentrationInSpeciesNode");
     if( species == NULL ) {
         return ErrorReport( FAILING, "SetConcentrationInSpeciesNode", "input species node is NULL" );
     }
-    species->quantity.concentration = concentration;
+    size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+    species->quantity.amount = concentration * size;
+    //species->quantity.concentration = concentration;
+    //printf("Setting amount of %s to %g\n",
+    //   GetCharArrayOfString( GetSpeciesNodeName( species ) ), species->quantity.amount );
     END_FUNCTION("SetConcentrationInSpeciesNode", SUCCESS );
     return ret;
 }
