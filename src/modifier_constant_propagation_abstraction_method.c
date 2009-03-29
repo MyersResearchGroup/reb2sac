@@ -65,6 +65,7 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
     RET_VAL ret = SUCCESS;
     double value = 0.0;
     SPECIES *species = NULL;
+    SPECIES *species2 = NULL;
     REACTION *reaction = NULL;
     IR_EDGE *edge = NULL;    
     KINETIC_LAW *kineticLaw = NULL;
@@ -213,6 +214,16 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	ResetCurrentElement( list );
 	while( ( constraint = (CONSTRAINT*)GetNextFromLinkedList( list ) ) != NULL ) {
 	  kineticLaw = GetMathInConstraint( constraint );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	}
+
+	list = ir->GetListOfSpeciesNodes( ir );
+        ResetCurrentElement( list );    
+	while( ( species2 = (SPECIES*)GetNextFromLinkedList( speciesList ) ) != NULL ) {
+	  kineticLaw = GetInitialAssignmentInSpeciesNode( species2 );
 	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
 	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
 	    return ret;

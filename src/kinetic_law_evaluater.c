@@ -323,14 +323,28 @@ static RET_VAL _VisitPWToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
     
     children = GetPWChildrenFromKineticLaw( kineticLaw );
     num = GetLinkedListSize( children );
-    for ( i = 1; i < num; i+=2 ) {
-      child = (KINETIC_LAW*)GetElementByIndex( i,children );
-      visitor->_internal2 = (CADDR_T)(&childValue);
-      if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
-        END_FUNCTION("_VisitPWToEvaluate", ret );
-        return ret;
+    opType = GetPWTypeFromKineticLaw( kineticLaw );
+    switch( opType ) {
+    case KINETIC_LAW_OP_PW:
+      for ( i = 1; i < num; i+=2 ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if (childValue) {
+	  child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	  visitor->_internal2 = (CADDR_T)(&childValue);
+	  if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	    END_FUNCTION("_VisitPWToEvaluate", ret );
+	    return ret;
+	  }
+	  *result = childValue;
+	  break;
+	}
       }
-      if (childValue) {
+      if (i==num) {
 	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
 	visitor->_internal2 = (CADDR_T)(&childValue);
 	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
@@ -338,17 +352,47 @@ static RET_VAL _VisitPWToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
 	  return ret;
 	}
 	*result = childValue;
-	break;
       }
-    }
-    if (i==num) {
-      child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
-      visitor->_internal2 = (CADDR_T)(&childValue);
-      if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
-        END_FUNCTION("_VisitPWToEvaluate", ret );
-        return ret;
+      break;
+    case KINETIC_LAW_OP_XOR:
+      *result = 0;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = (!(*result) && childValue)||((*result) && !childValue);
       }
-      *result = childValue;
+      break;
+    case KINETIC_LAW_OP_OR:
+      *result = 0;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result || childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_AND:
+      *result = 1;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && childValue;
+      }
+      break;
+    default:
+      END_FUNCTION("_VisitUnaryOpToFindNextTime", E_WRONGDATA );
+      return E_WRONGDATA;
     }
     
     visitor->_internal2 = (CADDR_T)result;
@@ -405,19 +449,28 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
         case KINETIC_LAW_OP_POW:
             *result = pow( leftValue, rightValue );
         break;
+
+        case KINETIC_LAW_OP_DELAY:
+	  *result = leftValue;
+        break;        
         
         case KINETIC_LAW_OP_ROOT:
 	  *result = pow(rightValue,(1./leftValue));
         break;        
 
+	/*
         case KINETIC_LAW_OP_XOR:
 	  *result = (!leftValue && rightValue)||(leftValue && !rightValue);
+        break;
+
+        case KINETIC_LAW_OP_OR:
+            *result = leftValue || rightValue;
         break;
 
         case KINETIC_LAW_OP_AND:
             *result = leftValue && rightValue;
         break;
-
+	*/
         case KINETIC_LAW_OP_EQ:
 	  *result = (leftValue == rightValue);
         break;
@@ -452,10 +505,6 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
 
         case KINETIC_LAW_OP_LT:
 	  *result = (leftValue < rightValue);
-        break;
-
-        case KINETIC_LAW_OP_OR:
-            *result = leftValue || rightValue;
         break;
 
         case KINETIC_LAW_OP_UNIFORM:
@@ -516,7 +565,7 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 	  *result = !childValue;
         break;
         case KINETIC_LAW_UNARY_OP_ABS:
-	  *result = labs(childValue);
+	  *result = fabs(childValue);
         break;
         case KINETIC_LAW_UNARY_OP_COT:
 	  *result = cos(childValue);
@@ -692,6 +741,10 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
             *result = pow( leftValue, rightValue );
         break;
         
+        case KINETIC_LAW_OP_DELAY:
+	  *result = leftValue;
+        break;        
+
         case KINETIC_LAW_OP_ROOT:
 	  *result = pow(rightValue,(1./leftValue));
         break;        
@@ -790,7 +843,7 @@ static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINET
 	  *result = !childValue;
         break;
         case KINETIC_LAW_UNARY_OP_ABS:
-	  *result = labs(childValue);
+	  *result = fabs(childValue);
         break;
         case KINETIC_LAW_UNARY_OP_COT:
 	  *result = cos(childValue);
@@ -1063,6 +1116,7 @@ static RET_VAL _VisitSpeciesToEvaluateWithCurrentAmounts( KINETIC_LAW_VISITOR *v
     result = (double*)(visitor->_internal2);
     species = GetSpeciesFromKineticLaw( kineticLaw );
     
+    //if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
     if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
       value = GetAmountInSpeciesNode( species );
     } else {
@@ -1084,7 +1138,7 @@ static RET_VAL _VisitSpeciesToEvaluateWithCurrentConcentrations( KINETIC_LAW_VIS
     result = (double*)(visitor->_internal2);
     species = GetSpeciesFromKineticLaw( kineticLaw );
     
-    
+    //if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
     if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
       value = GetAmountInSpeciesNode( species );
     } else {

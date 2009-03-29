@@ -1088,8 +1088,21 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     children = GetPWChildrenFromKineticLaw( kineticLaw );
     ResetCurrentElement( children );
     _PrintTab( file, *tabCount );
-    fprintf( file, REB2SAC_XHTML_MATHML_OP_PW_FORMAT );
-      
+    switch( GetPWTypeFromKineticLaw( kineticLaw ) ) {
+    case KINETIC_LAW_OP_PW:
+      fprintf( file, REB2SAC_XHTML_MATHML_OP_PW_FORMAT );
+      break;
+    case KINETIC_LAW_OP_AND:
+      fprintf( file, REB2SAC_XHTML_MATHML_OP_AND_FORMAT );
+      break;
+    case KINETIC_LAW_OP_OR:
+      fprintf( file, REB2SAC_XHTML_MATHML_OP_OR_FORMAT );
+      break;
+    case KINETIC_LAW_OP_XOR:
+      fprintf( file, REB2SAC_XHTML_MATHML_OP_XOR_FORMAT );
+      break;
+    }
+
     (*tabCount)++;
     _PrintTab( file, *tabCount );
     fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
@@ -1351,6 +1364,7 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
         case KINETIC_LAW_OP_NORMAL:
         case KINETIC_LAW_OP_BINOMIAL:
         case KINETIC_LAW_OP_LOGNORMAL:
+        case KINETIC_LAW_OP_DELAY:
 	  _PrintTab( file, *tabCount );
 	  if (opType == KINETIC_LAW_OP_UNIFORM) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_UNIFORM_FORMAT );
@@ -1360,8 +1374,10 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_BINOMIAL_FORMAT );
 	  } else if (opType == KINETIC_LAW_OP_LOGNORMAL) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_LOGNORMAL_FORMAT );
-	  } else {
+	  } else if (opType == KINETIC_LAW_OP_NORMAL) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_NORMAL_FORMAT );
+	  } else {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_DELAY_FORMAT );
 	  }
 	  (*tabCount)++;
 	  _PrintTab( file, *tabCount );
@@ -1401,9 +1417,6 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
         case KINETIC_LAW_OP_LEQ:
         case KINETIC_LAW_OP_EQ:
         case KINETIC_LAW_OP_NEQ:
-        case KINETIC_LAW_OP_AND:
-        case KINETIC_LAW_OP_OR:
-        case KINETIC_LAW_OP_XOR:
             _PrintTab( file, *tabCount );
             fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
             fprintf( file, NEW_LINE );             
@@ -1458,12 +1471,6 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_EQ_FORMAT );
 	    } else if ( opType == KINETIC_LAW_OP_NEQ ) {
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_NEQ_FORMAT );
-	    } else if ( opType == KINETIC_LAW_OP_AND ) {
-	      fprintf( file, REB2SAC_XHTML_MATHML_OP_AND_FORMAT );
-	    } else if ( opType == KINETIC_LAW_OP_OR ) {
-	      fprintf( file, REB2SAC_XHTML_MATHML_OP_OR_FORMAT );
-	    } else if ( opType == KINETIC_LAW_OP_XOR ) {
-	      fprintf( file, REB2SAC_XHTML_MATHML_OP_XOR_FORMAT );
 	    } 
             fprintf( file, NEW_LINE );
 
