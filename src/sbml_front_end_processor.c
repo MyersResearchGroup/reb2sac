@@ -1112,7 +1112,7 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
             }
         }
         else {
-            if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, -1.0 ) ) ) ) {
+            if( IS_FAILED( ( ret = SetInitialConcentrationInSpeciesNode( speciesNode, 0.0 ) ) ) ) {
                 END_FUNCTION("_CreateSpeciesNode", ret );
                 return ret;   
             }
