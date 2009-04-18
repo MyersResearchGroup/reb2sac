@@ -639,6 +639,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
       }
       curStep++;
       nextPrintTime = (curStep/numSteps) * rec->timeLimit;
+      //double oldTime = 0.0;
       while( time < nextPrintTime ) {
 	if ((timeStep == DBL_MAX) || (maxTime + timeStep > nextPrintTime)) {
 	  maxTime = nextPrintTime;
@@ -655,6 +656,8 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
 	status = gsl_odeiv_evolve_apply( evolve, control, step,
 					 &system, &time, maxTime,
 					 &h, y );
+	//printf("Current Time = %g Step size = %g\n",time,time-oldTime);
+	//oldTime = time;
 	if( status != GSL_SUCCESS ) {
 	  return FAILING;
 	}
