@@ -967,7 +967,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
         }
     }
     else {
-        if( IS_FAILED( ( ret = SetSizeInCompartment( compartment, -1.0 ) ) ) ) {
+        if( IS_FAILED( ( ret = SetSizeInCompartment( compartment, 1.0 ) ) ) ) {
             END_FUNCTION("_HandleCompartment", ret );
             return ret;
         }

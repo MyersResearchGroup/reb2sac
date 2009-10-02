@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /usr/bin/sh
 
 if [ -f "Makefile" ]; then
 env WANT_AUTOCONF_2_5="1" WANT_AUTOMAKE_1_6="1" make -k -j1 install
