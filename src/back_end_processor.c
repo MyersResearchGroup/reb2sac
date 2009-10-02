@@ -36,6 +36,7 @@
 #include "implicit_runge_kutta_4_method.h"
 #include "implicit_gear1_method.h"
 #include "implicit_gear2_method.h"
+#include "marginal_probability_density_evolution_monte_carlo.h"
 #include "normal_waiting_time_monte_carlo.h"
 #include "type1pili_gillespie_ci.h"
 #include "ctmc_analysis_back_end_processor.h"
@@ -93,6 +94,7 @@ BACK_END_PROCESSOR_INFO *GetInfoOnBackEndProcessors() {
         { "euler", 1, "${out-dir}/euler-run.${ext}", "ODE simulation with Euler method" },
         { "emc-sim", 1, "${out-dir}/run-${run-num}.${ext}", "Monte Carlo simulation with jump count as independent variable"},
         { "gillespie", 1, "${out-dir}/run-${run-num}.${ext}", "perform Gillespie's direct method" },
+        { "mpde", 1, "${out-dir}/run-${run-num}.${ext}", "perform marginal probability density evolution" },
         { "gear1", 1, "${out-dir}/gear1-run.${ext}", "ODE simulation with Gear method, M=1" },
         { "gear2", 1, "${out-dir}/gear2-run.${ext}", "ODE simulation with Gear method, M=2" },
         { NULL, -1, NULL, NULL }
@@ -239,6 +241,20 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 }
                 backend->Process = ProcessHseBackend;
                 backend->Close = CloseHseBackend;
+            }
+            else {
+                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+            }
+        break;
+
+        case 'm':
+            if( strcmp( encoding, "mpde" ) == 0 ) {
+                if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
+                    return ret;
+                }
+                backend->Process = DoMPDEMonteCarloAnalysis;
+                backend->Close = CloseMPDEMonteCarloAnalyzer;
             }
             else {
                 fprintf( stderr, "target encoding type %s is invalid", encoding ); 
