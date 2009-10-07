@@ -45,6 +45,10 @@ typedef struct {
     UINT32 runs; 
     char *outDir; 
     int startIndex;
+    double *oldSpeciesMeans;
+    double *oldSpeciesVariances;
+    double *newSpeciesMeans;
+    double *newSpeciesVariances;
 } MPDE_MONTE_CARLO_RECORD;
 
 
