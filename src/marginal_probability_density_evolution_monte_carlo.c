@@ -8,7 +8,7 @@ static BOOL _IsModelConditionSatisfied( IR *ir );
 
 static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir );
 static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum );
-static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec );
+static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend );
 
 static RET_VAL _CleanSimulation( MPDE_MONTE_CARLO_RECORD *rec );
 static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec );
@@ -47,14 +47,12 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
     if( !_IsModelConditionSatisfied( ir ) ) {
         return ErrorReport( FAILING, "DoMPDEMonteCarloAnalysis", "Marginal Probability Density Evolution method cannot be applied to the model" );
     }
-
     if( IS_FAILED( ( ret = _InitializeRecord( &rec, backend, ir ) ) ) )  {
         return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "initialization of the record failed" );
     }
 
-
     runs = rec.runs;
-    for( i = 1; i <= runs; i++ ) {
+    //for( i = 1; i <= runs; i++ ) {
         SeedRandomNumberGenerators( rec.seed );
         rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
         timeout = 0;
@@ -68,15 +66,17 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
 	if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
 	  return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "Cycle detected in initial and rule assignments" );
 	}
-        if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
+        if( IS_FAILED( ( ret = _RunSimulation( &rec, backend ) ) ) ) {
             return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "%i-th simulation failed at time %f", i, rec.time );
         }
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i );
         }
+for( i = 1; i <= runs; i++ ) {
 	printf("Run = %d\n",i);
+}
 	fflush(stdout);
-    }
+    //}
     END_FUNCTION("DoMPDEMonteCarloAnalysis", SUCCESS );
     return ret;
 }
@@ -142,6 +142,10 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
+    double *oldSpeciesMeans = NULL;
+    double *oldSpeciesVariances = NULL;
+    double *newSpeciesMeans = NULL;
+    double *newSpeciesVariances = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -228,6 +232,18 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
       if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
       }
+      if( ( oldSpeciesMeans = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for old species means array" );
+      }
+      if( ( oldSpeciesVariances = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for old species variances array" );
+      }
+      if( ( newSpeciesMeans = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for new species means array" );
+      }
+      if( ( newSpeciesVariances = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for new species variances array" );
+      }
     }
 
     properties = compRec->properties;
@@ -236,9 +252,17 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
+        oldSpeciesMeans[i] = 0;
+        oldSpeciesVariances[i] = 0;
+        newSpeciesMeans[i] = 0;
+        newSpeciesVariances[i] = 0;
         i++;
     }
     rec->speciesArray = speciesArray;
+    rec->oldSpeciesMeans = oldSpeciesMeans;
+    rec->oldSpeciesVariances = oldSpeciesVariances;
+    rec->newSpeciesMeans = newSpeciesMeans;
+    rec->newSpeciesVariances = newSpeciesVariances;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -500,9 +524,11 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
 	    amount = GetInitialAmountInSpeciesNode( species );
+            rec->oldSpeciesMeans[i] = amount;
 	  }
 	  else {
 	    amount = GetInitialAmountInSpeciesNode( species );
+            rec->oldSpeciesMeans[i] = amount;
 	  }
 	} else {
 	  law = CloneKineticLaw( law );
@@ -515,12 +541,14 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
 	  if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
 	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
 	      SetInitialAmountInSpeciesNode( species, amount );
+              rec->oldSpeciesMeans[i] = amount;
 	      change = TRUE;
 	    }
 	  }
 	  else {
 	    if (GetInitialAmountInSpeciesNode( species ) != amount) {
 	      SetInitialAmountInSpeciesNode( species, amount );
+              rec->oldSpeciesMeans[i] = amount;
 	      change = TRUE;
 	    }
 	  }
@@ -579,12 +607,15 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     return ret;
 }
 
-static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec ) {
+static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend ) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int j = 0;
+    int k = 0;
+    int l = 0;
     double timeLimit = rec->timeLimit;
     double timeStep = rec->timeStep;
+    double time = rec->time;
     double maxTime = 0.0;
     double nextPrintTime = 0.0;
     REACTION *reaction = NULL;
@@ -593,74 +624,122 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec ) {
     int nextEvent = 0;
     double nextEventTime = 0;
 
+    UINT32 size = 0;
+    SPECIES *species = NULL;
+    SPECIES **speciesArray = rec->speciesArray;
     printer = rec->printer;
-    decider = rec->decider;
-    while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
-        i++;
-	if (timeStep == DBL_MAX) {
-	  maxTime = DBL_MAX;
-	} else {
-	  maxTime = maxTime + timeStep;
-	}
-	nextEventTime = fireEvents( rec, rec->time );
-	if (nextEventTime==-2.0) {
-	  return FAILING;
-	}
-	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
-	  maxTime = nextEventTime;
-	}
+    while (rec->time > timeLimit) {
+      for( k = 1; k <= rec->runs; k++ ) {
+        rec->time = time;
+        double end = rec->time + timeStep;
+        if ( timeLimit < end) {
+          end = timeLimit;
+        }
+        if( ( rec->decider =
+              CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, rec->reactionArray, rec->reactionsSize,
+					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, end ) )
+                                               == NULL ) {
+            return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation decider" );
+        }
+        size = rec->speciesSize;
+        for( l = 0; l < size; l++ ) {
+          species = speciesArray[l];
+          SetAmountInSpeciesNode( species, GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->oldSpeciesVariances[l]) );
+        }
+        decider = rec->decider;
+        while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
+            i++;
+	    if (timeStep == DBL_MAX) {
+	      maxTime = DBL_MAX;
+            } else {
+	      maxTime = maxTime + timeStep;
+	    }
+	    nextEventTime = fireEvents( rec, rec->time );
+	    if (nextEventTime==-2.0) {
+	      return FAILING;
+	    }
+	    if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+	      maxTime = nextEventTime;
+	    }
 
-	if( IS_FAILED( ( ret = _CalculatePropensities( rec ) ) ) ) {
-	  return ret;
-	}
-	if( IS_FAILED( ( ret = _CalculateTotalPropensities( rec ) ) ) ) {
-	  return ret;
-	}
-	if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
-	  TRACE_1( "the total propensity is 0 at iteration %i", i );
-	  rec->t = maxTime - rec->time;
-	  rec->time = maxTime;
-	  reaction = NULL;
-	  rec->nextReaction = NULL;
-	  if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
-	    return ret;
-	  }
-	  if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-	    return ret;
-	  }
-	}
-	else {
-	  if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
-	    return ret;
-	  }
-	  if ( maxTime < rec->time ) {
-	    rec->time -= rec->t;
-	    rec->t = maxTime - rec->time;
-	    rec->time = maxTime;
-	    reaction = NULL;
-	    rec->nextReaction = NULL;
-	    if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	    if( IS_FAILED( ( ret = _CalculatePropensities( rec ) ) ) ) {
 	      return ret;
 	    }
-	    if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	    if( IS_FAILED( ( ret = _CalculateTotalPropensities( rec ) ) ) ) {
 	      return ret;
 	    }
-	  } else {
-	    maxTime = rec->time;
-	    if ( rec->time < timeLimit ) {
-	      if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
-		return ret;
-	      }
-	      reaction = rec->nextReaction;
+	    if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
+	      TRACE_1( "the total propensity is 0 at iteration %i", i );
+	      rec->t = maxTime - rec->time;
+	      rec->time = maxTime;
+	      reaction = NULL;
+              rec->nextReaction = NULL;
 	      if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
-		return ret;
+	        return ret;
 	      }
-	    } else {
-	      if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-		return ret;
+	      //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	      //  return ret;
+	      //}
+	    }
+	    else {
+	      if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
+	        return ret;
+	      }
+	      if ( maxTime < rec->time ) {
+	        rec->time -= rec->t;
+	        rec->t = maxTime - rec->time;
+	        rec->time = maxTime;
+	        reaction = NULL;
+	        rec->nextReaction = NULL;
+	        if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	          return ret;
+	        }
+	        //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	        //  return ret;
+	        //}
+	      } else {
+	        maxTime = rec->time;
+	        if ( rec->time < timeLimit ) {
+	          if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
+		    return ret;
+	          }
+	          reaction = rec->nextReaction;
+	          if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+		    return ret;
+	          }
+	        } else {
+	          //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+		  //  return ret;
+	          //}
+	        }
 	      }
 	    }
-	  }
+          }
+          if ( k == 1 ) {
+            for( l = 0; l < size; l++ ) {
+              species = speciesArray[l];
+              rec->newSpeciesMeans[l] = GetAmountInSpeciesNode( species );
+              rec->newSpeciesVariances[l] = 0;
+            }
+          }
+          else {
+            species = speciesArray[l];
+            double old = rec->newSpeciesMeans[l];
+            rec->newSpeciesMeans[l] = old + ((GetAmountInSpeciesNode( species ) - old) / k);
+	    double new = rec->newSpeciesMeans[l];
+            double oldVary = rec->newSpeciesVariances[l];
+	    double newVary = (((k - 2) * oldVary) + (GetAmountInSpeciesNode( species ) - new) * (GetAmountInSpeciesNode( species ) - old))/ (k - 1);
+	    rec->newSpeciesVariances[l] = newVary;
+          } 
+        }
+        for( l = 0; l < size; l++ ) {
+          species = speciesArray[l];
+          rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
+          SetAmountInSpeciesNode( species, rec->newSpeciesMeans[l] );
+          rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+        }
+        if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+	  return ret;
 	}
     }
     if( rec->time >= timeLimit ) {
