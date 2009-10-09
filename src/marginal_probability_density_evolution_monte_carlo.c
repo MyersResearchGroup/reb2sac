@@ -72,7 +72,6 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i );
         }
-	fflush(stdout);
     //}
     END_FUNCTION("DoMPDEMonteCarloAnalysis", SUCCESS );
     return ret;
@@ -143,6 +142,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     double *oldSpeciesVariances = NULL;
     double *newSpeciesMeans = NULL;
     double *newSpeciesVariances = NULL;
+    double *speciesSD = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -241,6 +241,9 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
       if( ( newSpeciesVariances = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for new species variances array" );
       }
+      if( ( speciesSD = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species standard deviations array" );
+      }
     }
 
     properties = compRec->properties;
@@ -253,6 +256,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
         oldSpeciesVariances[i] = 0;
         newSpeciesMeans[i] = 0;
         newSpeciesVariances[i] = 0;
+        speciesSD[i] = 0;
         i++;
     }
     rec->speciesArray = speciesArray;
@@ -260,6 +264,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     rec->oldSpeciesVariances = oldSpeciesVariances;
     rec->newSpeciesMeans = newSpeciesMeans;
     rec->newSpeciesVariances = newSpeciesVariances;
+    rec->speciesSD = speciesSD;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -378,10 +383,20 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
         rec->outDir = DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE;
     }
 
-    if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+    if( ( rec->meanPrinter = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
 						  speciesArray, rec->speciesSize,
 						  symbolArray, rec->symbolsSize ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation mean printer" );
+    }
+    if( ( rec->varPrinter = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+    						  speciesArray, rec->speciesSize,
+    						  symbolArray, rec->symbolsSize ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation var printer" );
+    }
+    if( ( rec->sdPrinter = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
+    						  speciesArray, rec->speciesSize,
+    						  symbolArray, rec->symbolsSize ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation sd printer" );
     }
 
     if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
@@ -464,7 +479,9 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
 
 static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum ) {
     RET_VAL ret = SUCCESS;
-    char filenameStem[512];
+    char meanFilenameStem[512];
+    char varFilenameStem[512];
+    char sdFilenameStem[512];
     double amount = 0;
     double param = 0;
     UINT32 i = 0;
@@ -474,7 +491,9 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     REACTION *reaction = NULL;
     REACTION **reactionArray = rec->reactionArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
-    SIMULATION_PRINTER *printer = rec->printer;
+    SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
+    SIMULATION_PRINTER *varPrinter = rec->varPrinter;
+    SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
     double compSize = 0.0;
     COMPARTMENT *compartment = NULL;
     COMPARTMENT **compartmentArray = rec->compartmentArray;
@@ -483,11 +502,25 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     KINETIC_LAW *law = NULL;
     BOOL change = FALSE;
 
-    sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );
-    if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
+    sprintf( meanFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
+    sprintf( varFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
+    sprintf( sdFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
+    if( IS_FAILED( (  ret = meanPrinter->PrintStart( meanPrinter, meanFilenameStem ) ) ) ) {
         return ret;
     }
-    if( IS_FAILED( (  ret = printer->PrintHeader( printer ) ) ) ) {
+    if( IS_FAILED( (  ret = meanPrinter->PrintHeader( meanPrinter ) ) ) ) {
+        return ret;
+    }
+    if( IS_FAILED( (  ret = varPrinter->PrintStart( varPrinter, varFilenameStem ) ) ) ) {
+        return ret;
+    }
+    if( IS_FAILED( (  ret = varPrinter->PrintHeader( varPrinter ) ) ) ) {
+        return ret;
+    }
+    if( IS_FAILED( (  ret = sdPrinter->PrintStart( sdPrinter, sdFilenameStem ) ) ) ) {
+        return ret;
+    }
+    if( IS_FAILED( (  ret = sdPrinter->PrintHeader( sdPrinter ) ) ) ) {
         return ret;
     }
     rec->time = 0.0;
@@ -616,7 +649,9 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     double maxTime = 0.0;
     double nextPrintTime = 0.0;
     REACTION *reaction = NULL;
-    SIMULATION_PRINTER *printer = NULL;
+    SIMULATION_PRINTER *meanPrinter = NULL;
+    SIMULATION_PRINTER *varPrinter = NULL;
+    SIMULATION_PRINTER *sdPrinter = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     int nextEvent = 0;
     double nextEventTime = 0;
@@ -627,7 +662,9 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     double newValue;
 
     printf("Size = %d\n",size);
-    printer = rec->printer;
+    meanPrinter = rec->meanPrinter;
+    varPrinter = rec->varPrinter;
+    sdPrinter = rec->sdPrinter;
     nextPrintTime = rec->printInterval;
     while (rec->time < timeLimit) {
       for( k = 1; k <= rec->runs; k++ ) {
@@ -644,20 +681,20 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
         }
         for( l = 0; l < size; l++ ) {
           species = speciesArray[l];
-          newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], sqrt(rec->oldSpeciesVariances[l]));
-	  newValue = round(newValue);
-	  if (newValue < 0.0) newValue = 0.0;
-          SetAmountInSpeciesNode( species, newValue );
-        }
-	if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, rec->time ) ) ) ) {
-	  return ret;
-	}
+          newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+	      newValue = round(newValue);
+	      if (newValue < 0.0) newValue = 0.0;
+            SetAmountInSpeciesNode( species, newValue );
+          }
+	    if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, rec->time ) ) ) ) {
+	      return ret;
+	     }
         decider = rec->decider;
         while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
             i++;
 	    if (timeStep == DBL_MAX) {
 	      maxTime = DBL_MAX;
-            } else {
+        } else {
 	      maxTime = maxTime + timeStep;
 	    }
 	    nextEventTime = fireEvents( rec, rec->time );
@@ -741,33 +778,57 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
           } 
       }
       time = end;
-      for( l = 0; l < size; l++ ) {
-	species = speciesArray[l];
-	rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
-	SetAmountInSpeciesNode( species, rec->newSpeciesMeans[l] );
-	rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
-      }
+    for( l = 0; l < size; l++ ) {
+	  species = speciesArray[l];
+	  rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
+	  rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+	  rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+    }
       if (time == nextPrintTime) {
-	nextPrintTime += rec->printInterval;
-	printf("Time = %g\n",time);
-	fflush(stdout);
-	if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
-	  return ret;
-	}
+	    nextPrintTime += rec->printInterval;
+	    printf("Time = %g\n",time);
+	    fflush(stdout);
+	    SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
+	    if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, rec->time ) ) ) ) {
+	      return ret;
+	    }
+	    SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
+	    if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, rec->time ) ) ) ) {
+	      return ret;
+	    }
+	    SetAmountInSpeciesNode(species, rec->speciesSD[l]);
+	    if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, rec->time ) ) ) ) {
+	      return ret;
+	    }
       }
     }
     if( rec->time >= timeLimit ) {
         rec->time = timeLimit;
     }
-    if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
-            return ret;
+    SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
+    if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, rec->time ) ) ) ) {
+        return ret;
+    }
+    SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
+    if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, rec->time ) ) ) ) {
+        return ret;
+    }
+    SetAmountInSpeciesNode(species, rec->speciesSD[l]);
+    if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, rec->time ) ) ) ) {
+        return ret;
     }
     /*
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
         return ret;
     }
     */
-    if( IS_FAILED( ( ret = printer->PrintEnd( printer ) ) ) ) {
+    if( IS_FAILED( ( ret = meanPrinter->PrintEnd( meanPrinter ) ) ) ) {
+        return ret;
+    }
+    if( IS_FAILED( ( ret = varPrinter->PrintEnd( varPrinter ) ) ) ) {
+        return ret;
+    }
+    if( IS_FAILED( ( ret = sdPrinter->PrintEnd( sdPrinter ) ) ) ) {
         return ret;
     }
 
@@ -796,7 +857,9 @@ static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     char filename[512];
     FILE *file = NULL;
-    SIMULATION_PRINTER *printer = rec->printer;
+    SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
+    SIMULATION_PRINTER *varPrinter = rec->varPrinter;
+    SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
 
     sprintf( filename, "%s%csim-rep.txt", rec->outDir, FILE_SEPARATOR );
@@ -818,7 +881,9 @@ static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec ) {
         FREE( rec->speciesArray );
     }
 
-    printer->Destroy( printer );
+    meanPrinter->Destroy( meanPrinter );
+    varPrinter->Destroy( varPrinter );
+    sdPrinter->Destroy( sdPrinter );
     decider->Destroy( decider );
 
     return ret;
@@ -1023,12 +1088,20 @@ static RET_VAL _Print( MPDE_MONTE_CARLO_RECORD *rec ) {
     double time = rec->time;
     double printInterval = rec->printInterval;
     REACTION *reaction = NULL;
-    SIMULATION_PRINTER *printer = rec->printer;
+    SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
+    SIMULATION_PRINTER *varPrinter = rec->varPrinter;
+    SIMULATION_PRINTER *sPrinter = rec->sdPrinter;
 
     while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
       if (nextPrintTime > 0) printf("Time = %g\n",nextPrintTime);
-      if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
-	return ret;
+      if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, nextPrintTime ) ) ) ) {
+	    return ret;
+      }
+      if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, nextPrintTime ) ) ) ) {
+      	return ret;
+      }
+      if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, nextPrintTime ) ) ) ) {
+      	return ret;
       }
       nextPrintTime += printInterval;
     }
