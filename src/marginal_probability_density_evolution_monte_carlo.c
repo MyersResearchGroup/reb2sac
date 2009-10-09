@@ -1090,7 +1090,7 @@ static RET_VAL _Print( MPDE_MONTE_CARLO_RECORD *rec ) {
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
-    SIMULATION_PRINTER *sPrinter = rec->sdPrinter;
+    SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
 
     while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
       if (nextPrintTime > 0) printf("Time = %g\n",nextPrintTime);

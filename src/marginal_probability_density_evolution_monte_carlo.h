@@ -30,7 +30,9 @@ typedef struct {
     EVENT **eventArray;
     UINT32 eventsSize;
     REACTION *nextReaction;    
-    SIMULATION_PRINTER *printer;
+    SIMULATION_PRINTER *meanPrinter;
+    SIMULATION_PRINTER *varPrinter;
+    SIMULATION_PRINTER *sdPrinter;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double time;
     double t;
@@ -49,6 +51,7 @@ typedef struct {
     double *oldSpeciesVariances;
     double *newSpeciesMeans;
     double *newSpeciesVariances;
+    double *speciesSD;
 } MPDE_MONTE_CARLO_RECORD;
 
 
