@@ -503,8 +503,8 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     BOOL change = FALSE;
 
     sprintf( meanFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
-    sprintf( varFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
-    sprintf( sdFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
+    sprintf( varFilenameStem, "%s%cvariance", rec->outDir, FILE_SEPARATOR);
+    sprintf( sdFilenameStem, "%s%cstandard_deviation", rec->outDir, FILE_SEPARATOR);
     if( IS_FAILED( (  ret = meanPrinter->PrintStart( meanPrinter, meanFilenameStem ) ) ) ) {
         return ret;
     }
