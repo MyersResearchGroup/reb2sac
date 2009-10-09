@@ -72,9 +72,6 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
         if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
             return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i );
         }
-for( i = 1; i <= runs; i++ ) {
-	printf("Run = %d\n",i);
-}
 	fflush(stdout);
     //}
     END_FUNCTION("DoMPDEMonteCarloAnalysis", SUCCESS );
@@ -615,7 +612,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     int l = 0;
     double timeLimit = rec->timeLimit;
     double timeStep = rec->timeStep;
-    double time = rec->time;
+    double time = 0.0;
     double maxTime = 0.0;
     double nextPrintTime = 0.0;
     REACTION *reaction = NULL;
@@ -623,15 +620,19 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     int nextEvent = 0;
     double nextEventTime = 0;
-
-    UINT32 size = 0;
+    UINT32 size = rec->speciesSize;
     SPECIES *species = NULL;
     SPECIES **speciesArray = rec->speciesArray;
+    double end;
+    double newValue;
+
+    printf("Size = %d\n",size);
     printer = rec->printer;
+    nextPrintTime = rec->printInterval;
     while (rec->time < timeLimit) {
       for( k = 1; k <= rec->runs; k++ ) {
         rec->time = time;
-        double end = rec->time + timeStep;
+        end = rec->time + timeStep;
         if ( timeLimit < end) {
           end = timeLimit;
         }
@@ -641,11 +642,16 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
                                                == NULL ) {
             return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation decider" );
         }
-        size = rec->speciesSize;
         for( l = 0; l < size; l++ ) {
           species = speciesArray[l];
-          SetAmountInSpeciesNode( species, GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->oldSpeciesVariances[l]) );
+          newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], sqrt(rec->oldSpeciesVariances[l]));
+	  newValue = round(newValue);
+	  if (newValue < 0.0) newValue = 0.0;
+          SetAmountInSpeciesNode( species, newValue );
         }
+	if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, rec->time ) ) ) ) {
+	  return ret;
+	}
         decider = rec->decider;
         while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
             i++;
@@ -674,7 +680,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
 	      rec->time = maxTime;
 	      reaction = NULL;
               rec->nextReaction = NULL;
-	      if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	      if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
 	        return ret;
 	      }
 	      //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
@@ -691,7 +697,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
 	        rec->time = maxTime;
 	        reaction = NULL;
 	        rec->nextReaction = NULL;
-	        if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	        if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
 	          return ret;
 	        }
 	        //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
@@ -704,7 +710,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
 		    return ret;
 	          }
 	          reaction = rec->nextReaction;
-	          if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
+	          if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
 		    return ret;
 	          }
 	        } else {
@@ -723,24 +729,32 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
             }
           }
           else {
-            species = speciesArray[l];
-            double old = rec->newSpeciesMeans[l];
-            rec->newSpeciesMeans[l] = old + ((GetAmountInSpeciesNode( species ) - old) / k);
-	    double new = rec->newSpeciesMeans[l];
-            double oldVary = rec->newSpeciesVariances[l];
-	    double newVary = (((k - 2) * oldVary) + (GetAmountInSpeciesNode( species ) - new) * (GetAmountInSpeciesNode( species ) - old))/ (k - 1);
-	    rec->newSpeciesVariances[l] = newVary;
+            for( l = 0; l < size; l++ ) {
+	      species = speciesArray[l];
+	      double old = rec->newSpeciesMeans[l];
+	      rec->newSpeciesMeans[l] = old + ((GetAmountInSpeciesNode( species ) - old) / k);
+	      double new = rec->newSpeciesMeans[l];
+	      double oldVary = rec->newSpeciesVariances[l];
+	      double newVary = (((k - 2) * oldVary) + (GetAmountInSpeciesNode( species ) - new) * (GetAmountInSpeciesNode( species ) - old))/ (k - 1);
+	      rec->newSpeciesVariances[l] = newVary;
+	    }
           } 
-        }
-        for( l = 0; l < size; l++ ) {
-          species = speciesArray[l];
-          rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
-          SetAmountInSpeciesNode( species, rec->newSpeciesMeans[l] );
-          rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
-        }
-        if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
+      }
+      time = end;
+      for( l = 0; l < size; l++ ) {
+	species = speciesArray[l];
+	rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
+	SetAmountInSpeciesNode( species, rec->newSpeciesMeans[l] );
+	rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+      }
+      if (time == nextPrintTime) {
+	nextPrintTime += rec->printInterval;
+	printf("Time = %g\n",time);
+	fflush(stdout);
+	if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
 	  return ret;
 	}
+      }
     }
     if( rec->time >= timeLimit ) {
         rec->time = timeLimit;
