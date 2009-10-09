@@ -58,7 +58,7 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
         timeout = 0;
 	do {
 	  SeedRandomNumberGenerators( rec.seed );
-	  if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
+	  if( IS_FAILED( ( ret = _InitializeSimulation( &rec, 1 ) ) ) ) {
             return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
 	  }
 	  timeout++;
@@ -628,7 +628,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     SPECIES *species = NULL;
     SPECIES **speciesArray = rec->speciesArray;
     printer = rec->printer;
-    while (rec->time > timeLimit) {
+    while (rec->time < timeLimit) {
       for( k = 1; k <= rec->runs; k++ ) {
         rec->time = time;
         double end = rec->time + timeStep;
@@ -738,7 +738,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
           SetAmountInSpeciesNode( species, rec->newSpeciesMeans[l] );
           rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
         }
-        if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+        if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
 	  return ret;
 	}
     }
