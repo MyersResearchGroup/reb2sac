@@ -788,15 +788,24 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
 	    nextPrintTime += rec->printInterval;
 	    printf("Time = %g\n",time);
 	    fflush(stdout);
-	    SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
+	    for( l = 0; l < size; l++ ) {
+	    	species = speciesArray[l];
+	    	SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
+	    }
 	    if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, rec->time ) ) ) ) {
 	      return ret;
 	    }
-	    SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
+	    for( l = 0; l < size; l++ ) {
+	    	species = speciesArray[l];
+	    	SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
+	    }
 	    if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, rec->time ) ) ) ) {
 	      return ret;
 	    }
-	    SetAmountInSpeciesNode(species, rec->speciesSD[l]);
+	    for( l = 0; l < size; l++ ) {
+	    	species = speciesArray[l];
+	    	SetAmountInSpeciesNode(species, rec->speciesSD[l]);
+	    }
 	    if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, rec->time ) ) ) ) {
 	      return ret;
 	    }
