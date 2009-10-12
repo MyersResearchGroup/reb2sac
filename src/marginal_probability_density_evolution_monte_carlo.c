@@ -785,6 +785,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
 	  rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
     }
       if (time == nextPrintTime) {
+    	    rec->time = nextPrintTime;
 	    nextPrintTime += rec->printInterval;
 	    printf("Time = %g\n",time);
 	    fflush(stdout);
