@@ -696,22 +696,24 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
                                                == NULL ) {
             return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation decider" );
         }
-        for( l = 0; l < size; l++ ) {
-          species = speciesArray[l];
-          newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
-	      newValue = round(newValue);
-	      if (newValue < 0.0) newValue = 0.0;
-            SetAmountInSpeciesNode( species, newValue );
-          }
-	    if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, rec->time ) ) ) ) {
-	      return ret;
-	     }
         decider = rec->decider;
+        do {
+	  for( l = 0; l < size; l++ ) {
+	    species = speciesArray[l];
+	    newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+	    newValue = round(newValue);
+	    if (newValue < 0.0) newValue = 0.0;
+            SetAmountInSpeciesNode( species, newValue );
+	  }
+	  if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, rec->time ) ) ) ) {
+	    return ret;
+	  }
+	} while( (decider->IsTerminationConditionMet( decider, reaction, rec->time )) );
         while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
             i++;
 	    if (timeStep == DBL_MAX) {
 	      maxTime = DBL_MAX;
-        } else {
+	    } else {
 	      maxTime = maxTime + timeStep;
 	    }
 	    nextEventTime = fireEvents( rec, rec->time );
