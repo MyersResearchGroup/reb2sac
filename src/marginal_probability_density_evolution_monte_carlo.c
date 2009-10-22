@@ -676,6 +676,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double end;
     double newValue;
     int useMP = backend->useMP;
+    double *mpRun = NULL;
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
@@ -699,6 +700,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         species = speciesArray[l];
         SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
     }
+    if (useMP) {
+        mpRun = rec->oldSpeciesMeans;
+    }
     while (rec->time < timeLimit) {
         for (k = 1; k <= rec->runs; k++) {
             rec->time = time;
@@ -715,10 +719,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             do {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
-                    if (rec->speciesSD[l] == 0) {
-                        newValue = rec->oldSpeciesMeans[l];
+                    if (useMP) {
+                        newValue = mpRun[l];
                     } else {
-                        newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+                        if (rec->speciesSD[l] == 0) {
+                            newValue = rec->oldSpeciesMeans[l];
+                        } else {
+                            newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+                        }
                     }
                     newValue = round(newValue);
                     if (newValue < 0.0)
@@ -827,6 +835,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
             rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
             rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+            if (useMP) {
+                mpRun = rec->mpRuns[1];
+            }
         }
         if (time == nextPrintTime) {
             rec->time = nextPrintTime;
