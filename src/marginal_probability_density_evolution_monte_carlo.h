@@ -52,6 +52,7 @@ typedef struct {
     double *newSpeciesMeans;
     double *newSpeciesVariances;
     double *speciesSD;
+    double **mpRuns;
 } MPDE_MONTE_CARLO_RECORD;
 
 
