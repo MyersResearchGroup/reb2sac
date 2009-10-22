@@ -47,6 +47,7 @@ struct _BACK_END_PROCESSOR {
     CADDR_T _internal3;    
     RET_VAL (*Process)( BACK_END_PROCESSOR *backend, IR *ir );
     RET_VAL (*Close)( BACK_END_PROCESSOR *backend );
+    int useMP;
 };
 
 typedef struct {
