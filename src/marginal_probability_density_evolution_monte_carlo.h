@@ -6,7 +6,7 @@
 BEGIN_C_NAMESPACE
 
 
-DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir );
+DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir, int useMP );
 DLLSCOPE RET_VAL STDCALL CloseMPDEMonteCarloAnalyzer( BACK_END_PROCESSOR *backend );
 
 #if 0
