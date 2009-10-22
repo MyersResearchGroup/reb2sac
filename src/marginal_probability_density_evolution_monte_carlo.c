@@ -111,6 +111,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
+    UINT32 k = 0;
     UINT32 size = 0;
     UINT32 numberSteps = 0;
     char buf[512];
@@ -143,6 +144,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     double *newSpeciesMeans = NULL;
     double *newSpeciesVariances = NULL;
     double *speciesSD = NULL;
+    double **mpRuns = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -244,6 +246,11 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
       if( ( speciesSD = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species standard deviations array" );
       }
+      if (backend->useMP == 1) {
+    	  if( ( mpRuns = (double**)MALLOC( rec->speciesSize * rec->runs * sizeof(double) ) ) == NULL ) {
+    		  return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for MP runs array" );
+    	  }
+      }
     }
 
     properties = compRec->properties;
@@ -257,6 +264,11 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
         newSpeciesMeans[i] = 0;
         newSpeciesVariances[i] = 0;
         speciesSD[i] = 0;
+        if (backend->useMP == 1) {
+        	for (k = 0; k < rec->runs; k ++) {
+        		mpRuns[k][i] = 0;
+        	}
+        }
         i++;
     }
     rec->speciesArray = speciesArray;
@@ -265,6 +277,9 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     rec->newSpeciesMeans = newSpeciesMeans;
     rec->newSpeciesVariances = newSpeciesVariances;
     rec->speciesSD = speciesSD;
+    if (backend->useMP == 1) {
+    	rec->mpRuns = mpRuns;
+    }
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -637,7 +652,7 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     return ret;
 }
 
-static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend ) {
+static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int j = 0;
@@ -662,182 +677,186 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     double newValue;
     int useMP = backend->useMP;
 
-    printf("Size = %d\n",size);
+    printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
     sdPrinter = rec->sdPrinter;
     nextPrintTime = rec->printInterval;
-    if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, rec->time ) ) ) ) {
+    if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, rec->time)))) {
         return ret;
     }
-    for( l = 0; l < size; l++ ) {
-      	species = speciesArray[l];
-       	SetAmountInSpeciesNode(species, 0.0);
+    for (l = 0; l < size; l++) {
+        species = speciesArray[l];
+        SetAmountInSpeciesNode(species, 0.0);
     }
-    if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, rec->time ) ) ) ) {
+    if (IS_FAILED((ret = varPrinter->PrintValues(varPrinter, rec->time)))) {
         return ret;
     }
-    if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, rec->time ) ) ) ) {
+    if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, rec->time)))) {
         return ret;
     }
-    for( l = 0; l < size; l++ ) {
-      	species = speciesArray[l];
-      	SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
+    for (l = 0; l < size; l++) {
+        species = speciesArray[l];
+        SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
     }
     while (rec->time < timeLimit) {
-      for( k = 1; k <= rec->runs; k++ ) {
-        rec->time = time;
-        end = rec->time + timeStep;
-        if ( timeLimit < end) {
-          end = timeLimit;
-        }
-        if( ( rec->decider =
-              CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, rec->reactionArray, rec->reactionsSize,
-					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, end ) )
-                                               == NULL ) {
-            return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation decider" );
-        }
-        decider = rec->decider;
-        do {
-	  for( l = 0; l < size; l++ ) {
-	    species = speciesArray[l];
-	    if (rec->speciesSD[l] == 0) {
-	    	newValue = rec->oldSpeciesMeans[l];
-	    }
-	    else {
-	    	newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
-	    }
-	    newValue = round(newValue);
-	    if (newValue < 0.0) newValue = 0.0;
-            SetAmountInSpeciesNode( species, newValue );
-	  }
-	  if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, rec->time ) ) ) ) {
-	    return ret;
-	  }
-	} while( (decider->IsTerminationConditionMet( decider, reaction, rec->time )) );
-        while( !(decider->IsTerminationConditionMet( decider, reaction, rec->time )) ) {
-            i++;
-	    if (timeStep == DBL_MAX) {
-	      maxTime = DBL_MAX;
-	    } else {
-	      maxTime = maxTime + timeStep;
-	    }
-	    nextEventTime = fireEvents( rec, rec->time );
-	    if (nextEventTime==-2.0) {
-	      return FAILING;
-	    }
-	    if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
-	      maxTime = nextEventTime;
-	    }
-
-	    if( IS_FAILED( ( ret = _CalculatePropensities( rec ) ) ) ) {
-	      return ret;
-	    }
-	    if( IS_FAILED( ( ret = _CalculateTotalPropensities( rec ) ) ) ) {
-	      return ret;
-	    }
-	    if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
-	      TRACE_1( "the total propensity is 0 at iteration %i", i );
-	      rec->t = maxTime - rec->time;
-	      rec->time = maxTime;
-	      reaction = NULL;
-              rec->nextReaction = NULL;
-	      if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
-	        return ret;
-	      }
-	      //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-	      //  return ret;
-	      //}
-	    }
-	    else {
-	      if( IS_FAILED( ( ret = _FindNextReactionTime( rec ) ) ) ) {
-	        return ret;
-	      }
-	      if ( maxTime < rec->time ) {
-	        rec->time -= rec->t;
-	        rec->t = maxTime - rec->time;
-	        rec->time = maxTime;
-	        reaction = NULL;
-	        rec->nextReaction = NULL;
-	        if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
-	          return ret;
-	        }
-	        //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-	        //  return ret;
-	        //}
-	      } else {
-	        maxTime = rec->time;
-	        if ( rec->time < timeLimit ) {
-	          if( IS_FAILED( ( ret = _FindNextReaction( rec ) ) ) ) {
-		    return ret;
-	          }
-	          reaction = rec->nextReaction;
-	          if( IS_FAILED( ( ret = _UpdateNodeValues( rec ) ) ) ) {
-		    return ret;
-	          }
-	        } else {
-	          //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
-		  //  return ret;
-	          //}
-	        }
-	      }
-	    }
-          }
-          if ( k == 1 ) {
-            for( l = 0; l < size; l++ ) {
-              species = speciesArray[l];
-              rec->newSpeciesMeans[l] = GetAmountInSpeciesNode( species );
-              rec->newSpeciesVariances[l] = 0;
+        for (k = 1; k <= rec->runs; k++) {
+            rec->time = time;
+            end = rec->time + timeStep;
+            if (timeLimit < end) {
+                end = timeLimit;
             }
-          }
-          else {
-            for( l = 0; l < size; l++ ) {
-	      species = speciesArray[l];
-	      double old = rec->newSpeciesMeans[l];
-	      rec->newSpeciesMeans[l] = old + ((GetAmountInSpeciesNode( species ) - old) / k);
-	      double new = rec->newSpeciesMeans[l];
-	      double oldVary = rec->newSpeciesVariances[l];
-	      double newVary = (((k - 2) * oldVary) + (GetAmountInSpeciesNode( species ) - new) * (GetAmountInSpeciesNode( species ) - old))/ (k - 1);
-	      rec->newSpeciesVariances[l] = newVary;
-	    }
-          } 
-      }
-      time = end;
-    for( l = 0; l < size; l++ ) {
-	  species = speciesArray[l];
-	  rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
-	  rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
-	  rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+            if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
+                    rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
+                    FALSE, end)) == NULL) {
+                return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation decider");
+            }
+            decider = rec->decider;
+            do {
+                for (l = 0; l < size; l++) {
+                    species = speciesArray[l];
+                    if (rec->speciesSD[l] == 0) {
+                        newValue = rec->oldSpeciesMeans[l];
+                    } else {
+                        newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+                    }
+                    newValue = round(newValue);
+                    if (newValue < 0.0)
+                        newValue = 0.0;
+                    SetAmountInSpeciesNode(species, newValue);
+                }
+                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                    return ret;
+                }
+            } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
+            while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
+                i++;
+                if (timeStep == DBL_MAX) {
+                    maxTime = DBL_MAX;
+                } else {
+                    maxTime = maxTime + timeStep;
+                }
+                nextEventTime = fireEvents(rec, rec->time);
+                if (nextEventTime == -2.0) {
+                    return FAILING;
+                }
+                if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+                    maxTime = nextEventTime;
+                }
+
+                if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
+                    return ret;
+                }
+                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                    return ret;
+                }
+                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                    TRACE_1("the total propensity is 0 at iteration %i", i);
+                    rec->t = maxTime - rec->time;
+                    rec->time = maxTime;
+                    reaction = NULL;
+                    rec->nextReaction = NULL;
+                    if (IS_FAILED((ret = _UpdateNodeValues(rec)))) {
+                        return ret;
+                    }
+                    //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+                    //  return ret;
+                    //}
+                } else {
+                    if (IS_FAILED((ret = _FindNextReactionTime(rec)))) {
+                        return ret;
+                    }
+                    if (maxTime < rec->time) {
+                        rec->time -= rec->t;
+                        rec->t = maxTime - rec->time;
+                        rec->time = maxTime;
+                        reaction = NULL;
+                        rec->nextReaction = NULL;
+                        if (IS_FAILED((ret = _UpdateNodeValues(rec)))) {
+                            return ret;
+                        }
+                        //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+                        //  return ret;
+                        //}
+                    } else {
+                        maxTime = rec->time;
+                        if (rec->time < timeLimit) {
+                            if (IS_FAILED((ret = _FindNextReaction(rec)))) {
+                                return ret;
+                            }
+                            reaction = rec->nextReaction;
+                            if (IS_FAILED((ret = _UpdateNodeValues(rec)))) {
+                                return ret;
+                            }
+                        } else {
+                            //if( IS_FAILED( ( ret = _Print( rec ) ) ) ) {
+                            //  return ret;
+                            //}
+                        }
+                    }
+                }
+            }
+            if (k == 1) {
+                for (l = 0; l < size; l++) {
+                    species = speciesArray[l];
+                    rec->newSpeciesMeans[l] = GetAmountInSpeciesNode(species);
+                    rec->newSpeciesVariances[l] = 0;
+                    if (useMP == 1) {
+                        rec->mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                    }
+                }
+            } else {
+                for (l = 0; l < size; l++) {
+                    species = speciesArray[l];
+                    double old = rec->newSpeciesMeans[l];
+                    rec->newSpeciesMeans[l] = old + ((GetAmountInSpeciesNode(species) - old) / k);
+                    double new = rec->newSpeciesMeans[l];
+                    double oldVary = rec->newSpeciesVariances[l];
+                    double newVary = (((k - 2) * oldVary) + (GetAmountInSpeciesNode(species) - new)
+                            * (GetAmountInSpeciesNode(species) - old)) / (k - 1);
+                    rec->newSpeciesVariances[l] = newVary;
+                    if (useMP == 1) {
+                        rec->mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                    }
+                }
+            }
+        }
+        time = end;
+        for (l = 0; l < size; l++) {
+            species = speciesArray[l];
+            rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
+            rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+            rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+        }
+        if (time == nextPrintTime) {
+            rec->time = nextPrintTime;
+            nextPrintTime += rec->printInterval;
+            printf("Time = %g\n", time);
+            fflush(stdout);
+            for (l = 0; l < size; l++) {
+                species = speciesArray[l];
+                SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
+            }
+            if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, rec->time)))) {
+                return ret;
+            }
+            for (l = 0; l < size; l++) {
+                species = speciesArray[l];
+                SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
+            }
+            if (IS_FAILED((ret = varPrinter->PrintValues(varPrinter, rec->time)))) {
+                return ret;
+            }
+            for (l = 0; l < size; l++) {
+                species = speciesArray[l];
+                SetAmountInSpeciesNode(species, rec->speciesSD[l]);
+            }
+            if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, rec->time)))) {
+                return ret;
+            }
+        }
     }
-      if (time == nextPrintTime) {
-    	rec->time = nextPrintTime;
-	    nextPrintTime += rec->printInterval;
-	    printf("Time = %g\n",time);
-	    fflush(stdout);
-	    for( l = 0; l < size; l++ ) {
-	    	species = speciesArray[l];
-	    	SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
-	    }
-	    if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, rec->time ) ) ) ) {
-	      return ret;
-	    }
-	    for( l = 0; l < size; l++ ) {
-	    	species = speciesArray[l];
-	    	SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
-	    }
-	    if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, rec->time ) ) ) ) {
-	      return ret;
-	    }
-	    for( l = 0; l < size; l++ ) {
-	    	species = speciesArray[l];
-	    	SetAmountInSpeciesNode(species, rec->speciesSD[l]);
-	    }
-	    if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, rec->time ) ) ) ) {
-	      return ret;
-	    }
-      }
-    }
-    if( rec->time >= timeLimit ) {
+    if (rec->time >= timeLimit) {
         rec->time = timeLimit;
     }
     //SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
@@ -853,21 +872,21 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     //    return ret;
     //}
     /*
-    if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
+     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
+     return ret;
+     }
+     */
+    if (IS_FAILED((ret = meanPrinter->PrintEnd(meanPrinter)))) {
         return ret;
     }
-    */
-    if( IS_FAILED( ( ret = meanPrinter->PrintEnd( meanPrinter ) ) ) ) {
+    if (IS_FAILED((ret = varPrinter->PrintEnd(varPrinter)))) {
         return ret;
     }
-    if( IS_FAILED( ( ret = varPrinter->PrintEnd( varPrinter ) ) ) ) {
-        return ret;
-    }
-    if( IS_FAILED( ( ret = sdPrinter->PrintEnd( sdPrinter ) ) ) ) {
+    if (IS_FAILED((ret = sdPrinter->PrintEnd(sdPrinter)))) {
         return ret;
     }
 
-    if( IS_FAILED( ( ret = _CleanSimulation( rec ) ) ) ) {
+    if (IS_FAILED((ret = _CleanSimulation(rec)))) {
         return ret;
     }
 
