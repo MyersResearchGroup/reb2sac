@@ -52,7 +52,6 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
     }
 
     runs = rec.runs;
-    rec.useMP = backend->useMP;
     //for( i = 1; i <= runs; i++ ) {
         SeedRandomNumberGenerators( rec.seed );
         rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
@@ -661,6 +660,7 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
     SPECIES **speciesArray = rec->speciesArray;
     double end;
     double newValue;
+    int useMP = backend->useMP;
 
     printf("Size = %d\n",size);
     meanPrinter = rec->meanPrinter;
