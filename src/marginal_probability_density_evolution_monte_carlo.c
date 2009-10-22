@@ -34,7 +34,7 @@ static void fireEvent( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec );
 static void ExecuteAssignments( MPDE_MONTE_CARLO_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec );
 
-DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir ) {
+DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir, int useMP ) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
     UINT runs = 1;
