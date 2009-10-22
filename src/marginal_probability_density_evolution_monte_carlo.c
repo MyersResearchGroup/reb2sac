@@ -701,7 +701,12 @@ static RET_VAL _RunSimulation( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR 
         do {
 	  for( l = 0; l < size; l++ ) {
 	    species = speciesArray[l];
-	    newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+	    if (rec->speciesSD[l] == 0) {
+	    	newValue = rec->oldSpeciesMeans[l];
+	    }
+	    else {
+	    	newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+	    }
 	    newValue = round(newValue);
 	    if (newValue < 0.0) newValue = 0.0;
             SetAmountInSpeciesNode( species, newValue );
