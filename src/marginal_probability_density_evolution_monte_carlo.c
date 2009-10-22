@@ -34,7 +34,7 @@ static void fireEvent( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec );
 static void ExecuteAssignments( MPDE_MONTE_CARLO_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec );
 
-DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir, int useMP ) {
+DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
     UINT runs = 1;
@@ -52,6 +52,7 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
     }
 
     runs = rec.runs;
+    rec.useMP = backend->useMP;
     //for( i = 1; i <= runs; i++ ) {
         SeedRandomNumberGenerators( rec.seed );
         rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
