@@ -146,8 +146,6 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     double *newSpeciesMeans = NULL;
     double *newSpeciesVariances = NULL;
     double *speciesSD = NULL;
-    //double **mpRuns = NULL;
-    //double *mpTempRun = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -252,17 +250,6 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
             return ErrorReport(FAILING, "_InitializeRecord",
                     "could not allocate memory for species standard deviations array");
         }
-        //if (backend->useMP == 1) {
-        //    if ((mpRuns = (double**) MALLOC(rec->runs * sizeof(double*))) == NULL) {
-        //        return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for MP runs array");
-        //    }
-        //    for (k = 0; k < rec->runs; k++) {
-        //        if ((mpTempRun = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
-        //            return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for single MP run array");
-        //        }
-        //        mpRuns[k] = mpTempRun;
-        //    }
-        //}
     }
 
     properties = compRec->properties;
@@ -276,11 +263,6 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
         newSpeciesMeans[i] = 0;
         newSpeciesVariances[i] = 0;
         speciesSD[i] = 0;
-        //if (backend->useMP == 1) {
-        //	for (k = 0; k < rec->runs; k ++) {
-        //		mpRuns[k][i] = 0;
-        //	}
-        //}
         i++;
     }
     rec->speciesArray = speciesArray;
@@ -289,9 +271,6 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     rec->newSpeciesMeans = newSpeciesMeans;
     rec->newSpeciesVariances = newSpeciesVariances;
     rec->speciesSD = speciesSD;
-    //if (backend->useMP == 1) {
-    //	rec->mpRuns = mpRuns;
-    //}
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -1039,9 +1018,6 @@ static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec ) {
     if( rec->speciesSD != NULL ) {
         FREE( rec->speciesSD );
     }
-    //if( rec->mpRuns != NULL ) {
-    //    FREE( rec->mpRuns );
-    //}
 
     meanPrinter->Destroy( meanPrinter );
     varPrinter->Destroy( varPrinter );
