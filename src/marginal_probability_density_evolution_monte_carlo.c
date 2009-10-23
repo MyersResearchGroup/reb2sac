@@ -146,8 +146,8 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     double *newSpeciesMeans = NULL;
     double *newSpeciesVariances = NULL;
     double *speciesSD = NULL;
-    double **mpRuns = NULL;
-    double *mpTempRun = NULL;
+    //double **mpRuns = NULL;
+    //double *mpTempRun = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -252,17 +252,17 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
             return ErrorReport(FAILING, "_InitializeRecord",
                     "could not allocate memory for species standard deviations array");
         }
-        if (backend->useMP == 1) {
-            if ((mpRuns = (double**) MALLOC(rec->runs * sizeof(double*))) == NULL) {
-                return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for MP runs array");
-            }
-            for (k = 0; k < rec->runs; k++) {
-                if ((mpTempRun = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
-                    return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for single MP run array");
-                }
-                mpRuns[k] = mpTempRun;
-            }
-        }
+        //if (backend->useMP == 1) {
+        //    if ((mpRuns = (double**) MALLOC(rec->runs * sizeof(double*))) == NULL) {
+        //        return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for MP runs array");
+        //    }
+        //    for (k = 0; k < rec->runs; k++) {
+        //        if ((mpTempRun = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+        //            return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for single MP run array");
+        //        }
+        //        mpRuns[k] = mpTempRun;
+        //    }
+        //}
     }
 
     properties = compRec->properties;
@@ -276,11 +276,11 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
         newSpeciesMeans[i] = 0;
         newSpeciesVariances[i] = 0;
         speciesSD[i] = 0;
-        if (backend->useMP == 1) {
-        	for (k = 0; k < rec->runs; k ++) {
-        		mpRuns[k][i] = 0;
-        	}
-        }
+        //if (backend->useMP == 1) {
+        //	for (k = 0; k < rec->runs; k ++) {
+        //		mpRuns[k][i] = 0;
+        //	}
+        //}
         i++;
     }
     rec->speciesArray = speciesArray;
@@ -289,9 +289,9 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     rec->newSpeciesMeans = newSpeciesMeans;
     rec->newSpeciesVariances = newSpeciesVariances;
     rec->speciesSD = speciesSD;
-    if (backend->useMP == 1) {
-    	rec->mpRuns = mpRuns;
-    }
+    //if (backend->useMP == 1) {
+    //	rec->mpRuns = mpRuns;
+    //}
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -705,10 +705,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double end;
     double newValue;
     int useMP = rec->useMP;
-    double *mpRun = NULL;
+    double mpRun[size];
     double distance;
     double newDistance;
     int index;
+    double mpRuns[rec->runs][size];
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
@@ -741,7 +742,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
     }
     if (useMP) {
-        mpRun = rec->oldSpeciesMeans;
+        for (l = 0; l < size; l++) {
+            mpRun[l] = rec->oldSpeciesMeans[l];
+        }
     }
     while (rec->time < timeLimit) {
         for (k = 1; k <= rec->runs; k++) {
@@ -851,7 +854,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesMeans[l] = GetAmountInSpeciesNode(species);
                     rec->newSpeciesVariances[l] = 0;
                     if (useMP == 1) {
-                        rec->mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                        mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
             } else {
@@ -865,7 +868,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                             * (GetAmountInSpeciesNode(species) - old)) / (k - 1);
                     rec->newSpeciesVariances[l] = newVary;
                     if (useMP == 1) {
-                        rec->mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                        mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
             }
@@ -883,7 +886,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             for (k = 0; k < rec->runs; k++) {
                 newDistance = 0;
                 for (l = 0; l < size; l++) {
-                    newDistance += pow(rec->mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
+                    newDistance += pow(mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
                 }
                 if (distance == -1) {
                     distance = newDistance;
@@ -893,7 +896,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     index = k;
                 }
             }
-            mpRun = rec->mpRuns[index];
+            for (l = 0; l < size; l++) {
+                mpRun[l] = mpRuns[index][l];
+            }
         }
         if (time == nextPrintTime) {
             rec->time = nextPrintTime;
@@ -1034,9 +1039,9 @@ static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec ) {
     if( rec->speciesSD != NULL ) {
         FREE( rec->speciesSD );
     }
-    if( rec->mpRuns != NULL ) {
-        FREE( rec->mpRuns );
-    }
+    //if( rec->mpRuns != NULL ) {
+    //    FREE( rec->mpRuns );
+    //}
 
     meanPrinter->Destroy( meanPrinter );
     varPrinter->Destroy( varPrinter );
