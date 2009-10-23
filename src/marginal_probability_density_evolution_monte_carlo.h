@@ -33,6 +33,7 @@ typedef struct {
     SIMULATION_PRINTER *meanPrinter;
     SIMULATION_PRINTER *varPrinter;
     SIMULATION_PRINTER *sdPrinter;
+    SIMULATION_PRINTER *mpPrinter;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double time;
     double t;
@@ -53,6 +54,7 @@ typedef struct {
     double *newSpeciesVariances;
     double *speciesSD;
     double **mpRuns;
+    int useMP;
 } MPDE_MONTE_CARLO_RECORD;
 
 
