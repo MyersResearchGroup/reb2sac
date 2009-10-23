@@ -258,7 +258,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
             }
             for (k = 0; k < rec->runs; k++) {
                 if ((mpTempRun = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
-                    return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for MP runs array");
+                    return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for single MP run array");
                 }
                 mpRuns[k] = mpTempRun;
             }
