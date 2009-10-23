@@ -985,6 +985,7 @@ static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec ) {
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
+    SIMULATION_PRINTER *mpPrinter = rec->mpPrinter;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
 
     sprintf( filename, "%s%csim-rep.txt", rec->outDir, FILE_SEPARATOR );
@@ -1240,6 +1241,7 @@ static RET_VAL _Print( MPDE_MONTE_CARLO_RECORD *rec ) {
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
+    SIMULATION_PRINTER *mpPrinter = rec->mpPrinter;
 
     while ((nextPrintTime < time) && (nextPrintTime < rec->timeLimit)) {
         if (nextPrintTime > 0)
@@ -1253,7 +1255,7 @@ static RET_VAL _Print( MPDE_MONTE_CARLO_RECORD *rec ) {
         if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, nextPrintTime)))) {
             return ret;
         }
-        if (useMP) {
+        if (rec->useMP) {
             if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, nextPrintTime)))) {
                 return ret;
             }
