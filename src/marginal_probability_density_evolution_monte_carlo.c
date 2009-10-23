@@ -34,7 +34,7 @@ static void fireEvent( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec );
 static void ExecuteAssignments( MPDE_MONTE_CARLO_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec );
 
-DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir ) {
+DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, IR *ir) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
     UINT runs = 1;
@@ -44,36 +44,38 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, 
 
     START_FUNCTION("DoMPDEMonteCarloAnalysis");
 
-    if( !_IsModelConditionSatisfied( ir ) ) {
-        return ErrorReport( FAILING, "DoMPDEMonteCarloAnalysis", "Marginal Probability Density Evolution method cannot be applied to the model" );
+    if (!_IsModelConditionSatisfied(ir)) {
+        return ErrorReport(FAILING, "DoMPDEMonteCarloAnalysis",
+                "Marginal Probability Density Evolution method cannot be applied to the model");
     }
-    if( IS_FAILED( ( ret = _InitializeRecord( &rec, backend, ir ) ) ) )  {
-        return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "initialization of the record failed" );
+    if (IS_FAILED((ret = _InitializeRecord(&rec, backend, ir)))) {
+        return ErrorReport(ret, "DoMPDEMonteCarloAnalysis", "initialization of the record failed");
     }
 
     runs = rec.runs;
+    rec->useMP = backend->useMP;
     //for( i = 1; i <= runs; i++ ) {
-        SeedRandomNumberGenerators( rec.seed );
-        rec.seed = GetNextUniformRandomNumber(0,RAND_MAX);
-        timeout = 0;
-	do {
-	  SeedRandomNumberGenerators( rec.seed );
-	  if( IS_FAILED( ( ret = _InitializeSimulation( &rec, 1 ) ) ) ) {
-            return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "initialization of the %i-th simulation failed", i );
-	  }
-	  timeout++;
-	} while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
-	if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
-	  return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "Cycle detected in initial and rule assignments" );
-	}
-        if( IS_FAILED( ( ret = _RunSimulation( &rec, backend ) ) ) ) {
-            return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "%i-th simulation failed at time %f", i, rec.time );
+    SeedRandomNumberGenerators(rec.seed);
+    rec.seed = GetNextUniformRandomNumber(0, RAND_MAX);
+    timeout = 0;
+    do {
+        SeedRandomNumberGenerators(rec.seed);
+        if (IS_FAILED((ret = _InitializeSimulation(&rec, 1)))) {
+            return ErrorReport(ret, "DoMPDEMonteCarloAnalysis", "initialization of the %i-th simulation failed", i);
         }
-        if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
-            return ErrorReport( ret, "DoMPDEMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i );
-        }
+        timeout++;
+    } while ((ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)));
+    if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
+        return ErrorReport(ret, "DoMPDEMonteCarloAnalysis", "Cycle detected in initial and rule assignments");
+    }
+    if (IS_FAILED((ret = _RunSimulation(&rec, backend)))) {
+        return ErrorReport(ret, "DoMPDEMonteCarloAnalysis", "%i-th simulation failed at time %f", i, rec.time);
+    }
+    if (IS_FAILED((ret = _CleanSimulation(&rec)))) {
+        return ErrorReport(ret, "DoMPDEMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i);
+    }
     //}
-    END_FUNCTION("DoMPDEMonteCarloAnalysis", SUCCESS );
+    END_FUNCTION("DoMPDEMonteCarloAnalysis", SUCCESS);
     return ret;
 }
 
@@ -398,20 +400,25 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
         rec->outDir = DEFAULT_MONTE_CARLO_SIMULATION_OUT_DIR_VALUE;
     }
 
-    if( ( rec->meanPrinter = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
-						  speciesArray, rec->speciesSize,
-						  symbolArray, rec->symbolsSize ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation mean printer" );
+    if ((rec->meanPrinter = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+            rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
+        return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mean printer");
     }
-    if( ( rec->varPrinter = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
-    						  speciesArray, rec->speciesSize,
-    						  symbolArray, rec->symbolsSize ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation var printer" );
+    if ((rec->varPrinter = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+            rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
+        return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation var printer");
     }
-    if( ( rec->sdPrinter = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
-    						  speciesArray, rec->speciesSize,
-    						  symbolArray, rec->symbolsSize ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation sd printer" );
+    if ((rec->sdPrinter = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+            rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
+        return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
+    }
+    if (backend->useMP) {
+        if ((rec->mpPrinter = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+                rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
+        }
+    } else {
+        rec->mpPrinter = NULL;
     }
 
     if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
@@ -497,6 +504,7 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     char meanFilenameStem[512];
     char varFilenameStem[512];
     char sdFilenameStem[512];
+    char mpFilenameStem[512];
     double amount = 0;
     double param = 0;
     UINT32 i = 0;
@@ -509,6 +517,7 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
+    SIMULATION_PRINTER *mpPrinter = rec->mpPrinter;
     double compSize = 0.0;
     COMPARTMENT *compartment = NULL;
     COMPARTMENT **compartmentArray = rec->compartmentArray;
@@ -520,6 +529,7 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     sprintf( meanFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
     sprintf( varFilenameStem, "%s%cvariance", rec->outDir, FILE_SEPARATOR);
     sprintf( sdFilenameStem, "%s%cstandard_deviation", rec->outDir, FILE_SEPARATOR);
+    sprintf( mpFilenameStem, "%s%crun-1", rec->outDir, FILE_SEPARATOR);
     if( IS_FAILED( (  ret = meanPrinter->PrintStart( meanPrinter, meanFilenameStem ) ) ) ) {
         return ret;
     }
@@ -537,6 +547,14 @@ static RET_VAL _InitializeSimulation( MPDE_MONTE_CARLO_RECORD *rec, int runNum )
     }
     if( IS_FAILED( (  ret = sdPrinter->PrintHeader( sdPrinter ) ) ) ) {
         return ret;
+    }
+    if (rec->useMP) {
+        if (IS_FAILED((ret = mpPrinter->PrintStart(mpPrinter, mpFilenameStem)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = mpPrinter->PrintHeader(mpPrinter)))) {
+            return ret;
+        }
     }
     rec->time = 0.0;
     rec->nextPrintTime = 0.0;
@@ -667,6 +685,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     SIMULATION_PRINTER *meanPrinter = NULL;
     SIMULATION_PRINTER *varPrinter = NULL;
     SIMULATION_PRINTER *sdPrinter = NULL;
+    SIMULATION_PRINTER *mpPrinter = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     int nextEvent = 0;
     double nextEventTime = 0;
@@ -675,16 +694,27 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     SPECIES **speciesArray = rec->speciesArray;
     double end;
     double newValue;
-    int useMP = backend->useMP;
+    int useMP = rec->useMP;
     double *mpRun = NULL;
+    double distance;
+    double newDistance;
+    int index;
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
     sdPrinter = rec->sdPrinter;
+    if (useMP) {
+        mpPrinter = rec->mpPrinter;
+    }
     nextPrintTime = rec->printInterval;
     if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, rec->time)))) {
         return ret;
+    }
+    if (useMP) {
+        if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
+            return ret;
+        }
     }
     for (l = 0; l < size; l++) {
         species = speciesArray[l];
@@ -706,6 +736,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     while (rec->time < timeLimit) {
         for (k = 1; k <= rec->runs; k++) {
             rec->time = time;
+            i = 0;
             end = rec->time + timeStep;
             if (timeLimit < end) {
                 end = timeLimit;
@@ -835,9 +866,24 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
             rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
             rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
-            if (useMP) {
-                mpRun = rec->mpRuns[1];
+        }
+        if (useMP) {
+            distance = -1;
+            index = -1;
+            for (k = 0; k < rec->runs; k++) {
+                newDistance = 0;
+                for (l = 0; l < size; l++) {
+                    newDistance += pow(rec->mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
+                }
+                if (distance == -1) {
+                    distance = newDistance;
+                    index = k;
+                } else if (newDistance < distance) {
+                    distance = newDistance;
+                    index = k;
+                }
             }
+            mpRun = rec->mpRuns[index];
         }
         if (time == nextPrintTime) {
             rec->time = nextPrintTime;
@@ -864,6 +910,15 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, rec->time)))) {
                 return ret;
+            }
+            if (useMP) {
+                for (l = 0; l < size; l++) {
+                    species = speciesArray[l];
+                    SetAmountInSpeciesNode(species, mpRun[l]);
+                }
+                if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
+                    return ret;
+                }
             }
         }
     }
@@ -895,6 +950,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     }
     if (IS_FAILED((ret = sdPrinter->PrintEnd(sdPrinter)))) {
         return ret;
+    }
+    if (useMP) {
+        if (IS_FAILED((ret = mpPrinter->PrintEnd(mpPrinter)))) {
+            return ret;
+        }
     }
 
     if (IS_FAILED((ret = _CleanSimulation(rec)))) {
@@ -945,10 +1005,34 @@ static RET_VAL _CleanRecord( MPDE_MONTE_CARLO_RECORD *rec ) {
     if( rec->speciesArray != NULL ) {
         FREE( rec->speciesArray );
     }
+    if( rec->oldSpeciesMeans != NULL ) {
+        FREE( rec->oldSpeciesMeans );
+    }
+    if( rec->oldSpeciesMeans != NULL ) {
+        FREE( rec->oldSpeciesMeans );
+    }
+    if( rec->oldSpeciesVariances != NULL ) {
+        FREE( rec->oldSpeciesVariances );
+    }
+    if( rec->newSpeciesMeans != NULL ) {
+        FREE( rec->newSpeciesMeans );
+    }
+    if( rec->newSpeciesVariances != NULL ) {
+        FREE( rec->newSpeciesVariances );
+    }
+    if( rec->speciesSD != NULL ) {
+        FREE( rec->speciesSD );
+    }
+    if( rec->mpRuns != NULL ) {
+        FREE( rec->mpRuns );
+    }
 
     meanPrinter->Destroy( meanPrinter );
     varPrinter->Destroy( varPrinter );
     sdPrinter->Destroy( sdPrinter );
+    if (rec->useMP) {
+        mpPrinter->Destroy( mpPrinter );
+    }
     decider->Destroy( decider );
 
     return ret;
@@ -1157,18 +1241,24 @@ static RET_VAL _Print( MPDE_MONTE_CARLO_RECORD *rec ) {
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
 
-    while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
-      if (nextPrintTime > 0) printf("Time = %g\n",nextPrintTime);
-      if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, nextPrintTime ) ) ) ) {
-	    return ret;
-      }
-      if( IS_FAILED( ( ret = varPrinter->PrintValues( varPrinter, nextPrintTime ) ) ) ) {
-      	return ret;
-      }
-      if( IS_FAILED( ( ret = sdPrinter->PrintValues( sdPrinter, nextPrintTime ) ) ) ) {
-      	return ret;
-      }
-      nextPrintTime += printInterval;
+    while ((nextPrintTime < time) && (nextPrintTime < rec->timeLimit)) {
+        if (nextPrintTime > 0)
+            printf("Time = %g\n", nextPrintTime);
+        if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, nextPrintTime)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = varPrinter->PrintValues(varPrinter, nextPrintTime)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, nextPrintTime)))) {
+            return ret;
+        }
+        if (useMP) {
+            if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, nextPrintTime)))) {
+                return ret;
+            }
+        }
+        nextPrintTime += printInterval;
     }
     rec->nextPrintTime = nextPrintTime;
     return ret;
