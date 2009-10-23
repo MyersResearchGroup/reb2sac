@@ -918,6 +918,38 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     }
     if (rec->time >= timeLimit) {
         rec->time = timeLimit;
+    } else {
+        rec->time = timeLimit;
+        for (l = 0; l < size; l++) {
+            species = speciesArray[l];
+            SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
+        }
+        if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, rec->time)))) {
+            return ret;
+        }
+        for (l = 0; l < size; l++) {
+            species = speciesArray[l];
+            SetAmountInSpeciesNode(species, rec->newSpeciesVariances[l]);
+        }
+        if (IS_FAILED((ret = varPrinter->PrintValues(varPrinter, rec->time)))) {
+            return ret;
+        }
+        for (l = 0; l < size; l++) {
+            species = speciesArray[l];
+            SetAmountInSpeciesNode(species, rec->speciesSD[l]);
+        }
+        if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, rec->time)))) {
+            return ret;
+        }
+        if (useMP) {
+            for (l = 0; l < size; l++) {
+                species = speciesArray[l];
+                SetAmountInSpeciesNode(species, mpRun[l]);
+            }
+            if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
+                return ret;
+            }
+        }
     }
     //SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
     //if( IS_FAILED( ( ret = meanPrinter->PrintValues( meanPrinter, rec->time ) ) ) ) {
