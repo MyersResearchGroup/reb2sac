@@ -147,6 +147,7 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     double *newSpeciesVariances = NULL;
     double *speciesSD = NULL;
     double **mpRuns = NULL;
+    double *mpTempRun = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -230,29 +231,38 @@ static RET_VAL _InitializeRecord( MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESS
     //    return ErrorReport( FAILING, "_InitializeRecord", "no species remaining in the model" );
     //}
     if (rec->speciesSize > 0) {
-      if( ( speciesArray = (SPECIES**)MALLOC( rec->speciesSize * sizeof(SPECIES*) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
-      }
-      if( ( oldSpeciesMeans = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for old species means array" );
-      }
-      if( ( oldSpeciesVariances = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for old species variances array" );
-      }
-      if( ( newSpeciesMeans = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for new species means array" );
-      }
-      if( ( newSpeciesVariances = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for new species variances array" );
-      }
-      if( ( speciesSD = (double*)MALLOC( rec->speciesSize * sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species standard deviations array" );
-      }
-      if (backend->useMP == 1) {
-    	  if( ( mpRuns = (double**)MALLOC( rec->speciesSize * rec->runs * sizeof(double) ) ) == NULL ) {
-    		  return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for MP runs array" );
-    	  }
-      }
+        if ((speciesArray = (SPECIES**) MALLOC(rec->speciesSize * sizeof(SPECIES*))) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for species array");
+        }
+        if ((oldSpeciesMeans = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for old species means array");
+        }
+        if ((oldSpeciesVariances = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord",
+                    "could not allocate memory for old species variances array");
+        }
+        if ((newSpeciesMeans = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for new species means array");
+        }
+        if ((newSpeciesVariances = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord",
+                    "could not allocate memory for new species variances array");
+        }
+        if ((speciesSD = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord",
+                    "could not allocate memory for species standard deviations array");
+        }
+        if (backend->useMP == 1) {
+            if ((mpRuns = (double**) MALLOC(rec->runs * sizeof(double*))) == NULL) {
+                return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for MP runs array");
+            }
+            for (k = 0; k < rec->runs; k++) {
+                if ((mpTempRun = (double*) MALLOC(rec->speciesSize * sizeof(double))) == NULL) {
+                    return ErrorReport(FAILING, "_InitializeRecord", "could not allocate memory for MP runs array");
+                }
+                mpRuns[k] = mpTempRun;
+            }
+        }
     }
 
     properties = compRec->properties;
