@@ -53,7 +53,7 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, I
     }
 
     runs = rec.runs;
-    rec->useMP = backend->useMP;
+    rec.useMP = backend->useMP;
     //for( i = 1; i <= runs; i++ ) {
     SeedRandomNumberGenerators(rec.seed);
     rec.seed = GetNextUniformRandomNumber(0, RAND_MAX);
