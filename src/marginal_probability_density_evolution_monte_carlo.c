@@ -919,6 +919,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (rec->time >= timeLimit) {
         rec->time = timeLimit;
     }
+    printf("Time = %g\n", timeLimit);
+    fflush(stdout);
     for (l = 0; l < size; l++) {
         species = speciesArray[l];
         SetAmountInSpeciesNode(species, rec->newSpeciesMeans[l]);
