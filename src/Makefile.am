@@ -10,14 +10,14 @@ reb2sac_LDFLAGS = $(all_libraries)
 noinst_HEADERS = \
 	abs_phage_lambda2_simulation_run_termination_decider.h	abs_phage_lambda_simulation_run_termination_decider.h	abstraction_engine.h abstraction_method_constructor.h	abstraction_method_manager.h \
 				abstraction_method_properties.h	abstraction_reporter.h back_end_processor.h biospice_tsd_printer.h	 \
-				bunker_monte_carlo.h common.h	compartment_manager.h reaction_manager.h compiler_def.h \
+				unker_monte_carlo.h common.h	compartment_manager.h reaction_manager.h compiler_def.h \
 				confidence_interval_stop_rule.h	critical_concentration_finder.h critical_level_finder.h	critical_level_order_decider.h \
 				csv_simulation_printer.h	ctmc_analysis_back_end_processor.h ctmc_analyzer.h	ctmc_stationary_analysis_back_end_processor.h \
 				ctmc_stationary_analyzer.h	ctmc_transformation_checker.h \
 				default_reb2sac_properties.h	default_simulation_run_termination_decider.h	default_ts_species_level_updater.h dependency_graph.h dll_scope.h	dot_back_end_processor.h \
 				embedded_runge_kutta_fehlberg_method.h	embedded_runge_kutta_prince_dormand_method.h	emc_leaked_stationary_analyzer.h emc_simulation.h	emc_stationary_analyzer.h \
 				euler_method.h \
-				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h \
+				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h monte_carlo.h\
 				gnuplot_dat_simulation_printer.h hash_table.h	hse2_back_end_processor.h \
 				hse_back_end_processor_common.h	hse_back_end_processor_def.h hse_back_end_processor.h	hse_back_end_processor_util.h \
 				hse_logical_statement_handler.h	hse_transformation_checker.h implicit_gear1_method.h	implicit_gear2_method.h \
@@ -56,7 +56,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	enzyme_kinetic_rapid_equilibrium_method.c euler_method.c \
 	final_state_generation_method.c \
 	flat_phage_lambda2_simulation_run_termination_decider.c flat_phage_lambda_simulation_run_termination_decider.c \
-	front_end_processor.c gillespie_monte_carlo.c \
+	front_end_processor.c gillespie_monte_carlo.c monte_carlo.c\
 	gnuplot_dat_simulation_printer.c hash_table.c hse2_back_end_processor.c hse_back_end_processor.c \
 	hse_back_end_processor_util.c hse_logical_statement_handler.c hse_transformation_checker.c \
 	implicit_gear1_method.c implicit_gear2_method.c implicit_runge_kutta_4_method.c \
@@ -73,7 +73,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	op_site_binding_abstraction_method2.c op_site_binding_abstraction_method3.c \
 	op_site_binding_abstraction_method.c pow_kinetic_law_transformer.c random_number_generator.c reaction_node.c \
 	reb2sac.c reversible_reaction_structure_transformation_method.c \
-	reversible_to_irreversible_transformation_method.c rnap_operator_binding_abstraction_method.c \
+	reversible_to_irreversible_transformation_method.c distribute_method.c rnap_operator_binding_abstraction_method.c \
 	sac_phage_lambda_simulation_run_termination_decider.c sbml_back_end_processor.c sbml_front_end_processor.c sbml_symtab.c \
 	similar_reaction_combining_method.c simulation_printer.c simulation_run_termination_decider.c \
 	single_reactant_product_reaction_elimination_method.c species_critical_level.c species_critical_level_generator.c \

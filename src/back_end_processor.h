@@ -42,6 +42,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
 struct _BACK_END_PROCESSOR {
     COMPILER_RECORD_T *record;
     char *outputFilename;
+    char *encoding;
     CADDR_T _internal1;
     CADDR_T _internal2;
     CADDR_T _internal3;    

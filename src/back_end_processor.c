@@ -25,10 +25,7 @@
 #include "hse_back_end_processor.h"
 #include "hse2_back_end_processor.h"
 #include "xhtml_back_end_processor.h"
-#include "gillespie_monte_carlo.h"
-#include "bunker_monte_carlo.h"
-/* #include "bunker_monte_carlo2.h" */
-#include "emc_simulation.h"
+#include "monte_carlo.h"
 #include "euler_method.h"
 #include "nary_level_back_end_process.h"
 #include "embedded_runge_kutta_prince_dormand_method.h"
@@ -37,7 +34,6 @@
 #include "implicit_gear1_method.h"
 #include "implicit_gear2_method.h"
 #include "marginal_probability_density_evolution_monte_carlo.h"
-#include "normal_waiting_time_monte_carlo.h"
 #include "type1pili_gillespie_ci.h"
 #include "ctmc_analysis_back_end_processor.h"
 #include "ssa_with_user_update.h"
@@ -119,7 +115,6 @@ char *GetTypeNameOfBackEndProcessor( int type ) {
 
 RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *backend ) {
     RET_VAL ret = SUCCESS;
-    char *encoding = NULL;
     PROPERTIES *options = NULL;
     
     START_FUNCTION("InitBackendProcessor");
@@ -128,93 +123,86 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
     backend->record = record;
     options = record->options;
     
-    if( ( encoding = options->GetProperty( options, REB2SAC_TARGET_ENCODING_KEY ) ) == NULL ) {
-        encoding = REB2SAC_DEFAULT_TARGET_ENCODING;
+    if( ( backend->encoding = options->GetProperty( options, REB2SAC_TARGET_ENCODING_KEY ) ) == NULL ) {
+        backend->encoding = REB2SAC_DEFAULT_TARGET_ENCODING;
     } 
     
     backend->outputFilename = options->GetProperty( options, REB2SAC_OUT_KEY );   
         
-    switch( encoding[0] ) {
+    switch( backend->encoding[0] ) {
         case 'b':
-            if( strcmp( encoding, "bunker" ) == 0 ) {
+            if( strcmp( backend->encoding, "bunker" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoBunkerMonteCarloAnalysis;
-                backend->Close = CloseBunkerMonteCarloAnalyzer;
+                backend->Process = DoMonteCarloAnalysis;
+                backend->Close = CloseMonteCarloAnalyzer;
             }
-	    /*            else if( strcmp( encoding, "bunker2" ) == 0 ) {
-                if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
-                    return ret;
-                }
-                backend->Process = DoBunkerMonteCarlo2Analysis;
-                backend->Close = CloseBunkerMonteCarlo2Analyzer;
-		} */
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         case 'c':
-            if( strcmp( encoding, "ctmc-transient" ) == 0 ) {
+            if( strcmp( backend->encoding, "ctmc-transient" ) == 0 ) {
                 backend->Process = ProcessCTMCAnalysisBackend;
                 backend->Close = CloseCTMCAnalysisBackend;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         case 'd':
-            if( strcmp( encoding, "dot" ) == 0 ) {
+            if( strcmp( backend->encoding, "dot" ) == 0 ) {
                 backend->Process = ProcessDotBackend;
                 backend->Close = CloseDotBackend;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         case 'e':
-            if( strcmp( encoding, "euler" ) == 0 ) {
+            if( strcmp( backend->encoding, "euler" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = DoEulerSimulation;
                 backend->Close = CloseEulerSimulation;
             }
-            else if( strcmp( encoding, "emc-sim" ) == 0 ) {
+            else if( strcmp( backend->encoding, "emc-sim" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoEmcSimulation;
-                backend->Close = CloseEmcSimulation;
+                backend->Process = DoMonteCarloAnalysis;
+                backend->Close = CloseMonteCarloAnalyzer;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         case 'g':
-            if( strcmp( encoding, "gillespie" ) == 0 ) {
+            if( strcmp( backend->encoding, "gillespie" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoGillespieMonteCarloAnalysis;
-                backend->Close = CloseGillespieMonteCarloAnalyzer;
+                backend->Process = DoMonteCarloAnalysis;
+                backend->Close = CloseMonteCarloAnalyzer;
             }
-            else if(strcmp( encoding, "gear1" ) == 0 ) {
+            else if(strcmp( backend->encoding, "gear1" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = DoImplicitGear1Simulation;
                 backend->Close = CloseImplicitGear1Simulation;
             }
-            else if(strcmp( encoding, "gear2" ) == 0 ) {
+            else if(strcmp( backend->encoding, "gear2" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -222,20 +210,20 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseImplicitGear2Simulation;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
 
         case 'h':
-            if( strcmp( encoding, "hse2" ) == 0 ) {
+            if( strcmp( backend->encoding, "hse2" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __SAC_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = ProcessHse2Backend;
                 backend->Close = CloseHse2Backend;
             }
-            else if( strcmp( encoding, "hse" ) == 0 ) {
+            else if( strcmp( backend->encoding, "hse" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __SAC_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -243,13 +231,13 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseHseBackend;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
 
         case 'm':
-            if( strcmp( encoding, "mpde" ) == 0 ) {
+            if( strcmp( backend->encoding, "mpde" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -257,7 +245,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseMPDEMonteCarloAnalyzer;
                 backend->useMP = 0;
             }
-            else if( strcmp( encoding, "mp" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mp" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -266,41 +254,41 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useMP = 1;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
                 
         case 'n':
-            if( strcmp( encoding, "nary-level" ) == 0 ) {
+            if( strcmp( backend->encoding, "nary-level" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __NARY_LEVEL1_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = ProcessNaryLevelBackend;
                 backend->Close = CloseNaryLevelBackend;
             }
-            else if( strcmp( encoding, "nary-level2" ) == 0 ) {
+            else if( strcmp( backend->encoding, "nary-level2" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __NARY_LEVEL2_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = ProcessNaryLevelBackend2;
                 backend->Close = CloseNaryLevelBackend2;
             }
-            else if(strcmp( encoding, "nmc" ) == 0 ) {
+            else if(strcmp( backend->encoding, "nmc" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoNormalWaitingTimeMonteCarloAnalysis;
-                backend->Close = CloseNormalWaitingTimeMonteCarloAnalyzer;
+                backend->Process = DoMonteCarloAnalysis;
+                backend->Close = CloseMonteCarloAnalyzer;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         case 'p':
-            if( strcmp( encoding, "pili-gillespie-ci" ) == 0 ) {
+            if( strcmp( backend->encoding, "pili-gillespie-ci" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -308,27 +296,27 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseGillespiesForType1PiliWithCI;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
             break;
         
         case 'r':
-            if( strcmp( encoding, "rk4imp" ) == 0 ) {
+            if( strcmp( backend->encoding, "rk4imp" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = DoImplicitRungeKutta4Simulation;
                 backend->Close = CloseImplicitRungeKutta4Simulation;
             }
-            else if(strcmp( encoding, "rk8pd" ) == 0 ) {
+            else if(strcmp( backend->encoding, "rk8pd" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
                 backend->Process = DoEmbeddedRungeKuttaPrinceDormandSimulation;
                 backend->Close = CloseEmbeddedRungeKuttaPrinceDormandSimulation;
             }
-            else if(strcmp( encoding, "rkf45" ) == 0 ) {
+            else if(strcmp( backend->encoding, "rkf45" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -336,17 +324,17 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseEmbeddedRungeKuttaFehlbergSimulation;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
             break;
         
         case 's':
-            if( strcmp( encoding, "sbml" ) == 0 ) {
+            if( strcmp( backend->encoding, "sbml" ) == 0 ) {
                 backend->Process = ProcessSBMLBackend;
                 backend->Close = CloseSBMLBackend;
             }
-            else if( strcmp( encoding, "ssa-with-user-update" ) == 0 ) {
+            else if( strcmp( backend->encoding, "ssa-with-user-update" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -354,27 +342,27 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseSSAWithUserUpdateAnalyzer;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         
         case 'x':
-            if( strcmp( encoding, "xhtml" ) == 0 ) {
+            if( strcmp( backend->encoding, "xhtml" ) == 0 ) {
                 backend->Process = ProcessXHTMLBackend;
                 backend->Close = CloseXHTMLBackend;
             }
             else {
-                fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-                return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+                fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+                return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
             }
         break;
         
         
         default:
-            fprintf( stderr, "target encoding type %s is invalid", encoding ); 
-        return ErrorReport( FAILING, "InitBackendProcessor", "target encoding type %s is invalid", encoding );
+            fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
+        return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
     }
    
     END_FUNCTION("InitBackendProcessor", SUCCESS );

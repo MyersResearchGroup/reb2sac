@@ -82,6 +82,8 @@ DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir 
       if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
         return ErrorReport( ret, "DoEulerSimulation", "cleaning of the %i-th simulation failed", i );
       }
+      printf("Run = %d\n",i);
+      fflush(stdout);
     }
 
     END_FUNCTION("DoEulerSimulation", SUCCESS );
@@ -124,7 +126,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
-    UINT32 numberSteps = 0;
+    double printInterval = 0.0;
     UINT32 size = 0;
     char buf[512];
     char *valueString = NULL;
@@ -290,19 +292,19 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
 
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
       if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+        rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
       } else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(numberSteps), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
-        } else {
-	  rec->printInterval = rec->timeLimit / numberSteps;
-	}
+        if( IS_FAILED( ( ret = StrToUINT32( &(rec->numberSteps), valueString ) ) ) ) {
+            rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+        } 
       }
     }
     else {
-        if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
-        }
+        if( IS_FAILED( ( ret = StrToFloat( &(printInterval), valueString ) ) ) ) {
+            rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+        } else {
+	  rec->numberSteps = rec->timeLimit / printInterval;
+	}
     }
 
 #if GET_SEED_FROM_COMMAND_LINE
@@ -472,6 +474,7 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
     }
     rec->time = 0.0;
     rec->nextPrintTime = 0.0;
+    rec->currentStep = 0;
     size = rec->compartmentsSize;
     for( i = 0; i < size; i++ ) {
         compartment = compartmentArray[i];
@@ -691,18 +694,21 @@ static RET_VAL _Update( EULER_SIMULATION_RECORD *rec ) {
 
 static RET_VAL _Print( EULER_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
+    double numberSteps = rec->numberSteps;
     double nextPrintTime = rec->nextPrintTime;
     double time = rec->time;
-    double printInterval = rec->printInterval;
     SIMULATION_PRINTER *printer = rec->printer;
 
     while( nextPrintTime <= time ) {
-      if (nextPrintTime > 0.0) printf("Time = %.2f\n",nextPrintTime);
-      fflush(stdout);
-        if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
-            return ret;
-        }
-        nextPrintTime += printInterval;
+      if (nextPrintTime > 0.0) {
+	printf("Time = %.2f\n",nextPrintTime);
+	fflush(stdout);
+      }
+      if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
+	return ret;
+      }
+      rec->currentStep++;
+      nextPrintTime = (rec->currentStep/numberSteps) * rec->timeLimit;
     }
     rec->nextPrintTime = nextPrintTime;
     return ret;

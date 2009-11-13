@@ -136,7 +136,7 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     UINT32 i = 0;
     UINT32 j = 0;
     UINT32 size = 0;
-    UINT32 numberSteps = 0;
+    double printInterval = 0.0;
     char buf[512];
     char *valueString = NULL;
     SPECIES *species = NULL;
@@ -320,20 +320,20 @@ static RET_VAL _InitializeRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, B
     }
 
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
-      if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
+      if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
+        rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
       } else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(numberSteps), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
-        } else {
-	  rec->printInterval = rec->timeLimit / numberSteps;
-	}
+        if( IS_FAILED( ( ret = StrToUINT32( &(rec->numberSteps), valueString ) ) ) ) {
+            rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+        } 
       }
     }
     else {
-        if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_MONTE_CARLO_SIMULATION_PRINT_INTERVAL_VALUE;
-        }
+        if( IS_FAILED( ( ret = StrToFloat( &(printInterval), valueString ) ) ) ) {
+            rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+        } else {
+	  rec->numberSteps = rec->timeLimit / printInterval;
+	}
     }
 
 #if GET_SEED_FROM_COMMAND_LINE
@@ -485,6 +485,7 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
     }
     rec->time = 0.0;
     rec->nextPrintTime = 0.0;
+    rec->currentStep = 0.0;
     size = rec->compartmentsSize;
     for( i = 0; i < size; i++ ) {
         compartment = compartmentArray[i];
@@ -937,18 +938,22 @@ static RET_VAL _Update( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
 
 static RET_VAL _Print( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
+    UINT32 numberSteps = rec->numberSteps;
     double nextPrintTime = rec->nextPrintTime;
     double time = rec->time;
-    double printInterval = rec->printInterval;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
 
     while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
-      if (nextPrintTime > 0) printf("Time = %g\n",nextPrintTime);
+      if (nextPrintTime > 0) {
+	printf("Time = %g\n",nextPrintTime);
+	fflush(stdout);
+      }
       if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
 	return ret;
       }
-      nextPrintTime += printInterval;
+      rec->currentStep++;
+      nextPrintTime = (rec->currentStep * rec->timeLimit)/numberSteps;
     }
     rec->nextPrintTime = nextPrintTime;
     return ret;
