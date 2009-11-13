@@ -227,7 +227,7 @@
 "</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_SPECIES_FORMAT \
-"<table border=\"2\"><tr><th>Species ID</th><th>Type</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Species ID</th><th>Type</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th><th>HasOnlySubstanceUnits</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_SPECIES_FORMAT \
 "</table>" NEW_LINE
@@ -236,7 +236,7 @@
 "<tr><td>%s</td><td>%s</td><td>%s</td><td><center>"
 
 #define REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT \
-"</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
+"</center></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_EVENT_FORMAT \
 "<table border=\"2\"><tr><th>Event ID</th><th>Trigger</th><th>Delay</th><th>Assignments</th></tr>" NEW_LINE

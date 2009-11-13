@@ -85,6 +85,8 @@ DLLSCOPE RET_VAL STDCALL DoImplicitGear2Simulation( BACK_END_PROCESSOR *backend,
       if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
         return ErrorReport( ret, "DoImplicitGear2Simulation", "cleaning of the %i-th simulation failed", i );
       }
+      printf("Run = %d\n",i);
+      fflush(stdout);
     }
 
     END_FUNCTION("DoImplicitGear2Simulation", SUCCESS );
@@ -115,7 +117,7 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, BACK_EN
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
-    UINT32 numberSteps = 0;
+    double printInterval = 0.0;
     char buf[512];
     char *valueString = NULL;
     SPECIES *species = NULL;
@@ -304,19 +306,19 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, BACK_EN
 
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
       if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
+        rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
       } else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(numberSteps), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
-        } else {
-	  rec->printInterval = rec->timeLimit / numberSteps;
-	}
+        if( IS_FAILED( ( ret = StrToUINT32( &(rec->numberSteps), valueString ) ) ) ) {
+            rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+        } 
       }
     }
     else {
-        if( IS_FAILED( ( ret = StrToFloat( &(rec->printInterval), valueString ) ) ) ) {
-            rec->printInterval = DEFAULT_ODE_SIMULATION_PRINT_INTERVAL_VALUE;
-        }
+        if( IS_FAILED( ( ret = StrToFloat( &(printInterval), valueString ) ) ) ) {
+            rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+        } else {
+	  rec->numberSteps = rec->timeLimit / printInterval;
+	}
     }
 
 #if GET_SEED_FROM_COMMAND_LINE
@@ -605,14 +607,13 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR2_SIMULATION_RECORD *rec ) {
     int status = GSL_SUCCESS;
     double h = IMPLICIT_GEAR2_H;
     double *y = rec->concentrations;
-    double printInterval = rec->printInterval;
     double nextPrintTime = rec->time;
     double time = rec->time;
     double timeStep = rec->timeStep;
     double nextEventTime;
     double maxTime;
     int curStep = 0;
-    double numSteps = round(rec->timeLimit / rec->printInterval);
+    double numberSteps = rec->numberSteps;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     const gsl_odeiv_step_type *stepType = gsl_odeiv_step_gear2;
@@ -639,7 +640,7 @@ static RET_VAL _RunSimulation( IMPLICIT_GEAR2_SIMULATION_RECORD *rec ) {
 	return ret;
       }
       curStep++;
-      nextPrintTime = (curStep/numSteps) * rec->timeLimit;
+      nextPrintTime = (curStep/numberSteps) * rec->timeLimit;
       while( time < nextPrintTime ) {
 	if ((timeStep == DBL_MAX) || (maxTime + timeStep > nextPrintTime)) {
 	  maxTime = nextPrintTime;

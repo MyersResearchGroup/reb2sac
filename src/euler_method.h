@@ -48,7 +48,8 @@ typedef struct {
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double time;
     double timeStep;
-    double printInterval;
+    UINT32 currentStep;
+    UINT32 numberSteps;
     double nextPrintTime;    
     double timeLimit;
     KINETIC_LAW_EVALUATER *evaluator;

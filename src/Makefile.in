@@ -110,6 +110,7 @@ am_reb2sac_OBJECTS =  \
 	flat_phage_lambda_simulation_run_termination_decider.$(OBJEXT) \
 	front_end_processor.$(OBJEXT) \
 	gillespie_monte_carlo.$(OBJEXT) \
+	monte_carlo.$(OBJEXT) \
 	gnuplot_dat_simulation_printer.$(OBJEXT) hash_table.$(OBJEXT) \
 	hse2_back_end_processor.$(OBJEXT) \
 	hse_back_end_processor.$(OBJEXT) \
@@ -155,6 +156,7 @@ am_reb2sac_OBJECTS =  \
 	reb2sac.$(OBJEXT) \
 	reversible_reaction_structure_transformation_method.$(OBJEXT) \
 	reversible_to_irreversible_transformation_method.$(OBJEXT) \
+	distribute_method.$(OBJEXT) \
 	rnap_operator_binding_abstraction_method.$(OBJEXT) \
 	sac_phage_lambda_simulation_run_termination_decider.$(OBJEXT) \
 	sbml_back_end_processor.$(OBJEXT) \
@@ -254,6 +256,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/flat_phage_lambda_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/front_end_processor.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/gillespie_monte_carlo.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/monte_carlo.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/gnuplot_dat_simulation_printer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/hash_table.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/hse2_back_end_processor.Po \
@@ -303,6 +306,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/reb2sac.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/reversible_reaction_structure_transformation_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/reversible_to_irreversible_transformation_method.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/distribute_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/rnap_operator_binding_abstraction_method.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sac_phage_lambda_simulation_run_termination_decider.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/sad_ast.Po \
@@ -463,7 +467,7 @@ noinst_HEADERS = \
 				default_reb2sac_properties.h	default_simulation_run_termination_decider.h	default_ts_species_level_updater.h dependency_graph.h dll_scope.h	dot_back_end_processor.h \
 				embedded_runge_kutta_fehlberg_method.h	embedded_runge_kutta_prince_dormand_method.h	emc_leaked_stationary_analyzer.h emc_simulation.h	emc_stationary_analyzer.h \
 				euler_method.h \
-				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h \
+				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h monte_carlo.h \
 				gnuplot_dat_simulation_printer.h hash_table.h	hse2_back_end_processor.h \
 				hse_back_end_processor_common.h	hse_back_end_processor_def.h hse_back_end_processor.h	hse_back_end_processor_util.h \
 				hse_logical_statement_handler.h	hse_transformation_checker.h implicit_gear1_method.h	implicit_gear2_method.h \
@@ -503,7 +507,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	enzyme_kinetic_rapid_equilibrium_method.c euler_method.c \
 	final_state_generation_method.c \
 	flat_phage_lambda2_simulation_run_termination_decider.c flat_phage_lambda_simulation_run_termination_decider.c \
-	front_end_processor.c gillespie_monte_carlo.c \
+	front_end_processor.c gillespie_monte_carlo.c monte_carlo.c \
 	gnuplot_dat_simulation_printer.c hash_table.c hse2_back_end_processor.c hse_back_end_processor.c \
 	hse_back_end_processor_util.c hse_logical_statement_handler.c hse_transformation_checker.c \
 	implicit_gear1_method.c implicit_gear2_method.c implicit_runge_kutta_4_method.c \
@@ -520,7 +524,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	op_site_binding_abstraction_method2.c op_site_binding_abstraction_method3.c \
 	op_site_binding_abstraction_method.c pow_kinetic_law_transformer.c random_number_generator.c reaction_node.c \
 	reb2sac.c reversible_reaction_structure_transformation_method.c \
-	reversible_to_irreversible_transformation_method.c rnap_operator_binding_abstraction_method.c \
+	distribute_method.c reversible_to_irreversible_transformation_method.c rnap_operator_binding_abstraction_method.c \
 	sac_phage_lambda_simulation_run_termination_decider.c sbml_back_end_processor.c sbml_front_end_processor.c sbml_symtab.c \
 	similar_reaction_combining_method.c simulation_printer.c simulation_run_termination_decider.c \
 	single_reactant_product_reaction_elimination_method.c species_critical_level.c species_critical_level_generator.c \
@@ -668,6 +672,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flat_phage_lambda_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_processor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gillespie_monte_carlo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monte_carlo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gnuplot_dat_simulation_printer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hse2_back_end_processor.Po@am__quote@
@@ -718,6 +723,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reb2sac.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reversible_reaction_structure_transformation_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reversible_to_irreversible_transformation_method.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distribute_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rnap_operator_binding_abstraction_method.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sac_phage_lambda_simulation_run_termination_decider.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sad_ast.Po@am__quote@

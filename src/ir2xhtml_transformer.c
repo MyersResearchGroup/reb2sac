@@ -921,11 +921,6 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
         
     compartment = GetCompartmentInSpeciesNode( species );
     
-    if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
-      initialQuantity = GetInitialAmountInSpeciesNode( species );
-    } else {
-      initialQuantity = GetInitialConcentrationInSpeciesNode( species );
-    }
     strcpy(none,"none");
     if (GetSubstanceUnitsInSpeciesNode ( species ) != NULL) {
       units = GetCharArrayOfString( GetUnitDefinitionID( GetSubstanceUnitsInSpeciesNode( species ) ) );
@@ -948,12 +943,19 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
 	return ret;
       }    
     } else {
-      fprintf( file, "%g",initialQuantity );
+      if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
+	initialQuantity = GetInitialAmountInSpeciesNode( species );
+	fprintf( file, "%g (amount)",initialQuantity );
+      } else {
+	initialQuantity = GetInitialConcentrationInSpeciesNode( species );
+	fprintf( file, "%g (conc.)",initialQuantity );
+      }
     }
     fprintf( file, REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT,
 	     units, 
 	     HasBoundaryConditionInSpeciesNode( species ) ? "True" : "False",
-	     IsSpeciesNodeConstant( species ) ? "True" : "False");
+	     IsSpeciesNodeConstant( species ) ? "True" : "False",
+	     HasOnlySubstanceUnitsInSpeciesNode( species ) ? "True" : "False");
 
     fprintf( file, NEW_LINE );
             

@@ -51,7 +51,7 @@ typedef struct {
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double *concentrations;
     double time;
-    double printInterval;
+    UINT32 numberSteps;
     double nextPrintTime;    
     double timeLimit;
     double timeStep;

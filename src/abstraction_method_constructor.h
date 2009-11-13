@@ -51,6 +51,7 @@ extern ABSTRACTION_METHOD *FinalStateGenerationMethodConstructor(  ABSTRACTION_M
 extern ABSTRACTION_METHOD *SimilarReactionCombiningMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
 extern ABSTRACTION_METHOD *AbsoluteInhibitionGenerationMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
 extern ABSTRACTION_METHOD *ReversibleToIrreversibleMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
+extern ABSTRACTION_METHOD *DistributeMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
 extern ABSTRACTION_METHOD *MultipleProductsReactionEliminationMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
 extern ABSTRACTION_METHOD *MultipleReactantsReactionEliminationMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager ); 
 extern ABSTRACTION_METHOD *SingleReactantProductReactionEliminationMethodConstructor(  ABSTRACTION_METHOD_MANAGER *manager );
@@ -118,6 +119,7 @@ static AbstractionMethodConstructorType __abstractionMethodConstrcutorTable[] = 
     MultipleReactantsReactionEliminationMethodConstructor,
     MultipleProductsReactionEliminationMethodConstructor,
     ReversibleToIrreversibleMethodConstructor,
+    DistributeMethodConstructor,
     AbsoluteInhibitionGenerationMethodConstructor, 
     SimilarReactionCombiningMethodConstructor,
     FinalStateGenerationMethodConstructor,
