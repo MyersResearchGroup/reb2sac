@@ -119,6 +119,10 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *species 
         * this species S is not used as a product in any reactions   
         */
     reactantEdges = GetReactantEdges( (IR_NODE*)species );
+    if( GetLinkedListSize( reactantEdges ) == 0 ) {
+        END_FUNCTION("_IsConditionSatisfied", SUCCESS );
+        return FALSE;
+    }
     ResetCurrentElement( reactantEdges );
     while( ( reactantEdge = GetNextEdge( reactantEdges ) ) != NULL ) {
         /*

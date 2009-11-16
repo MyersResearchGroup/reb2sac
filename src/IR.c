@@ -44,6 +44,7 @@ static RET_VAL _AddReaction( IR *ir, REACTION *reaction );
 
 static RET_VAL _RemoveSpecies( IR *ir, SPECIES *species ); 
 static RET_VAL _RemoveReaction( IR *ir, REACTION *reaction );
+static RET_VAL _RemoveRule( IR *ir, RULE *rule ); 
 
 /*
 static RET_VAL _AddReactantInReaction( IR *ir, REACTION *reaction, SPECIES *reactant );
@@ -202,6 +203,7 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
     
     ir->RemoveSpecies = _RemoveSpecies;    
     ir->RemoveReaction = _RemoveReaction;
+    ir->RemoveRule = _RemoveRule;    
     
     ir->AddReactantEdge = _AddReactantEdge;
     ir->RemoveReactantEdge = _RemoveReactantEdge;
@@ -483,6 +485,34 @@ static RET_VAL _RemoveSpecies( IR *ir, SPECIES *species ) {
     return ret;    
 }
 
+static RET_VAL _RemoveRule( IR *ir, RULE *rule ) {
+    RET_VAL ret = SUCCESS;
+    RULE_MANAGER *ruleManager;
+    LINKED_LIST *ruleList = NULL;
+
+    START_FUNCTION("_RemoveRule");
+    
+    if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+    }
+    ruleList = ruleManager->CreateListOfRules( ruleManager );
+    if( IS_FAILED( ( ret = RemoveElementFromLinkedList( (CADDR_T)rule, ruleList ) ) ) ) {
+        END_FUNCTION("_RemoveRule", ret );
+        return ret;
+    } 
+        
+    /*if( IS_FAILED( ( ret = rule->ReleaseResource( (IR_NODE*)rule ) ) ) ) {
+        END_FUNCTION("_RemoveRule", ret );
+        return ret;    
+	} */
+    
+    FREE( rule );
+            
+    ir->changeFlag = TRUE;
+    END_FUNCTION("_RemoveRule", SUCCESS );
+    return ret;    
+}
+
 static RET_VAL _AddReaction( IR *ir, REACTION *reaction ) {
     RET_VAL ret = SUCCESS;
     
@@ -509,7 +539,7 @@ static RET_VAL _RemoveReaction( IR *ir, REACTION *reaction ) {
     } 
     
     if( IS_FAILED( ( ret = reaction->ReleaseResource( (IR_NODE*)reaction ) ) ) ) {
-        END_FUNCTION("_RemoveSpecies", ret );
+        END_FUNCTION("_RemoveReaction", ret );
         return ret;    
     } 
     

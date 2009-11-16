@@ -78,6 +78,7 @@ struct _IR {
     
     RET_VAL (*RemoveSpecies)( IR *ir, SPECIES *species );     
     RET_VAL (*RemoveReaction)( IR *ir, REACTION *reaction );
+    RET_VAL (*RemoveRule)( IR *ir, RULE *rule );     
 
         
     RET_VAL (*AddReactantInReaction)( IR *ir, REACTION *reaction, SPECIES *reactant );

@@ -236,13 +236,36 @@ static RET_VAL _RemoveIrrelevant( IR *ir, IRRELEVANT_SPECIES_ELIMINATION_INTERNA
     RET_VAL ret = SUCCESS;
     SPECIES *species = NULL;
     REACTION *reaction = NULL;
+    RULE *rule = NULL;
     LINKED_LIST *list = NULL;
+    RULE_MANAGER *ruleManager;
+    LINKED_LIST *ruleList = NULL;
+    BYTE type;
     
     START_FUNCTION("_RemoveIrrelevant");
     
     list = internal->irrelevantSpeciesList;
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
+	}
+	ruleList = ruleManager->CreateListOfRules( ruleManager );
+	if( ( ruleList != NULL ) && ( GetLinkedListSize( ruleList ) > 0 ) ) {
+	  ResetCurrentElement( ruleList );
+	  while( ( rule = (RULE*)GetNextFromLinkedList( ruleList ) ) != NULL ) {
+	    type = GetRuleType( rule );
+	    if (type != RULE_TYPE_ALGEBRAIC ) {
+	      if (strcmp(GetCharArrayOfString( GetRuleVar( rule ) ),
+			 GetCharArrayOfString( GetSpeciesNodeName( species ) ) ) == 0) {
+		if( IS_FAILED( ( ir->RemoveRule( ir, rule ) ) ) ) {
+		  END_FUNCTION("_RemoveIrrelevant", SUCCESS );
+		  return ret;
+		}
+	      }
+	    }
+	  }
+	}
         TRACE_1("removing species %s", GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
         if( IS_FAILED( ( ir->RemoveSpecies( ir, species ) ) ) ) {
             END_FUNCTION("_RemoveIrrelevant", SUCCESS );

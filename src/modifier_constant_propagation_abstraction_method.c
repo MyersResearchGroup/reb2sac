@@ -223,7 +223,7 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	list = ir->GetListOfSpeciesNodes( ir );
         ResetCurrentElement( list );    
 	while( ( species2 = (SPECIES*)GetNextFromLinkedList( speciesList ) ) != NULL ) {
-	  kineticLaw = GetInitialAssignmentInSpeciesNode( species2 );
+	  kineticLaw = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species2 );
 	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
 	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
 	    return ret;
@@ -245,10 +245,26 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 
 static double _GetModifierConcentration( SPECIES *modifier ) {
     double concentration = 0.0;
-    
+    KINETIC_LAW *law;
+
     START_FUNCTION("_GetModifierConcentration");
     
-    concentration = GetInitialConcentrationInSpeciesNode( modifier );
+    if (GetInitialAssignmentInSpeciesNode( modifier ) != NULL) {
+      law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( modifier );
+      SimplifyInitialAssignment(law);
+      if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
+	concentration = GetRealValueFromKineticLaw(law);
+      } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
+	concentration = (double)GetIntValueFromKineticLaw(law);
+      }
+    } else {
+      if( HasOnlySubstanceUnitsInSpeciesNode( modifier ) ) {
+	concentration = GetInitialAmountInSpeciesNode( modifier );
+      } else {
+	concentration = GetInitialConcentrationInSpeciesNode( modifier );
+      }
+    }
+    //concentration = GetInitialConcentrationInSpeciesNode( modifier );
     END_FUNCTION("_GetModifierConcentration", SUCCESS );
     return concentration;
 }
