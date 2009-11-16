@@ -844,7 +844,6 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
         return ErrorReport( FAILING, "_HandleEvent", "could not get an instance of event manager" );
     }
     id = (char *)Event_getId( source );
-    TRACE_1("creating event %s", id );
     if( ( eventDef = eventManager->CreateEvent( eventManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "could not allocate event %s", id );
     }
