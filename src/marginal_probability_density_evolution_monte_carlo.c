@@ -879,7 +879,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 mpRun[l] = mpRuns[index][l];
             }
         }
-        if (time == nextPrintTime && time != timeLimit) {
+        if (time >= nextPrintTime && time != timeLimit) {
             rec->time = nextPrintTime;
             nextPrintTime += rec->printInterval;
             printf("Time = %g\n", time);
