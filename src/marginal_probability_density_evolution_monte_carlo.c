@@ -680,6 +680,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double newDistance;
     int index;
     double mpRuns[rec->runs][size];
+    int n;
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
@@ -718,17 +719,64 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         }
     }
     while (rec->time < timeLimit) {
+        rec->time = time;
+        end = rec->time + timeStep;
+        if (timeLimit < end) {
+            end = timeLimit;
+        }
+        if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
+                rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
+                FALSE, end)) == NULL) {
+            return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
+        }
+        decider = rec->decider;
+        do {
+            for (l = 0; l < size; l++) {
+                species = speciesArray[l];
+                if (useMP) {
+                    newValue = mpRun[l];
+                } else {
+                    if (rec->speciesSD[l] == 0) {
+                        newValue = rec->oldSpeciesMeans[l];
+                    } else {
+                        newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
+                    }
+                }
+                newValue = round(newValue);
+                if (newValue < 0.0)
+                    newValue = 0.0;
+                SetAmountInSpeciesNode(species, newValue);
+            }
+            if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                return ret;
+            }
+        } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
+        if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+            return ret;
+        }
+        n = ((1 / (rec->totalPropensities)) / timeStep) + 1;
+        if ((n + time) > nextPrintTime) {
+            end = nextPrintTime;
+        } else {
+            end = n + time;
+        }
+        if (timeLimit < end) {
+            end = timeLimit;
+        }
         for (k = 1; k <= rec->runs; k++) {
             rec->time = time;
             i = 0;
-            end = rec->time + timeStep;
-            if (timeLimit < end) {
-                end = timeLimit;
-            }
+            //end = rec->time + timeStep;
+            //if (timeLimit < end) {
+            //    end = timeLimit;
+            //}
             if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
                     rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
                     FALSE, end)) == NULL) {
-                return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation decider");
+                return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
             }
             decider = rec->decider;
             do {
