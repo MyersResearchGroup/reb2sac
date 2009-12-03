@@ -112,6 +112,7 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
     UINT32 j = 0;
     UINT32 k = 0;
     UINT32 size = 0;
+    double printInterval = 0.0;
     UINT32 numberSteps = 0;
     char buf[512];
     char *valueString = NULL;

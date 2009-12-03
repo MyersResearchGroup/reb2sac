@@ -38,6 +38,8 @@ typedef struct {
     double time;
     double t;
     double printInterval;
+    UINT32 currentStep;
+    UINT32 numberSteps;
     double nextPrintTime;    
     double timeLimit;
     double timeStep;
