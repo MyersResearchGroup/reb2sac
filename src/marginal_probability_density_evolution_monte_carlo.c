@@ -769,10 +769,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         for (k = 1; k <= rec->runs; k++) {
             rec->time = time;
             i = 0;
-            //end = rec->time + timeStep;
-            //if (timeLimit < end) {
-            //    end = timeLimit;
-            //}
             if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
                     rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
                     FALSE, end)) == NULL) {
