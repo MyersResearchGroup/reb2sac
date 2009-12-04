@@ -91,6 +91,8 @@ BACK_END_PROCESSOR_INFO *GetInfoOnBackEndProcessors() {
         { "emc-sim", 1, "${out-dir}/run-${run-num}.${ext}", "Monte Carlo simulation with jump count as independent variable"},
         { "gillespie", 1, "${out-dir}/run-${run-num}.${ext}", "perform Gillespie's direct method" },
         { "mpde", 1, "${out-dir}/run-${run-num}.${ext}", "perform marginal probability density evolution" },
+        { "mp", 1, "${out-dir}/run-${run-num}.${ext}", "perform mean path method" },
+        { "mp-adaptive", 1, "${out-dir}/run-${run-num}.${ext}", "perform mean path adaptive method" },
         { "gear1", 1, "${out-dir}/gear1-run.${ext}", "ODE simulation with Gear method, M=1" },
         { "gear2", 1, "${out-dir}/gear2-run.${ext}", "ODE simulation with Gear method, M=2" },
         { NULL, -1, NULL, NULL }
@@ -252,6 +254,14 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Process = DoMPDEMonteCarloAnalysis;
                 backend->Close = CloseMPDEMonteCarloAnalyzer;
                 backend->useMP = 1;
+            }
+            else if( strcmp( backend->encoding, "mp-adaptive" ) == 0 ) {
+                if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
+                    return ret;
+                }
+                backend->Process = DoMPDEMonteCarloAnalysis;
+                backend->Close = CloseMPDEMonteCarloAnalyzer;
+                backend->useMP = 2;
             }
             else {
                 fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
