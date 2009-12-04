@@ -1073,7 +1073,7 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     meanPrinter->Destroy(meanPrinter);
     varPrinter->Destroy(varPrinter);
     sdPrinter->Destroy(sdPrinter);
-    if (useMP == 1 || useMP == 2) {
+    if (rec->useMP == 1 || rec->useMP == 2) {
         mpPrinter->Destroy(mpPrinter);
     }
     decider->Destroy(decider);
