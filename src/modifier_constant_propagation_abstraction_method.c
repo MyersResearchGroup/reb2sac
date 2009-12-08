@@ -82,8 +82,12 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
     RULE_MANAGER *ruleManager;
     CONSTRAINT_MANAGER *constraintManager;
     CONSTRAINT *constraint;
+    COMPARTMENT_MANAGER *compartmentManager;
+    COMPARTMENT *compartment;
     RULE *rule = NULL;
     BOOL foundIt;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMTAB *symtab = NULL;
 #ifdef DEBUG
     STRING *kineticLawString = NULL;
 #endif        
@@ -220,8 +224,33 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	  }
 	}
 
-	list = ir->GetListOfSpeciesNodes( ir );
-        ResetCurrentElement( list );    
+	if( ( compartmentManager = ir->GetCompartmentManager( ir ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_ApplyModifierConstantPropagationMethod", "could not get the constraint manager" );
+	}
+	list = compartmentManager->CreateListOfCompartments( compartmentManager );
+	ResetCurrentElement( list );
+	while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  kineticLaw = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	}
+
+	symtab = ir->GetGlobalSymtab( ir );
+	if( ( list = symtab->GenerateListOfSymbols( symtab ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_ApplyModifierConstantPropagationMethod", "could not generate a list of symbols" );
+	}
+	ResetCurrentElement( list );
+	while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
+	  kineticLaw = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
+	}
+
+        ResetCurrentElement( speciesList );    
 	while( ( species2 = (SPECIES*)GetNextFromLinkedList( speciesList ) ) != NULL ) {
 	  kineticLaw = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species2 );
 	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {

@@ -58,6 +58,7 @@ struct _EVENT_MANAGER {
     COMPILER_RECORD_T *record;
     
     EVENT * (*CreateEvent)( EVENT_MANAGER *manager, char *id );
+    RET_VAL (*RemoveEvent)( EVENT_MANAGER *manager, EVENT *eventDef );
     LINKED_LIST *(*CreateListOfEvents)( EVENT_MANAGER *manager );                  
 };
 
@@ -70,6 +71,7 @@ BOOL GetTriggerEnabledInEvent( EVENT *eventDef );
 RET_VAL AddTriggerInEvent( EVENT *eventDef, KINETIC_LAW *trigger );
 RET_VAL AddDelayInEvent( EVENT *eventDef, KINETIC_LAW *delay );
 RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assignment );
+RET_VAL RemoveEventAssignmentFromEvent( EVENT *eventDef, EVENT_ASSIGNMENT *eventAssignDef );
 EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment );
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime );
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
@@ -80,7 +82,6 @@ double GetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef );
 RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varType );
 RET_VAL SetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef, UINT32 index );
 RET_VAL SetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef, double nextValue );
-
 
 EVENT_MANAGER *GetEventManagerInstance( COMPILER_RECORD_T *record );
 RET_VAL CloseEventManager( );
