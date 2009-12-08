@@ -24,6 +24,7 @@ static EVENT_MANAGER manager;
 
 
 static EVENT * _CreateEvent( EVENT_MANAGER *manager, char *id );
+static RET_VAL _RemoveEvent( EVENT_MANAGER *manager, EVENT *event );
 static LINKED_LIST *_CreateListOfEvents( EVENT_MANAGER *manager );                  
 
 
@@ -38,6 +39,7 @@ EVENT_MANAGER *GetEventManagerInstance( COMPILER_RECORD_T *record ) {
             return NULL;
         }    
         manager.CreateEvent = _CreateEvent;
+        manager.RemoveEvent = _RemoveEvent;
         manager.CreateListOfEvents = _CreateListOfEvents;
     }
         
@@ -156,7 +158,7 @@ RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varTyp
     RET_VAL ret = SUCCESS;
     
     START_FUNCTION("SetEventAssignmentVarType");
-
+    printf("Setting %d\n",varType);
     eventAssignDef->varType = varType;
 
     END_FUNCTION("SetEventAssignmentVarType", SUCCESS );
@@ -241,6 +243,20 @@ RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assi
     return ret;
 }
 
+RET_VAL RemoveEventAssignmentFromEvent( EVENT *eventDef, EVENT_ASSIGNMENT *eventAssignment ) {
+    RET_VAL ret = SUCCESS;
+
+    START_FUNCTION("RemoveEventAssignmentToEvent");
+
+    if( IS_FAILED( RemoveElementFromLinkedList( (CADDR_T)eventAssignment, eventDef->eventAssignments ) ) ) {
+        END_FUNCTION("_RemoveEventAssignmentToEvent", FAILING );
+        return FAILING;
+    }
+
+    END_FUNCTION("RemoveEventAssignmentToEvent", SUCCESS );
+    return ret;
+}
+
 EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment ) {
     EVENT_ASSIGNMENT *eventAssignmentDef = NULL;
     
@@ -296,6 +312,14 @@ static EVENT * _CreateEvent( EVENT_MANAGER *manager, char *id ) {
     
     END_FUNCTION("_CreateEvent", SUCCESS );
     return eventDef;
+}
+
+static RET_VAL _RemoveEvent( EVENT_MANAGER *manager, EVENT *eventDef ) {
+  RET_VAL ret = SUCCESS;
+    if( IS_FAILED( RemoveElementFromLinkedList( (CADDR_T)eventDef, manager->events ) ) ) {
+      return FAILING;
+    } 
+    return ret;
 }
     
 static LINKED_LIST *_CreateListOfEvents( EVENT_MANAGER *manager ) {

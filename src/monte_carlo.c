@@ -728,6 +728,9 @@ static RET_VAL _CleanRecord( MONTE_CARLO_RECORD *rec ) {
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
     }
+    if( rec->findNextTime != NULL ) {
+        FreeKineticLawFind_Next_Time( &(rec->findNextTime) );
+    }
     if( rec->reactionArray != NULL ) {
         FREE( rec->reactionArray );
     }
