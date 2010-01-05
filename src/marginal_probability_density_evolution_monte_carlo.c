@@ -1326,9 +1326,12 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
             triggerEnabled = GetTriggerEnabledInEvent(rec->eventArray[i]);
             if (nextEventTime != -1.0) {
                 if (time >= nextEventTime) {
-                    fireEvent(rec->eventArray[i], rec);
-                    SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
-                    eventFired = TRUE;
+		  if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+		    SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+		  }
+		  fireEvent(rec->eventArray[i], rec);
+		  SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
+		  eventFired = TRUE;
                 } else {
                     if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
                         firstEventTime = nextEventTime;
@@ -1350,20 +1353,24 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
                         deltaTime = rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator,
                                 (KINETIC_LAW*) GetDelayInEvent(rec->eventArray[i]));
                     }
-                    if (deltaTime > 0) {
-                        SetNextEventTimeInEvent(rec->eventArray[i], time + deltaTime);
-                        SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-                        if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
-                            firstEventTime = time + deltaTime;
-                        }
-                    } else if (deltaTime == 0) {
-                        SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-                        fireEvent(rec->eventArray[i], rec);
-                        eventFired = TRUE;
-                    } else {
-                        ErrorReport(FAILING, "_Update", "delay for event evaluates to a negative number");
-                        return -2;
-                    }
+		    if (deltaTime > 0) {
+		      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+		      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+			SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+		      }
+		      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+			firstEventTime = time + deltaTime;
+		      }
+		    } else if (deltaTime == 0) {
+		      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+			SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+		      }
+		      fireEvent( rec->eventArray[i], rec );
+		      eventFired = TRUE;
+		    } else {
+		      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+		      return -2;
+		    }
                 }
             } else {
                 if (!rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, (KINETIC_LAW*) GetTriggerInEvent(

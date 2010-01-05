@@ -38,7 +38,8 @@ typedef struct {
     KINETIC_LAW *trigger;
     KINETIC_LAW *delay;
     LINKED_LIST *eventAssignments;
-    double nextEventTime;
+    LINKED_LIST *nextEventTime;
+    BOOL useValuesFromTriggerTime;
     BOOL triggerEnabled;
 } EVENT;
 
@@ -67,6 +68,7 @@ KINETIC_LAW *GetTriggerInEvent( EVENT *eventDef );
 KINETIC_LAW *GetDelayInEvent( EVENT *eventDef );
 LINKED_LIST *GetEventAssignments( EVENT *eventDef );
 double GetNextEventTimeInEvent( EVENT *eventDef );
+BOOL GetUseValuesFromTriggerTime( EVENT *eventDef );
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef );
 RET_VAL AddTriggerInEvent( EVENT *eventDef, KINETIC_LAW *trigger );
 RET_VAL AddDelayInEvent( EVENT *eventDef, KINETIC_LAW *delay );
@@ -74,6 +76,7 @@ RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assi
 RET_VAL RemoveEventAssignmentFromEvent( EVENT *eventDef, EVENT_ASSIGNMENT *eventAssignDef );
 EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment );
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime );
+void SetUseValuesFromTriggerTime( EVENT *eventDef, BOOL triggerEnabled );
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
 
 BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef );

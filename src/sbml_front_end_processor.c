@@ -853,6 +853,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     }
     table = (HASH_TABLE*)frontend->_internal2;    
 
+    SetUseValuesFromTriggerTime( eventDef, Event_getUseValuesFromTriggerTime( source ) );
     if (Event_isSetTrigger( source ) ) {
       trigger = (Trigger_t*)Event_getTrigger( source );
       node  = (ASTNode_t*)Trigger_getMath( trigger );

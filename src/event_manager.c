@@ -119,10 +119,19 @@ LINKED_LIST *GetEventAssignments( EVENT *eventDef ) {
 }
 
 double GetNextEventTimeInEvent( EVENT *eventDef ) {
+    double nextEventTime = -1;
+    double *nextEventTimePtr;
     START_FUNCTION("GetNextEventTimeInEvent");
-            
+
+    ResetCurrentElement( eventDef->nextEventTime );
+    while ( ( nextEventTimePtr = (double*)GetNextFromLinkedList( eventDef->nextEventTime ) ) != NULL ) {
+      if ((nextEventTime == -1) || (nextEventTime > (*nextEventTimePtr))) { 
+        nextEventTime = (*nextEventTimePtr);
+      }
+    } 
+
     END_FUNCTION("GetNextEventTimeInEvent", SUCCESS );
-    return eventDef->nextEventTime;
+    return nextEventTime;
 }
 
 BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef ) {
@@ -147,10 +156,31 @@ double GetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef ) {
 }
 
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime ) {
+    double *nextEventTimePtr = NULL;
+    double *nextEventTimePtrRm = NULL;
+
     START_FUNCTION("SetNextEventTimeInEvent");
-  
-    eventDef->nextEventTime = nextEventTime;
-  
+
+    if (nextEventTime == -1) {
+      ResetCurrentElement( eventDef->nextEventTime );
+      while ( ( nextEventTimePtr = (double*)GetNextFromLinkedList( eventDef->nextEventTime ) ) != NULL ) {
+	if ((nextEventTime == -1) || (nextEventTime > (*nextEventTimePtr))) { 
+	  nextEventTime = (*nextEventTimePtr);
+	  nextEventTimePtrRm = nextEventTimePtr;
+	}
+      } 
+      if (nextEventTimePtrRm != NULL) {
+	RemoveElementFromLinkedList( nextEventTimePtrRm, eventDef->nextEventTime );
+      }
+    } else {
+      if( ( nextEventTimePtr = (double*)MALLOC( sizeof(double) ) ) == NULL ) {
+        END_FUNCTION("_SetNextEventTimeInEvent", FAILING );
+        return;
+      }
+      (*nextEventTimePtr) = nextEventTime;
+      AddElementInLinkedList((CADDR_T)nextEventTimePtr,eventDef->nextEventTime);
+    }
+
     END_FUNCTION("SetNextEventTimeInEvent", SUCCESS );
 }
 
@@ -158,7 +188,6 @@ RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varTyp
     RET_VAL ret = SUCCESS;
     
     START_FUNCTION("SetEventAssignmentVarType");
-    printf("Setting %d\n",varType);
     eventAssignDef->varType = varType;
 
     END_FUNCTION("SetEventAssignmentVarType", SUCCESS );
@@ -187,11 +216,26 @@ RET_VAL SetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef, double ne
     return ret;
 }
 
+BOOL GetUseValuesFromTriggerTime( EVENT *eventDef ) {
+    START_FUNCTION("GetUseValuesFromTriggerTime");
+            
+    END_FUNCTION("GetUseValuesFromTriggerTime", SUCCESS );
+    return eventDef->useValuesFromTriggerTime;
+}
+
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef ) {
     START_FUNCTION("GetTriggerEnabledInEvent");
             
     END_FUNCTION("GetTriggerEnabledInEvent", SUCCESS );
     return eventDef->triggerEnabled;
+}
+
+void SetUseValuesFromTriggerTime( EVENT *eventDef, BOOL useValuesFromTriggerTime ) {
+    START_FUNCTION("SetTriggerEnabledInEvent");
+  
+    eventDef->useValuesFromTriggerTime = useValuesFromTriggerTime;
+  
+    END_FUNCTION("GetTriggerEnabledInEvent", SUCCESS );
 }
 
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled ) {
@@ -297,11 +341,17 @@ static EVENT * _CreateEvent( EVENT_MANAGER *manager, char *id ) {
     }
     eventDef->trigger = NULL;
     eventDef->delay = NULL;
+
     if( ( eventDef->eventAssignments = CreateLinkedList( ) ) == NULL ) {
       END_FUNCTION("_CreateEvent", FAILING );
       return NULL;
     }    
-    eventDef->nextEventTime = -1.0;
+
+    if( ( eventDef->nextEventTime = CreateLinkedList( ) ) == NULL ) {
+      END_FUNCTION("_CreateEvent", FAILING );
+      return NULL;
+    }    
+
     eventDef->triggerEnabled = FALSE;
 
     if( IS_FAILED( AddElementInLinkedList( (CADDR_T)eventDef, manager->events ) ) ) {
