@@ -43,7 +43,6 @@ typedef struct {
     double nextPrintTime;    
     double timeLimit;
     double timeStep;
-    double absoluteError;
     KINETIC_LAW_EVALUATER *evaluator;
     KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
     double totalPropensities;
