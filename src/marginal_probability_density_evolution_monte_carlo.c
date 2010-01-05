@@ -680,7 +680,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double newDistance;
     int index;
     double mpRuns[rec->runs][size];
-    double n;
+    int n;
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
@@ -725,7 +725,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             end = timeLimit;
         }
         if (useMP == 2) {
-            printf("Here\n");
             for (l = 0; l < size; l++) {
                 species = speciesArray[l];
                 newValue = mpRun[l];
@@ -734,18 +733,13 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
                 return ret;
             }
-            printf("Here\n");
             if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
                 return ret;
             }
-            printf("Here\n");
             if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
                 return ret;
             }
-            printf("Here\n");
             n = ((1 / (rec->totalPropensities)) * timeStep);
-            printf("Here %d\n",n);
-            printf("Here\n");
             //n = (n * rec->absoluteError);
             if ((n + time) > nextPrintTime) {
                 end = nextPrintTime;
