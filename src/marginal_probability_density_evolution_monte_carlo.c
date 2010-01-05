@@ -744,6 +744,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             printf("Here\n");
             n = ((1 / (rec->totalPropensities)) * timeStep);
+            printf("Here %d\n",n);
             printf("Here\n");
             //n = (n * rec->absoluteError);
             if ((n + time) > nextPrintTime) {
