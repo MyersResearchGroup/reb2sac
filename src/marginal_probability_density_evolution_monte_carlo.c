@@ -725,32 +725,21 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             end = timeLimit;
         }
         if (useMP == 2) {
-            if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
-                    rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
-                    FALSE, end)) == NULL) {
-                return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
+            for (l = 0; l < size; l++) {
+                species = speciesArray[l];
+                newValue = mpRun[l];
+                SetAmountInSpeciesNode(species, newValue);
             }
-            decider = rec->decider;
-            do {
-                for (l = 0; l < size; l++) {
-                    species = speciesArray[l];
-                    newValue = mpRun[l];
-                    newValue = round(newValue);
-                    if (newValue < 0.0)
-                        newValue = 0.0;
-                    SetAmountInSpeciesNode(species, newValue);
-                }
-                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-                    return ret;
-                }
-            } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
+            if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                return ret;
+            }
             if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
                 return ret;
             }
             if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
                 return ret;
             }
-            n = ((1 / (rec->totalPropensities)) / timeStep) + 1;
+            n = ((1 / (rec->totalPropensities)) * timeStep);
             //n = (n * rec->absoluteError);
             if ((n + time) > nextPrintTime) {
                 end = nextPrintTime;
@@ -781,10 +770,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         } else {
                             newValue = GetNextNormalRandomNumber(rec->oldSpeciesMeans[l], rec->speciesSD[l]);
                         }
+                        newValue = round(newValue);
+                        if (newValue < 0.0)
+                          newValue = 0.0;
                     }
-                    newValue = round(newValue);
-                    if (newValue < 0.0)
-                        newValue = 0.0;
                     SetAmountInSpeciesNode(species, newValue);
                 }
                 if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
@@ -793,11 +782,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
-                if (timeStep == DBL_MAX) {
+                //if (timeStep == DBL_MAX) {
                     maxTime = DBL_MAX;
-                } else {
-                    maxTime = maxTime + timeStep;
-                }
+                //} else {
+                    //maxTime = maxTime + timeStep;
+                //}
                 nextEventTime = fireEvents(rec, rec->time);
                 if (nextEventTime == -2.0) {
                     return FAILING;
