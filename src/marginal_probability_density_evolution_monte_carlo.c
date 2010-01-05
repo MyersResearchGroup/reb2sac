@@ -753,18 +753,25 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         for (k = 1; k <= rec->runs; k++) {
             rec->time = time;
             i = 0;
-            if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
-                    rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
-                    FALSE, end)) == NULL) {
-                return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
-            }
-            decider = rec->decider;
-            do {
+            if (useMP == 1 || useMP == 2) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
-                    if (useMP == 1 || useMP == 2) {
-                        newValue = mpRun[l];
-                    } else {
+                    newValue = mpRun[l];
+                    SetAmountInSpeciesNode(species, newValue);
+                }
+                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                    return ret;
+                }
+            } else {
+                if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
+                        rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize,
+                        rec->evaluator, FALSE, end)) == NULL) {
+                    return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
+                }
+                decider = rec->decider;
+                do {
+                    for (l = 0; l < size; l++) {
+                        species = speciesArray[l];
                         if (rec->speciesSD[l] == 0) {
                             newValue = rec->oldSpeciesMeans[l];
                         } else {
@@ -772,20 +779,20 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         }
                         newValue = round(newValue);
                         if (newValue < 0.0)
-                          newValue = 0.0;
+                            newValue = 0.0;
+                        SetAmountInSpeciesNode(species, newValue);
                     }
-                    SetAmountInSpeciesNode(species, newValue);
-                }
-                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-                    return ret;
-                }
-            } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
+                    if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                        return ret;
+                    }
+                } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
+            }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
                 //if (timeStep == DBL_MAX) {
-                    maxTime = DBL_MAX;
+                maxTime = DBL_MAX;
                 //} else {
-                    //maxTime = maxTime + timeStep;
+                //maxTime = maxTime + timeStep;
                 //}
                 nextEventTime = fireEvents(rec, rec->time);
                 if (nextEventTime == -2.0) {
