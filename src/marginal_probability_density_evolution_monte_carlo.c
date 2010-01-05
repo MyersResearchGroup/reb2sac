@@ -680,7 +680,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double newDistance;
     int index;
     double mpRuns[rec->runs][size];
-    int n;
+    double n;
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
