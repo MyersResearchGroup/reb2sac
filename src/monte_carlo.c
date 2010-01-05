@@ -1018,6 +1018,9 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
 	if (nextEventTime != -1.0) {
 	  if (time >= nextEventTime) {
+	    if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	    }
 	    fireEvent( rec->eventArray[i], rec );
 	    SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
 	    eventFired = TRUE;
@@ -1046,12 +1049,16 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	    }
 	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
-	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      }
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
 	      }
 	    } else if (deltaTime == 0) {
-	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      }
 	      fireEvent( rec->eventArray[i], rec );
 	      eventFired = TRUE;
 	    } else {
@@ -1098,12 +1105,12 @@ static void fireEvent( EVENT *event, MONTE_CARLO_RECORD *rec ) {
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    //printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
+    printf("Firing event %s\n",GetCharArrayOfString(eventAssignment->var));
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
-    //printf("varType = %d j = %d\n",varType,j);
+    printf("varType = %d j = %d\n",varType,j);
     amount = GetEventAssignmentNextValue( eventAssignment );
-    //printf("conc = %g\n",amount);
+    printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
       SetAmountInSpeciesNode( rec->speciesArray[j], amount );
       _UpdateReactionRateUpdateTimeForSpecies( rec, rec->speciesArray[j] );

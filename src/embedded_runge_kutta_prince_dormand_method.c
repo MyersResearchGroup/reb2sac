@@ -768,6 +768,9 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
 	if (nextEventTime != -1.0) {
 	  if  (time >= nextEventTime) {
+	    if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	    }
 	    fireEvent( rec->eventArray[i], rec );
 	    SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
 	    eventFired = TRUE;
@@ -796,12 +799,16 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
 	    }
 	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
-	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      }
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
 	      }
 	    } else if (deltaTime == 0) {
-	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      }
 	      fireEvent( rec->eventArray[i], rec );
 	      eventFired = TRUE;
 	    } else {
