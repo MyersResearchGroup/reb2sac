@@ -680,7 +680,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double newDistance;
     int index;
     double mpRuns[rec->runs][size];
-    int n;
+    double n;
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
@@ -739,15 +739,15 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
                 return ret;
             }
-            if (rec->totalPropensities == 0) {
+            if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
                 n = timeStep;
             } else {
                 n = (timeStep / rec->totalPropensities);
             }
-            if ((n + time) > nextPrintTime) {
+            if ((n + rec->time) > nextPrintTime) {
                 end = nextPrintTime;
             } else {
-                end = n + time;
+                end = n + rec->time;
             }
             if (timeLimit < end) {
                 end = timeLimit;
@@ -792,11 +792,15 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
-                //if (timeStep == DBL_MAX) {
-                maxTime = DBL_MAX;
-                //} else {
-                //maxTime = maxTime + timeStep;
-                //}
+                if (useMP == 2) {
+                    maxTime = DBL_MAX;
+                } else {
+                    if (timeStep == DBL_MAX) {
+                        maxTime = DBL_MAX;
+                    } else {
+                        maxTime = maxTime + timeStep;
+                    }
+                }
                 nextEventTime = fireEvents(rec, rec->time);
                 if (nextEventTime == -2.0) {
                     return FAILING;
