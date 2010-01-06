@@ -739,7 +739,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
                 return ret;
             }
-            n = ((1 / (rec->totalPropensities)) * timeStep);
+            if (rec->totalPropensities == 0) {
+                n = timeStep;
+            } else {
+                n = ((1 / (rec->totalPropensities)) * timeStep);
+            }
             //n = (n * rec->absoluteError);
             if ((n + time) > nextPrintTime) {
                 end = nextPrintTime;
@@ -753,6 +757,12 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         for (k = 1; k <= rec->runs; k++) {
             rec->time = time;
             i = 0;
+            if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
+                    rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
+                    FALSE, end)) == NULL) {
+                return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
+            }
+            decider = rec->decider;
             if (useMP == 1 || useMP == 2) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
@@ -763,12 +773,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     return ret;
                 }
             } else {
-                if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
-                        rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize,
-                        rec->evaluator, FALSE, end)) == NULL) {
-                    return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
-                }
-                decider = rec->decider;
                 do {
                     for (l = 0; l < size; l++) {
                         species = speciesArray[l];
@@ -1326,12 +1330,12 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
             triggerEnabled = GetTriggerEnabledInEvent(rec->eventArray[i]);
             if (nextEventTime != -1.0) {
                 if (time >= nextEventTime) {
-		  if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
-		    SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
-		  }
-		  fireEvent(rec->eventArray[i], rec);
-		  SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
-		  eventFired = TRUE;
+                    if (!GetUseValuesFromTriggerTime(rec->eventArray[i])) {
+                        SetEventAssignmentsNextValues(rec->eventArray[i], rec);
+                    }
+                    fireEvent(rec->eventArray[i], rec);
+                    SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
+                    eventFired = TRUE;
                 } else {
                     if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
                         firstEventTime = nextEventTime;
@@ -1353,24 +1357,24 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
                         deltaTime = rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator,
                                 (KINETIC_LAW*) GetDelayInEvent(rec->eventArray[i]));
                     }
-		    if (deltaTime > 0) {
-		      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
-		      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
-			SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
-		      }
-		      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
-			firstEventTime = time + deltaTime;
-		      }
-		    } else if (deltaTime == 0) {
-		      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
-			SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
-		      }
-		      fireEvent( rec->eventArray[i], rec );
-		      eventFired = TRUE;
-		    } else {
-		      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
-		      return -2;
-		    }
+                    if (deltaTime > 0) {
+                        SetNextEventTimeInEvent(rec->eventArray[i], time + deltaTime);
+                        if (GetUseValuesFromTriggerTime(rec->eventArray[i])) {
+                            SetEventAssignmentsNextValues(rec->eventArray[i], rec);
+                        }
+                        if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+                            firstEventTime = time + deltaTime;
+                        }
+                    } else if (deltaTime == 0) {
+                        if (GetUseValuesFromTriggerTime(rec->eventArray[i])) {
+                            SetEventAssignmentsNextValues(rec->eventArray[i], rec);
+                        }
+                        fireEvent(rec->eventArray[i], rec);
+                        eventFired = TRUE;
+                    } else {
+                        ErrorReport(FAILING, "_Update", "delay for event evaluates to a negative number");
+                        return -2;
+                    }
                 }
             } else {
                 if (!rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, (KINETIC_LAW*) GetTriggerInEvent(
