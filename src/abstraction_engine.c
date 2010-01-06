@@ -24,6 +24,7 @@ static RET_VAL _PutKeepFlagInSpeciesNodes( ABSTRACTION_ENGINE *abstractionEngine
 static RET_VAL _PutPrintFlagInNodes( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
 static RET_VAL _Abstract( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
 static RET_VAL _Abstract_DEBUG( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
+static RET_VAL _Print_Abstract_Methods( ABSTRACTION_ENGINE *abstractionEngine );
 
 static RET_VAL _Abstract1( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
 static RET_VAL _Abstract2( ABSTRACTION_ENGINE *abstractionEngine, IR *ir );
@@ -363,6 +364,8 @@ static RET_VAL _Abstract( ABSTRACTION_ENGINE *abstractionEngine, IR *ir ) {
         END_FUNCTION("_Abstract", ret );
         return ret;
     }
+
+    /* _Print_Abstract_Methods( abstractionEngine ); */
     
     if( ( methods1 = _CreateListOfMethods( abstractionEngine, 1 ) ) == NULL ) {
         return ErrorReport( FAILING, "_Abstract", "could not create a method list1" );
@@ -999,6 +1002,26 @@ static RET_VAL _Abstract_DEBUG( ABSTRACTION_ENGINE *abstractionEngine, IR *ir ) 
     } while( changed );                
     
     END_FUNCTION("_Abstract_DEBUG", SUCCESS );
+    
+    return ret;
+}
+
+
+static RET_VAL _Print_Abstract_Methods( ABSTRACTION_ENGINE *abstractionEngine ) {
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    ABSTRACTION_METHOD *method = NULL;
+    ABSTRACTION_METHOD **methods = NULL;
+                
+    START_FUNCTION("_Print_Abstract_Methods");
+    
+    methods = _GetRegisteredMethods( abstractionEngine );
+    i = 0;        
+    while( ( method = methods[i++] ) != NULL ) {
+      printf("%s\n", method->GetID( method ) );
+    } 
+    
+    END_FUNCTION("_Print_Abstract_Methods", SUCCESS );
     
     return ret;
 }
