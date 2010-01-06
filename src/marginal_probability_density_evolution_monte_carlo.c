@@ -742,9 +742,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             if (rec->totalPropensities == 0) {
                 n = timeStep;
             } else {
-                n = ((1 / (rec->totalPropensities)) * timeStep);
+                n = (timeStep / rec->totalPropensities);
             }
-            //n = (n * rec->absoluteError);
             if ((n + time) > nextPrintTime) {
                 end = nextPrintTime;
             } else {
