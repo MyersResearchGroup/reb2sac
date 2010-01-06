@@ -392,7 +392,7 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
             rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
         return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
     }
-    if (backend->useMP == 1 || backend->useMP == 2) {
+    if (backend->useMP != 0) {
         if ((rec->mpPrinter = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
                 rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
             return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
@@ -528,7 +528,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     if (IS_FAILED((ret = sdPrinter->PrintHeader(sdPrinter)))) {
         return ret;
     }
-    if (rec->useMP == 1 || rec->useMP == 2) {
+    if (rec->useMP != 0) {
         if (IS_FAILED((ret = mpPrinter->PrintStart(mpPrinter, mpFilenameStem)))) {
             return ret;
         }
@@ -681,12 +681,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     int index;
     double mpRuns[rec->runs][size];
     double n;
+    int eventCounter = 0;
+    int maxEvents = ceil(rec->timeStep);
 
     printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
     sdPrinter = rec->sdPrinter;
-    if (useMP == 1 || useMP == 2) {
+    if (useMP != 0) {
         mpPrinter = rec->mpPrinter;
     }
     rec->currentStep++;
@@ -694,7 +696,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, rec->time)))) {
         return ret;
     }
-    if (useMP == 1 || useMP == 2) {
+    if (useMP != 0) {
         if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
             return ret;
         }
@@ -713,18 +715,16 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         species = speciesArray[l];
         SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
     }
-    if (useMP == 1 || useMP == 2) {
+    if (useMP != 0) {
         for (l = 0; l < size; l++) {
             mpRun[l] = rec->oldSpeciesMeans[l];
         }
     }
     while (rec->time < timeLimit) {
         rec->time = time;
-        end = rec->time + timeStep;
-        if (timeLimit < end) {
-            end = timeLimit;
-        }
-        if (useMP == 2) {
+        if (useMP == 3) {
+            end = nextPrintTime;
+        } else if (useMP == 2) {
             for (l = 0; l < size; l++) {
                 species = speciesArray[l];
                 newValue = mpRun[l];
@@ -749,11 +749,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             } else {
                 end = n + rec->time;
             }
-            if (timeLimit < end) {
-                end = timeLimit;
-            }
+        } else {
+            end = rec->time + timeStep;
+        }
+        if (timeLimit < end) {
+            end = timeLimit;
         }
         for (k = 1; k <= rec->runs; k++) {
+            eventCounter = 0;
             rec->time = time;
             i = 0;
             if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
@@ -762,7 +765,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
             }
             decider = rec->decider;
-            if (useMP == 1 || useMP == 2) {
+            if (useMP != 0) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
                     newValue = mpRun[l];
@@ -790,7 +793,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     }
                 } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
             }
-            while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
+            while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time)) && eventCounter < maxEvents) {
                 i++;
                 if (useMP == 2) {
                     maxTime = DBL_MAX;
@@ -860,13 +863,16 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         }
                     }
                 }
+                if (useMP == 3) {
+                    eventCounter++;
+                }
             }
             if (k == 1) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
                     rec->newSpeciesMeans[l] = GetAmountInSpeciesNode(species);
                     rec->newSpeciesVariances[l] = 0;
-                    if (useMP == 1 || useMP == 2) {
+                    if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
@@ -880,7 +886,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     double newVary = (((k - 2) * oldVary) + (GetAmountInSpeciesNode(species) - new)
                             * (GetAmountInSpeciesNode(species) - old)) / (k - 1);
                     rec->newSpeciesVariances[l] = newVary;
-                    if (useMP == 1 || useMP == 2) {
+                    if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
@@ -893,7 +899,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
             rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
         }
-        if (useMP == 1 || useMP == 2) {
+        if (useMP != 0) {
             distance = -1;
             index = -1;
             for (k = 0; k < rec->runs; k++) {
@@ -940,7 +946,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, rec->time)))) {
                 return ret;
             }
-            if (useMP == 1 || useMP == 2) {
+            if (useMP != 0) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
                     SetAmountInSpeciesNode(species, mpRun[l]);
@@ -977,7 +983,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, rec->time)))) {
         return ret;
     }
-    if (useMP == 1 || useMP == 2) {
+    if (useMP != 0) {
         for (l = 0; l < size; l++) {
             species = speciesArray[l];
             SetAmountInSpeciesNode(species, mpRun[l]);
@@ -1000,7 +1006,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = sdPrinter->PrintEnd(sdPrinter)))) {
         return ret;
     }
-    if (useMP == 1 || useMP == 2) {
+    if (useMP != 0) {
         if (IS_FAILED((ret = mpPrinter->PrintEnd(mpPrinter)))) {
             return ret;
         }
@@ -1077,7 +1083,7 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     meanPrinter->Destroy(meanPrinter);
     varPrinter->Destroy(varPrinter);
     sdPrinter->Destroy(sdPrinter);
-    if (rec->useMP == 1 || rec->useMP == 2) {
+    if (rec->useMP != 0) {
         mpPrinter->Destroy(mpPrinter);
     }
     decider->Destroy(decider);
@@ -1294,7 +1300,7 @@ static RET_VAL _Print(MPDE_MONTE_CARLO_RECORD *rec) {
         if (IS_FAILED((ret = sdPrinter->PrintValues(sdPrinter, nextPrintTime)))) {
             return ret;
         }
-        if (rec->useMP == 1 || rec->useMP == 2) {
+        if (rec->useMP != 0) {
             if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, nextPrintTime)))) {
                 return ret;
             }
