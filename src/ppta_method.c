@@ -174,22 +174,26 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         return FALSE;
     }
     
+    /*printf("Working on %s\n",GetCharArrayOfString( GetSpeciesNodeID( species )));*/
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
         /*
         * every reaction R1, where R1 uses S as a reactant, the stoichiometry of S is 1.
         */
+
         if( GetStoichiometryInIREdge( edge ) != 1 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 1\n");*/
             return FALSE;
         }
-        
+
         reaction = GetReactionInIREdge( edge );
         /*
         * every reaction R1, where R1 uses S as a reactant, R1 is a reversible reaction
         */
         if( !IsReactionReversibleInReactionNode( reaction ) ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 2\n");*/
             return FALSE;
         }
         
@@ -199,6 +203,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         kineticLaw = GetKineticLawInReactionNode( reaction );
         if( ( k1Ratio = CreateRateConstantRatioKineticLaw( kineticLaw ) ) == NULL ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 3\n");*/
             return FALSE;
         }
                 
@@ -209,6 +214,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) != 2 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 4\n");*/
             return FALSE;
         }
 
@@ -226,6 +232,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetModifierEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 5\n");*/
             return FALSE;
         }
         
@@ -235,6 +242,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetProductEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 6\n");*/
             return FALSE;
         }
         
@@ -248,6 +256,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetProductEdges( (IR_NODE*)product );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 7\n");*/
             return FALSE;
         }
         
@@ -256,8 +265,9 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         * C is not an intersting species
         */
         if( IsKeepFlagSetInSpeciesNode( product ) ) {
-            END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
-            return FALSE;
+	   END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	   /*printf("fails 8\n");*/
+           return FALSE;
         }
         
         
@@ -267,6 +277,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetModifierEdges((IR_NODE*) product );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+  	    /*printf("fails 9\n");*/
             return FALSE;
         }
         
@@ -276,6 +287,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetReactantEdges( (IR_NODE*)product );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+  	    /*printf("fails 10\n");*/
             return FALSE;
         }        
         edge = GetHeadEdge( list );
@@ -283,6 +295,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetReactantEdges( (IR_NODE*)reaction );
         if( GetLinkedListSize( list ) != 1 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+ 	    /*printf("fails 11\n");*/
             return FALSE;
         }
                 
@@ -292,6 +305,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         */
         if( IsReactionReversibleInReactionNode( reaction ) ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+ 	    /*printf("fails 12\n");*/
             return FALSE;
         }
         
@@ -301,6 +315,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         kineticLaw = GetKineticLawInReactionNode( reaction );
         if( ( k2KineticLaw = CreateRateConstantKineticLaw( kineticLaw ) ) == NULL ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+	    /*printf("fails 13\n");*/
             return FALSE;
         }
 
@@ -313,6 +328,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
         list = GetModifierEdges((IR_NODE*) reaction );
         if( GetLinkedListSize( list ) > 0 ) {
             END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+ 	    /*printf("fails 14\n");*/
             return FALSE;
         }
         
@@ -328,6 +344,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
                 product = GetSpeciesInIREdge( productEdge );
                 if( species != product  ) {
                     END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+		    /*printf("fails 15\n");*/
                     return FALSE;
                 }
                 productEdge = NULL;
@@ -346,6 +363,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
                 else {
                     if( species != release ) {
                         END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+			/*printf("fails 16\n");*/
                         return FALSE;
                     }
                 }
@@ -353,6 +371,7 @@ static BOOL _IsPPTAConditionSatisfied( ABSTRACTION_METHOD *method, SPECIES *spec
             
             default:
                 END_FUNCTION("_IsPPTAConditionSatisfied", SUCCESS );
+		/*printf("fails 17\n");*/
             return FALSE;            
         }
         
