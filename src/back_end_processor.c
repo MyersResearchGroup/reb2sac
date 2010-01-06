@@ -263,6 +263,14 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseMPDEMonteCarloAnalyzer;
                 backend->useMP = 2;
             }
+            else if( strcmp( backend->encoding, "mp-event" ) == 0 ) {
+                if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
+                    return ret;
+                }
+                backend->Process = DoMPDEMonteCarloAnalysis;
+                backend->Close = CloseMPDEMonteCarloAnalyzer;
+                backend->useMP = 3;
+            }
             else {
                 fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
                 return ErrorReport( FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding );
