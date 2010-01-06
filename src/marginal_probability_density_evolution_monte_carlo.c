@@ -794,9 +794,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
             }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
-                if (eventCounter >= maxEvents) {
-                    break;
-                }
                 i++;
                 if (useMP == 2) {
                     maxTime = DBL_MAX;
@@ -868,6 +865,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 }
                 if (useMP == 3) {
                     eventCounter++;
+                    if (eventCounter >= maxEvents) {
+                        break;
+                    }
                 }
             }
             if (k == 1) {
