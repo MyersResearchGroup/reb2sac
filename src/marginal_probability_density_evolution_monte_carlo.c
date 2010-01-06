@@ -684,7 +684,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     int eventCounter = 0;
     int maxEvents = ceil(rec->timeStep);
 
-    printf("Size = %d\n", size);
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
     sdPrinter = rec->sdPrinter;
