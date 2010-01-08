@@ -898,11 +898,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 mpTimes[k - 1] = rec->time;
             }
         }
-        if (useMP == 3) {
-            if (time > nextPrintTime) {
-                time = end;
-            }
-        } else {
+        if (useMP != 3) {
             time = end;
         }
         for (l = 0; l < size; l++) {
@@ -935,6 +931,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             if (useMP == 3) {
                 time = mpTimes[index];
+                rec->time = time;
             }
         }
         if (time >= nextPrintTime && time != timeLimit) {
