@@ -899,6 +899,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
         }
         if (useMP == 3) {
+            printf("Time = %g End = %g\n", time, end);
             if (time > nextPrintTime) {
                 time = end;
             }
