@@ -755,6 +755,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         if (timeLimit < end) {
             end = timeLimit;
         }
+        printf("End = %g\n", end);
         for (k = 1; k <= rec->runs; k++) {
             eventCounter = 0;
             rec->time = time;
@@ -943,7 +944,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->time = nextPrintTime;
             rec->currentStep++;
             nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
-            printf("Print = %g\n", nextPrintTime);
+            printf("Next Print = %g\n", nextPrintTime);
             //printf("Time = %g\n", time);
             fflush(stdout);
             for (l = 0; l < size; l++) {
