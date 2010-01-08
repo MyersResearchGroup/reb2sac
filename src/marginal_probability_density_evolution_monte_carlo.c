@@ -972,7 +972,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 }
             }
         }
-        printf("Time = %g\n", rec->time);
     }
     if (rec->time >= timeLimit) {
         rec->time = timeLimit;
