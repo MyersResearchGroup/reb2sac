@@ -938,7 +938,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->time = nextPrintTime;
             rec->currentStep++;
             nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
-            printf("Time = %g\n", time);
+            //printf("Time = %g\n", time);
             fflush(stdout);
             for (l = 0; l < size; l++) {
                 species = speciesArray[l];
@@ -971,6 +971,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 }
             }
         }
+        printf("Time = %g\n", rec->time);
     }
     if (rec->time >= timeLimit) {
         rec->time = timeLimit;
