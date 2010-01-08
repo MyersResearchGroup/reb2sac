@@ -680,6 +680,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double newDistance;
     int index;
     double mpRuns[rec->runs][size];
+    double mpTimes[rec->runs];
     double n;
     int eventCounter = 0;
     int maxEvents = ceil(rec->timeStep);
@@ -876,6 +877,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesVariances[l] = 0;
                     if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                        if (useMP == 3) {
+                            mpTimes[k - 1] = rec->time;
+                        }
                     }
                 }
             } else {
@@ -890,11 +894,16 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesVariances[l] = newVary;
                     if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                        if (useMP == 3) {
+                            mpTimes[k - 1] = rec->time;
+                        }
                     }
                 }
             }
         }
-        time = end;
+        if (useMP != 3) {
+            time = end;
+        }
         for (l = 0; l < size; l++) {
             species = speciesArray[l];
             rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
@@ -909,6 +918,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 for (l = 0; l < size; l++) {
                     newDistance += pow(mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
                 }
+                if (useMP == 3) {
+                    newDistance += pow(mpTimes[k] - time, 2);
+                }
                 if (distance == -1) {
                     distance = newDistance;
                     index = k;
@@ -919,6 +931,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             for (l = 0; l < size; l++) {
                 mpRun[l] = mpRuns[index][l];
+            }
+            if (useMP == 3) {
+                time = mpTimes[index];
             }
         }
         if (time >= nextPrintTime && time != timeLimit) {
