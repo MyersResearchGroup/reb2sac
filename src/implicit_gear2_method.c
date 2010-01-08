@@ -807,9 +807,7 @@ static double fireEvents( IMPLICIT_GEAR2_SIMULATION_RECORD *rec, double time ) {
 		firstEventTime = time + deltaTime;
 	      }
 	    } else if (deltaTime == 0) {
-	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
-		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
-	      }
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
 	      fireEvent( rec->eventArray[i], rec );
 	      eventFired = TRUE;
 	    } else {
