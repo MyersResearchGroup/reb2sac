@@ -755,7 +755,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         if (timeLimit < end) {
             end = timeLimit;
         }
-        printf("End = %g\n", end);
         for (k = 1; k <= rec->runs; k++) {
             eventCounter = 0;
             rec->time = time;
@@ -796,7 +795,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
-                if (useMP == 2) {
+                if (useMP == 2 || useMP == 3) {
                     maxTime = DBL_MAX;
                 } else {
                     if (timeStep == DBL_MAX) {
@@ -878,9 +877,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesVariances[l] = 0;
                     if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
-                        if (useMP == 3) {
-                            mpTimes[k - 1] = rec->time;
-                        }
                     }
                 }
             } else {
@@ -895,11 +891,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesVariances[l] = newVary;
                     if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
-                        if (useMP == 3) {
-                            mpTimes[k - 1] = rec->time;
-                        }
                     }
                 }
+            }
+            if (useMP == 3) {
+                mpTimes[k - 1] = rec->time;
             }
         }
         if (useMP != 3) {
@@ -935,17 +931,13 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             if (useMP == 3) {
                 time = mpTimes[index];
-                if (time >= nextPrintTime) {
-                    time = nextPrintTime;
-                }
             }
         }
         if (time >= nextPrintTime && time != timeLimit) {
             rec->time = nextPrintTime;
             rec->currentStep++;
             nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
-            printf("Next Print = %g\n", nextPrintTime);
-            //printf("Time = %g\n", time);
+            printf("Time = %g\n", time);
             fflush(stdout);
             for (l = 0; l < size; l++) {
                 species = speciesArray[l];
