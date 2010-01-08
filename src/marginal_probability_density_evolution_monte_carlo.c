@@ -934,6 +934,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
         }
         if (time >= nextPrintTime && time != timeLimit) {
+            time = nextPrintTime;
             rec->time = nextPrintTime;
             rec->currentStep++;
             nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
