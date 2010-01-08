@@ -937,6 +937,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
         }
         if (time >= nextPrintTime && time != timeLimit) {
+            time = nextPrintTime;
             rec->time = nextPrintTime;
             rec->currentStep++;
             nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
@@ -1392,9 +1393,9 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
                             firstEventTime = time + deltaTime;
                         }
                     } else if (deltaTime == 0) {
-		      SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-		      fireEvent(rec->eventArray[i], rec);
-		      eventFired = TRUE;
+                        SetEventAssignmentsNextValues(rec->eventArray[i], rec);
+                        fireEvent(rec->eventArray[i], rec);
+                        eventFired = TRUE;
                     } else {
                         ErrorReport(FAILING, "_Update", "delay for event evaluates to a negative number");
                         return -2;
