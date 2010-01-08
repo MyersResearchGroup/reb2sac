@@ -895,7 +895,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 }
             }
             if (useMP == 3) {
-                mpTimes[k - 1] = rec->time;
+                if (rec->time > nextPrintTime) {
+                    mpTimes[k - 1] = nextPrintTime;
+                } else {
+                    mpTimes[k - 1] = rec->time;
+                }
             }
         }
         if (useMP != 3) {
