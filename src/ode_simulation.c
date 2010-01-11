@@ -22,47 +22,47 @@
 #include "gsl/gsl_errno.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_odeiv.h"
-#include "embedded_runge_kutta_fehlberg_method.h"
+#include "ode_simulation.h"
 
 
 static BOOL _IsModelConditionSatisfied( IR *ir );
 
 
-static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir );
-static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, int runNum );
-static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
+static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir );
+static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum );
+static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec );
 
-static RET_VAL _CleanSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
-static RET_VAL _CleanRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
+static RET_VAL _CleanSimulation( ODE_SIMULATION_RECORD *rec );
+static RET_VAL _CleanRecord( ODE_SIMULATION_RECORD *rec );
 
-static RET_VAL _CalculateReactionRates( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
-static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, REACTION *reaction );
-static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
-static RET_VAL _Print( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time );
+static RET_VAL _CalculateReactionRates( ODE_SIMULATION_RECORD *rec );
+static RET_VAL _CalculateReactionRate( ODE_SIMULATION_RECORD *rec, REACTION *reaction );
+static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECORD *rec );
+static RET_VAL _Print( ODE_SIMULATION_RECORD *rec, double time );
 
-static double fireEvents( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time );
-static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
-static void ExecuteAssignments( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
-static void SetEventAssignmentsNextValues( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
-static void SetEventAssignmentsNextValuesTime( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time );
+static double fireEvents( ODE_SIMULATION_RECORD *rec, double time );
+static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec );
+static void ExecuteAssignments( ODE_SIMULATION_RECORD *rec );
+static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *rec );
+static void SetEventAssignmentsNextValuesTime( EVENT *event, ODE_SIMULATION_RECORD *rec, double time );
 
-DLLSCOPE RET_VAL STDCALL DoEmbeddedRungeKuttaFehlbergSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
+DLLSCOPE RET_VAL STDCALL DoODESimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
     UINT runs = 1;
     char *namePrefix = NULL;
-    static EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD rec;
+    static ODE_SIMULATION_RECORD rec;
     UINT timeout = 0;
 
-    START_FUNCTION("DoEmbeddedRungeKuttaFehlbergSimulation");
+    START_FUNCTION("DoODESimulation");
 
     if( !_IsModelConditionSatisfied( ir ) ) {
-        return ErrorReport( FAILING, "DoEmbeddedRungeKuttaFehlbergSimulation",
+        return ErrorReport( FAILING, "DoODESimulation",
                             "Embedded Runge-Kutta-Fehlberg method cannot be applied to the model" );
     }
 
     if( IS_FAILED( ( ret = _InitializeRecord( &rec, backend, ir ) ) ) )  {
-        return ErrorReport( ret, "DoEmbeddedRungeKuttaFehlbergSimulation", "initialization of the record failed" );
+        return ErrorReport( ret, "DoODESimulation", "initialization of the record failed" );
     }
     runs = rec.runs;
     for( i = 1; i <= runs; i++ ) {
@@ -72,38 +72,38 @@ DLLSCOPE RET_VAL STDCALL DoEmbeddedRungeKuttaFehlbergSimulation( BACK_END_PROCES
       do {
 	SeedRandomNumberGenerators( rec.seed );
 	if( IS_FAILED( ( ret = _InitializeSimulation( &rec, i ) ) ) ) {
-	  return ErrorReport( ret, "DoEmbeddedRungeKuttaFehlbergSimulation", "initialization of the %i-th simulation failed", i );
+	  return ErrorReport( ret, "DoODESimulation", "initialization of the %i-th simulation failed", i );
 	}
 	timeout++;
       } while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
       if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
-	return ErrorReport( ret, "DoEmbeddedRungeKuttaFehlbergSimulation", "Cycle detected in initial and rule assignments" );
+	return ErrorReport( ret, "DoODESimulation", "Cycle detected in initial and rule assignments" );
       }
       if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
-        return ErrorReport( ret, "DoEmbeddedRungeKuttaFehlbergSimulation", "%i-th simulation failed at time %f", i, rec.time );
+        return ErrorReport( ret, "DoODESimulation", "%i-th simulation failed at time %f", i, rec.time );
       }
       if( IS_FAILED( ( ret = _CleanSimulation( &rec ) ) ) ) {
-        return ErrorReport( ret, "DoEmbeddedRungeKuttaFehlbergSimulation", "cleaning of the %i-th simulation failed", i );
+        return ErrorReport( ret, "DoODESimulation", "cleaning of the %i-th simulation failed", i );
       }
       printf("Run = %d\n",i);
       fflush(stdout);
     }
 
-    END_FUNCTION("DoEmbeddedRungeKuttaFehlbergSimulation", SUCCESS );
+    END_FUNCTION("DoODESimulation", SUCCESS );
     return ret;
 }
 
-DLLSCOPE RET_VAL STDCALL CloseEmbeddedRungeKuttaFehlbergSimulation( BACK_END_PROCESSOR *backend ) {
+DLLSCOPE RET_VAL STDCALL CloseODESimulation( BACK_END_PROCESSOR *backend ) {
     RET_VAL ret = SUCCESS;
-    EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec = (EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD*)(backend->_internal1);
+    ODE_SIMULATION_RECORD *rec = (ODE_SIMULATION_RECORD*)(backend->_internal1);
 
-    START_FUNCTION("CloseEmbeddedRungeKuttaFehlbergSimulation");
+    START_FUNCTION("CloseODESimulation");
 
     if( IS_FAILED( ( ret = _CleanRecord( rec ) ) ) )  {
-        return ErrorReport( ret, "CloseEmbeddedRungeKuttaFehlbergSimulation", "cleaning of the record failed" );
+        return ErrorReport( ret, "CloseODESimulation", "cleaning of the record failed" );
     }
 
-    END_FUNCTION("CloseEmbeddedRungeKuttaFehlbergSimulation",  SUCCESS );
+    END_FUNCTION("CloseODESimulation",  SUCCESS );
     return ret;
 }
 
@@ -113,7 +113,7 @@ static BOOL _IsModelConditionSatisfied( IR *ir ) {
 }
 
 
-static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir ) {
+static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
@@ -148,6 +148,7 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
     PROPERTIES *options = NULL;
 #endif
 
+    rec->encoding = backend->encoding;
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
     if (rec->reactionsSize!=0) {
@@ -449,7 +450,7 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECOR
     return ret;
 }
 
-static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, int runNum ) {
+static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
     double concentration = 0.0;
@@ -602,10 +603,10 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_R
     return ret;
 }
 
-static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     int status = GSL_SUCCESS;
-    double h = EMBEDDED_RUNGE_KUTTA_FEHLBERG_H;
+    double h = ODE_SIMULATION_H;
     double *y = rec->concentrations;
     double nextPrintTime = rec->time;
     double time = rec->time;
@@ -616,7 +617,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
     double numberSteps = rec->numberSteps;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
-    const gsl_odeiv_step_type *stepType = gsl_odeiv_step_rkf45;
+    gsl_odeiv_step_type *stepType;
     gsl_odeiv_step *step = NULL;
     gsl_odeiv_control *control = NULL;
     gsl_odeiv_evolve *evolve = NULL;
@@ -629,8 +630,20 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
         rec
     };
 
+    if (strcmp(rec->encoding,"rkf45")==0) {
+      stepType = gsl_odeiv_step_rkf45;
+    } else if (strcmp(rec->encoding,"rk8pd")==0) {
+      stepType = gsl_odeiv_step_rk8pd;
+    } else if (strcmp(rec->encoding,"rk4imp")==0) {
+      stepType = gsl_odeiv_step_rk4imp;
+    } else if (strcmp(rec->encoding,"gear1")==0) {
+      stepType = gsl_odeiv_step_gear1;
+    } else {
+      stepType = gsl_odeiv_step_gear2;
+    } 
+ 
     step = gsl_odeiv_step_alloc( stepType, size );
-    control = gsl_odeiv_control_y_new( rec->absoluteError, EMBEDDED_RUNGE_KUTTA_FEHLBERG_LOCAL_ERROR );
+    control = gsl_odeiv_control_y_new( rec->absoluteError, ODE_SIMULATION_LOCAL_ERROR );
     evolve = gsl_odeiv_evolve_alloc( size );
 
     printer = rec->printer;
@@ -679,12 +692,12 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *
     return ret;
 }
 
-static RET_VAL _CleanSimulation( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static RET_VAL _CleanSimulation( ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     return ret;
 }
 
-static RET_VAL _CleanRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static RET_VAL _CleanRecord( ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     SIMULATION_PRINTER *printer = rec->printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
@@ -708,7 +721,7 @@ static RET_VAL _CleanRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *re
     return ret;
 }
 
-static RET_VAL _Print( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time ) {
+static RET_VAL _Print( ODE_SIMULATION_RECORD *rec, double time ) {
     RET_VAL ret = SUCCESS;
     SIMULATION_PRINTER *printer = rec->printer;
 
@@ -720,7 +733,7 @@ static RET_VAL _Print( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, dou
 
 
 
-static RET_VAL _CalculateReactionRates( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static RET_VAL _CalculateReactionRates( ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int size = 0;
@@ -736,7 +749,7 @@ static RET_VAL _CalculateReactionRates( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION
 }
 
 
-static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, REACTION *reaction ) {
+static RET_VAL _CalculateReactionRate( ODE_SIMULATION_RECORD *rec, REACTION *reaction ) {
     RET_VAL ret = SUCCESS;
     double rate = 0.0;
     SPECIES *species = NULL;
@@ -754,7 +767,7 @@ static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_
     return ret;
 }
 
-static double fireEvents( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time ) {
+static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
     int i;
     double nextEventTime;
     BOOL triggerEnabled;
@@ -830,7 +843,7 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, 
     return firstEventTime;
 }
 
-static void SetEventAssignmentsNextValues( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
   double concentration = 0.0;
@@ -845,7 +858,7 @@ static void SetEventAssignmentsNextValues( EVENT *event, EMBEDDED_RUNGE_KUTTA_FE
   }
 }
 
-static void SetEventAssignmentsNextValuesTime( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time ) {
+static void SetEventAssignmentsNextValuesTime( EVENT *event, ODE_SIMULATION_RECORD *rec, double time ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
   double concentration = 0.0;
@@ -860,7 +873,7 @@ static void SetEventAssignmentsNextValuesTime( EVENT *event, EMBEDDED_RUNGE_KUTT
   }
 }
 
-static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
   double concentration = 0.0;
@@ -899,7 +912,7 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RE
 }
 
 /* Update values using assignments rules */
-static void ExecuteAssignments( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static void ExecuteAssignments( ODE_SIMULATION_RECORD *rec ) {
   UINT32 i = 0;
   UINT32 j = 0;
   double concentration = 0.0;
@@ -930,7 +943,7 @@ static void ExecuteAssignments( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD 
   }
 }
 
-static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec ) {
+static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;

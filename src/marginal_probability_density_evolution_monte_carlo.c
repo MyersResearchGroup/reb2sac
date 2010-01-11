@@ -31,6 +31,7 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time);
 static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
 static void ExecuteAssignments(MPDE_MONTE_CARLO_RECORD *rec);
 static void SetEventAssignmentsNextValues(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
+static void SetEventAssignmentsNextValuesTime( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time );
 
 DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, IR *ir) {
     RET_VAL ret = SUCCESS;
@@ -755,24 +756,23 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         if (timeLimit < end) {
             end = timeLimit;
         }
+	if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
+								  rec->reactionArray, rec->reactionsSize, 
+								  rec->constraintArray, rec->constraintsSize, 
+								  rec->evaluator,
+								  FALSE, end)) == NULL) {
+	  return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
+	}
+	decider = rec->decider;
         for (k = 1; k <= rec->runs; k++) {
             eventCounter = 0;
             rec->time = time;
             i = 0;
-            if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
-                    rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
-                    FALSE, end)) == NULL) {
-                return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
-            }
-            decider = rec->decider;
-            if (useMP != 0) {
+	    if (useMP != 0) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
                     newValue = mpRun[l];
                     SetAmountInSpeciesNode(species, newValue);
-                }
-                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-                    return ret;
                 }
             } else {
                 do {
@@ -788,11 +788,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                             newValue = 0.0;
                         SetAmountInSpeciesNode(species, newValue);
                     }
-                    if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-                        return ret;
-                    }
                 } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
             }
+	    if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+	      return ret;
+	    }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
                 if (useMP == 2 || useMP == 3) {
@@ -1428,6 +1428,21 @@ static void SetEventAssignmentsNextValues(EVENT *event, MPDE_MONTE_CARLO_RECORD 
     }
 }
 
+static void SetEventAssignmentsNextValuesTime( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double amount = 0.0;
+  UINT j;
+  BYTE varType;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+    SetEventAssignmentNextValueTime( eventAssignment, amount, time );
+  }
+}
+
 static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec) {
     LINKED_LIST *list = NULL;
     EVENT_ASSIGNMENT *eventAssignment;
@@ -1442,7 +1457,11 @@ static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec) {
         varType = GetEventAssignmentVarType(eventAssignment);
         j = GetEventAssignmentIndex(eventAssignment);
         //printf("varType = %d j = %d\n",varType,j);
-        amount = GetEventAssignmentNextValue(eventAssignment);
+	if (!GetUseValuesFromTriggerTime( event )) {
+	  amount = GetEventAssignmentNextValue( eventAssignment );
+	} else {
+	  amount = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
+	}
         //printf("conc = %g\n",amount);
         if (varType == SPECIES_EVENT_ASSIGNMENT) {
             SetAmountInSpeciesNode(rec->speciesArray[j], amount);

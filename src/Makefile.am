@@ -15,7 +15,7 @@ noinst_HEADERS = \
 				csv_simulation_printer.h	ctmc_analysis_back_end_processor.h ctmc_analyzer.h	ctmc_stationary_analysis_back_end_processor.h \
 				ctmc_stationary_analyzer.h	ctmc_transformation_checker.h \
 				default_reb2sac_properties.h	default_simulation_run_termination_decider.h	default_ts_species_level_updater.h dependency_graph.h dll_scope.h	dot_back_end_processor.h \
-				embedded_runge_kutta_fehlberg_method.h	embedded_runge_kutta_prince_dormand_method.h	emc_leaked_stationary_analyzer.h emc_simulation.h	emc_stationary_analyzer.h \
+				ode_simulation.h embedded_runge_kutta_fehlberg_method.h	embedded_runge_kutta_prince_dormand_method.h	emc_leaked_stationary_analyzer.h emc_simulation.h	emc_stationary_analyzer.h \
 				euler_method.h \
 				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h monte_carlo.h\
 				gnuplot_dat_simulation_printer.h hash_table.h	hse2_back_end_processor.h \
@@ -50,7 +50,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	degradation_stoichiometry_amplifier6.c degradation_stoichiometry_amplifier7.c \
 	degradation_stoichiometry_amplifier8.c degradation_stoichiometry_amplifier.c dependency_graph.c \
 	dimerization_reduction_level_assignment.c dimerization_reduction_method.c dimer_to_monomer_substitution_method.c \
-	dot_back_end_processor.c embedded_runge_kutta_fehlberg_method.c \
+	dot_back_end_processor.c ode_simulation.c embedded_runge_kutta_fehlberg_method.c \
 	embedded_runge_kutta_prince_dormand_method.c emc_leaked_stationary_analyzer.c emc_simulation.c \
 	emc_stationary_analyzer.c enzyme_kinetic_qssa_method.c ppta_method.c enzyme_kinetic_rapid_equilibrium_method2.c \
 	enzyme_kinetic_rapid_equilibrium_method.c euler_method.c \

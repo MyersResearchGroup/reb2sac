@@ -47,9 +47,15 @@ typedef struct {
     STRING *var;
     KINETIC_LAW *assignment;
     double nextValue;
+    LINKED_LIST *nextValueTime;
     BYTE varType;
     UINT32 index;
 } EVENT_ASSIGNMENT;
+
+typedef struct {
+  double nextValue;
+  double nextTime;
+} NEXT_VALUE_TIME;
 
 struct _EVENT_MANAGER;
 typedef struct _EVENT_MANAGER EVENT_MANAGER;
@@ -75,6 +81,7 @@ RET_VAL AddDelayInEvent( EVENT *eventDef, KINETIC_LAW *delay );
 RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assignment );
 RET_VAL RemoveEventAssignmentFromEvent( EVENT *eventDef, EVENT_ASSIGNMENT *eventAssignDef );
 EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment );
+NEXT_VALUE_TIME *CreateNextValueTime( double nextValue, double nextTime );
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime );
 void SetUseValuesFromTriggerTime( EVENT *eventDef, BOOL triggerEnabled );
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
@@ -82,9 +89,11 @@ void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
 BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef );
 UINT32 GetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef );
 double GetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef );
+double GetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double time );
 RET_VAL SetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef, BYTE varType );
 RET_VAL SetEventAssignmentIndex( EVENT_ASSIGNMENT *eventAssignDef, UINT32 index );
 RET_VAL SetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef, double nextValue );
+RET_VAL SetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double nextValue, double nextTime );
 
 EVENT_MANAGER *GetEventManagerInstance( COMPILER_RECORD_T *record );
 RET_VAL CloseEventManager( );

@@ -43,6 +43,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time );
 static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec );
 static void ExecuteAssignments( EULER_SIMULATION_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, EULER_SIMULATION_RECORD *rec );
+static void SetEventAssignmentsNextValuesTime( EVENT *event, EULER_SIMULATION_RECORD *rec, double time );
 
 DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -771,7 +772,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
 	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
-		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+		SetEventAssignmentsNextValuesTime( rec->eventArray[i], rec, time + deltaTime ); 
 	      }
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
@@ -814,6 +815,21 @@ static void SetEventAssignmentsNextValues( EVENT *event, EULER_SIMULATION_RECORD
   }
 }
 
+static void SetEventAssignmentsNextValuesTime( EVENT *event, EULER_SIMULATION_RECORD *rec, double time ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double amount = 0.0;
+  UINT j;
+  BYTE varType;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+    SetEventAssignmentNextValueTime( eventAssignment, amount, time );
+  }
+}
+
 static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
@@ -828,7 +844,11 @@ static void fireEvent( EVENT *event, EULER_SIMULATION_RECORD *rec ) {
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
-    concentration = GetEventAssignmentNextValue( eventAssignment );
+    if (!GetUseValuesFromTriggerTime( event )) {
+      concentration = GetEventAssignmentNextValue( eventAssignment );
+    } else {
+      concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
+    }
     //printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
       SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );

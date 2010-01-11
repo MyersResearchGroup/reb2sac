@@ -155,6 +155,25 @@ double GetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef ) {
     return eventAssignDef->nextValue;
 }
 
+double GetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double nextTime ) {
+    NEXT_VALUE_TIME *nextValueTimePtr = NULL;
+    double nextValue = -1;
+
+    START_FUNCTION("GetEventAssignmentNextValueTime");
+
+    ResetCurrentElement( eventAssignDef->nextValueTime );
+    while ( ( nextValueTimePtr = (NEXT_VALUE_TIME*)GetNextFromLinkedList( eventAssignDef->nextValueTime ) ) != NULL ){
+      if (nextValueTimePtr->nextTime == nextTime) {
+	nextValue = nextValueTimePtr->nextValue;
+	RemoveElementFromLinkedList( nextValueTimePtr, eventAssignDef->nextValueTime );
+	break;
+      } 
+    }
+
+    END_FUNCTION("GetEventAssignmentNextValueTime", SUCCESS );
+    return nextValue;
+}
+
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime ) {
     double *nextEventTimePtr = NULL;
     double *nextEventTimePtrRm = NULL;
@@ -213,6 +232,25 @@ RET_VAL SetEventAssignmentNextValue( EVENT_ASSIGNMENT *eventAssignDef, double ne
     eventAssignDef->nextValue = nextValue;
 
     END_FUNCTION("SetEventAssignmentNextValue", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double nextValue, double nextTime ) {
+    RET_VAL ret = SUCCESS;
+    NEXT_VALUE_TIME *nextValueTime;
+
+    START_FUNCTION("SetEventAssignmentNextValueTime");
+
+    if( ( nextValueTime = CreateNextValueTime( nextValue, nextTime ) ) == NULL ) {
+        END_FUNCTION("_SetEventAssignmentNextValueTime", FAILING );
+        return FAILING;
+    }
+    if( IS_FAILED( AddElementInLinkedList( (CADDR_T)nextValueTime, eventAssignDef->nextValueTime ) ) ) {
+        END_FUNCTION("_SetEventAssignmentNextValueTime", FAILING );
+        return FAILING;
+    }
+
+    END_FUNCTION("SetEventAssignmentNextValueTime", SUCCESS );
     return ret;
 }
 
@@ -318,9 +356,30 @@ EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment ) {
         return NULL;
     }
     eventAssignmentDef->assignment = assignment;
-    
+    eventAssignmentDef->nextValue = 0.0;
+    if( ( eventAssignmentDef->nextValueTime = CreateLinkedList( ) ) == NULL ) {
+      END_FUNCTION("_CreateEventAssignment", FAILING );
+      return NULL;
+    }    
+
     END_FUNCTION("_CreateAssignmentEvent", SUCCESS );
     return eventAssignmentDef;
+}
+
+NEXT_VALUE_TIME *CreateNextValueTime( double nextValue, double nextTime ) {
+    NEXT_VALUE_TIME *nextValueTimeDef = NULL;
+    
+    START_FUNCTION("_CreateNextValueTime");
+
+    if( ( nextValueTimeDef = (NEXT_VALUE_TIME*)MALLOC( sizeof(NEXT_VALUE_TIME) ) ) == NULL ) {
+        END_FUNCTION("_CreateNextValueTime", FAILING );
+        return NULL;
+    }
+    nextValueTimeDef->nextValue = nextValue;
+    nextValueTimeDef->nextTime = nextTime;
+
+    END_FUNCTION("_CreateNextValueTime", SUCCESS );
+    return nextValueTimeDef;
 }
 
 static EVENT * _CreateEvent( EVENT_MANAGER *manager, char *id ) {
