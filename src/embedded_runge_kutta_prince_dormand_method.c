@@ -44,6 +44,7 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
 static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec );
 static void ExecuteAssignments( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec );
+static void SetEventAssignmentsNextValuesTime( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec, double time );
 
 DLLSCOPE RET_VAL STDCALL DoEmbeddedRungeKuttaPrinceDormandSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -123,19 +124,19 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
     SPECIES **speciesArray = NULL;
     REACTION *reaction = NULL;
     REACTION **reactions = NULL;
-    COMPARTMENT *compartment = NULL;
-    COMPARTMENT **compartmentArray = NULL;
-    COMPARTMENT_MANAGER *compartmentManager;
     RULE *rule = NULL;
     RULE **ruleArray = NULL;
     RULE_MANAGER *ruleManager;
+    CONSTRAINT *constraint = NULL;
+    CONSTRAINT **constraintArray = NULL;
+    CONSTRAINT_MANAGER *constraintManager;
     EVENT *event = NULL;
     EVENT **eventArray = NULL;
     EVENT_MANAGER *eventManager;
     EVENT_ASSIGNMENT *eventAssignment;
-    CONSTRAINT *constraint = NULL;
-    CONSTRAINT **constraintArray = NULL;
-    CONSTRAINT_MANAGER *constraintManager;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentArray = NULL;
+    COMPARTMENT_MANAGER *compartmentManager;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = NULL;
     REB2SAC_SYMTAB *symTab;
@@ -261,7 +262,7 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
       }
     }
 
-    if( ( rec->concentrations = (double*)MALLOC( (rec->symbolsSize + rec->speciesSize + rec->compartmentsSize) * sizeof( double ) ) ) == NULL ) {
+    if( ( rec->concentrations = (double*)MALLOC( (rec->symbolsSize + rec->compartmentsSize + rec->speciesSize) * sizeof( double ) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for concentrations" );
     }
 
@@ -451,9 +452,9 @@ static RET_VAL _InitializeRecord( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION
 static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec, int runNum ) {
     RET_VAL ret = SUCCESS;
     char filenameStem[512];
+    double concentration = 0.0;
     double oldSize = 0.0;
     double compSize = 0.0;
-    double concentration = 0.0;
     double param = 0.0;
     double *concentrations = rec->concentrations;
     UINT32 i = 0;
@@ -462,10 +463,10 @@ static RET_VAL _InitializeSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULA
     SPECIES **speciesArray = rec->speciesArray;
     COMPARTMENT *compartment = NULL;
     COMPARTMENT **compartmentArray = rec->compartmentArray;
-    REACTION *reaction = NULL;
-    REACTION **reactionArray = rec->reactionArray;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
+    REACTION *reaction = NULL;
+    REACTION **reactionArray = rec->reactionArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
     KINETIC_LAW *law = NULL;
@@ -619,7 +620,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RE
     gsl_odeiv_step *step = NULL;
     gsl_odeiv_control *control = NULL;
     gsl_odeiv_evolve *evolve = NULL;
-    int size = rec->compartmentsSize + rec->speciesSize + rec->symbolsSize;
+    int size = rec->speciesSize + rec->compartmentsSize + rec->symbolsSize;
     gsl_odeiv_system system =
     {
         (int(*)(double , const double [], double [], void*))_Update,
@@ -660,7 +661,7 @@ static RET_VAL _RunSimulation( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RE
 	  return FAILING;
 	}
       }
-      if (time > 0.0) printf("Time = %.2f\n",time);
+      if (time > 0.0) printf("Time = %g\n",time);
       fflush(stdout);
     }
     if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
@@ -761,6 +762,7 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
     BOOL eventFired = FALSE;
     double firstEventTime = -1.0;
 
+    rec->time = time;
     do {
       eventFired = FALSE;
       for (i = 0; i < rec->eventsSize; i++) {
@@ -800,7 +802,7 @@ static double fireEvents( EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD 
 	    if (deltaTime > 0) {
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
 	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
-		SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+		SetEventAssignmentsNextValuesTime( rec->eventArray[i], rec, time + deltaTime ); 
 	      }
 	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
 		firstEventTime = time + deltaTime;
@@ -843,6 +845,21 @@ static void SetEventAssignmentsNextValues( EVENT *event, EMBEDDED_RUNGE_KUTTA_PR
   }
 }
 
+static void SetEventAssignmentsNextValuesTime( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec, double time ) {
+  LINKED_LIST *list = NULL;
+  EVENT_ASSIGNMENT *eventAssignment;
+  double concentration = 0.0;
+  UINT j;
+  BYTE varType;
+
+  list = GetEventAssignments( event );
+  ResetCurrentElement( list );
+  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
+    concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
+    SetEventAssignmentNextValueTime( eventAssignment, concentration, time );
+  }
+}
+
 static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
@@ -857,7 +874,11 @@ static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULAT
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
-    concentration = GetEventAssignmentNextValue( eventAssignment );
+    if (!GetUseValuesFromTriggerTime( event )) {
+      concentration = GetEventAssignmentNextValue( eventAssignment );
+    } else {
+      concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
+    }
     //printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
 	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
@@ -924,17 +945,18 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
     REACTION *reaction = NULL;
     COMPARTMENT *compartment = NULL;
     COMPARTMENT **compartmentsArray = rec->compartmentArray;
-    SPECIES *species = NULL;
-    SPECIES **speciesArray = rec->speciesArray;
     UINT32 symbolsSize = rec->symbolsSize;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
+    SPECIES *species = NULL;
+    SPECIES **speciesArray = rec->speciesArray;
     LINKED_LIST *edges = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     double nextEventTime;
     BOOL triggerEnabled;
     BYTE varType;
 
+    /* Update values from y[] */
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
 	if (f[i] != 0.0) {
@@ -1007,7 +1029,7 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            f[i] -= (stoichiometry * rate);
+	    f[i] -= (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                -(stoichiometry * rate));
         }
@@ -1017,11 +1039,11 @@ static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
             rate = GetReactionRate( reaction );
-            f[i] += (stoichiometry * rate);
+	    f[i] += (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                (stoichiometry * rate));
         }
-        TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), change );
+        TRACE_2( "change of %s is %g\n", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;
 }

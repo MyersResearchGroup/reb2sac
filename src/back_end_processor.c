@@ -28,11 +28,7 @@
 #include "monte_carlo.h"
 #include "euler_method.h"
 #include "nary_level_back_end_process.h"
-#include "embedded_runge_kutta_prince_dormand_method.h"
-#include "embedded_runge_kutta_fehlberg_method.h"
-#include "implicit_runge_kutta_4_method.h"
-#include "implicit_gear1_method.h"
-#include "implicit_gear2_method.h"
+#include "ode_simulation.h"
 #include "marginal_probability_density_evolution_monte_carlo.h"
 #include "type1pili_gillespie_ci.h"
 #include "ctmc_analysis_back_end_processor.h"
@@ -201,15 +197,15 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoImplicitGear1Simulation;
-                backend->Close = CloseImplicitGear1Simulation;
+                backend->Process = DoODESimulation;
+                backend->Close = CloseODESimulation;
             }
             else if(strcmp( backend->encoding, "gear2" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoImplicitGear2Simulation;
-                backend->Close = CloseImplicitGear2Simulation;
+                backend->Process = DoODESimulation;
+                backend->Close = CloseODESimulation;
             }
             else {
                 fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
@@ -324,22 +320,22 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoImplicitRungeKutta4Simulation;
-                backend->Close = CloseImplicitRungeKutta4Simulation;
+                backend->Process = DoODESimulation;
+                backend->Close = CloseODESimulation;
             }
             else if(strcmp( backend->encoding, "rk8pd" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoEmbeddedRungeKuttaPrinceDormandSimulation;
-                backend->Close = CloseEmbeddedRungeKuttaPrinceDormandSimulation;
+                backend->Process = DoODESimulation;
+                backend->Close = CloseODESimulation;
             }
             else if(strcmp( backend->encoding, "rkf45" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __ODE_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
-                backend->Process = DoEmbeddedRungeKuttaFehlbergSimulation;
-                backend->Close = CloseEmbeddedRungeKuttaFehlbergSimulation;
+                backend->Process = DoODESimulation;
+                backend->Close = CloseODESimulation;
             }
             else {
                 fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
