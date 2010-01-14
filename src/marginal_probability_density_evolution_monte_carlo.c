@@ -31,7 +31,7 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time);
 static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
 static void ExecuteAssignments(MPDE_MONTE_CARLO_RECORD *rec);
 static void SetEventAssignmentsNextValues(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
-static void SetEventAssignmentsNextValuesTime( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time );
+static void SetEventAssignmentsNextValuesTime(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time);
 
 DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, IR *ir) {
     RET_VAL ret = SUCCESS;
@@ -114,6 +114,7 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
     UINT32 k = 0;
     UINT32 size = 0;
     double printInterval = 0.0;
+    double minPrintInterval = -1.0;
     UINT32 numberSteps = 0;
     char buf[512];
     char *valueString = NULL;
@@ -332,9 +333,19 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
         }
     }
 
+    rec->minPrintInterval = -1.0;
     if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL)) == NULL) {
         if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_NUMBER_STEPS)) == NULL) {
-            rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+            if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_MINIMUM_PRINT_INTERVAL))
+                    == NULL) {
+                rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+            } else {
+                if (IS_FAILED((ret = StrToFloat(&(minPrintInterval), valueString)))) {
+                    rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+                } else {
+                    rec->minPrintInterval = minPrintInterval;
+                }
+            }
         } else {
             if (IS_FAILED((ret = StrToUINT32(&(rec->numberSteps), valueString)))) {
                 rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
@@ -685,6 +696,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double n;
     int eventCounter = 0;
     int maxEvents = ceil(rec->timeStep);
+    double minPrintInterval = rec->minPrintInterval;
 
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
@@ -723,52 +735,54 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     }
     while (rec->time < timeLimit) {
         rec->time = time;
-        if (useMP == 3) {
-            end = nextPrintTime;
-        } else if (useMP == 2) {
-            for (l = 0; l < size; l++) {
-                species = speciesArray[l];
-                newValue = mpRun[l];
-                SetAmountInSpeciesNode(species, newValue);
-            }
-            if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-                return ret;
-            }
-            if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
-                return ret;
-            }
-            if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
-                return ret;
-            }
-            if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
-                n = timeStep;
-            } else {
-                n = (timeStep / rec->totalPropensities);
-            }
-            if ((n + rec->time) > nextPrintTime) {
-                end = nextPrintTime;
-            } else {
-                end = n + rec->time;
-            }
-        } else {
-            end = rec->time + timeStep;
-        }
-        if (timeLimit < end) {
+        if (minPrintInterval >= 0.0) {
             end = timeLimit;
+        } else {
+            if (useMP == 3) {
+                end = nextPrintTime;
+            } else if (useMP == 2) {
+                for (l = 0; l < size; l++) {
+                    species = speciesArray[l];
+                    newValue = mpRun[l];
+                    SetAmountInSpeciesNode(species, newValue);
+                }
+                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                    return ret;
+                }
+                if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
+                    return ret;
+                }
+                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                    return ret;
+                }
+                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                    n = timeStep;
+                } else {
+                    n = (timeStep / rec->totalPropensities);
+                }
+                if ((n + rec->time) > nextPrintTime) {
+                    end = nextPrintTime;
+                } else {
+                    end = n + rec->time;
+                }
+            } else {
+                end = rec->time + timeStep;
+            }
+            if (timeLimit < end) {
+                end = timeLimit;
+            }
         }
-	if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
-								  rec->reactionArray, rec->reactionsSize, 
-								  rec->constraintArray, rec->constraintsSize, 
-								  rec->evaluator,
-								  FALSE, end)) == NULL) {
-	  return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
-	}
-	decider = rec->decider;
+        if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
+                rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
+                FALSE, end)) == NULL) {
+            return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
+        }
+        decider = rec->decider;
         for (k = 1; k <= rec->runs; k++) {
             eventCounter = 0;
             rec->time = time;
             i = 0;
-	    if (useMP != 0) {
+            if (useMP != 0) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
                     newValue = mpRun[l];
@@ -790,9 +804,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     }
                 } while ((decider->IsTerminationConditionMet(decider, reaction, rec->time)));
             }
-	    if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-	      return ret;
-	    }
+            if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                return ret;
+            }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
                 if (useMP == 2 || useMP == 3) {
@@ -1428,19 +1442,19 @@ static void SetEventAssignmentsNextValues(EVENT *event, MPDE_MONTE_CARLO_RECORD 
     }
 }
 
-static void SetEventAssignmentsNextValuesTime( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time ) {
-  LINKED_LIST *list = NULL;
-  EVENT_ASSIGNMENT *eventAssignment;
-  double amount = 0.0;
-  UINT j;
-  BYTE varType;
+static void SetEventAssignmentsNextValuesTime(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time) {
+    LINKED_LIST *list = NULL;
+    EVENT_ASSIGNMENT *eventAssignment;
+    double amount = 0.0;
+    UINT j;
+    BYTE varType;
 
-  list = GetEventAssignments( event );
-  ResetCurrentElement( list );
-  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
-    SetEventAssignmentNextValueTime( eventAssignment, amount, time );
-  }
+    list = GetEventAssignments(event);
+    ResetCurrentElement(list);
+    while ((eventAssignment = (EVENT_ASSIGNMENT*) GetNextFromLinkedList(list)) != NULL) {
+        amount = rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, eventAssignment->assignment);
+        SetEventAssignmentNextValueTime(eventAssignment, amount, time);
+    }
 }
 
 static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec) {
@@ -1457,11 +1471,11 @@ static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec) {
         varType = GetEventAssignmentVarType(eventAssignment);
         j = GetEventAssignmentIndex(eventAssignment);
         //printf("varType = %d j = %d\n",varType,j);
-	if (!GetUseValuesFromTriggerTime( event )) {
-	  amount = GetEventAssignmentNextValue( eventAssignment );
-	} else {
-	  amount = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
-	}
+        if (!GetUseValuesFromTriggerTime(event)) {
+            amount = GetEventAssignmentNextValue(eventAssignment);
+        } else {
+            amount = GetEventAssignmentNextValueTime(eventAssignment, rec->time);
+        }
         //printf("conc = %g\n",amount);
         if (varType == SPECIES_EVENT_ASSIGNMENT) {
             SetAmountInSpeciesNode(rec->speciesArray[j], amount);
