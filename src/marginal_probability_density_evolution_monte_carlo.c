@@ -740,7 +740,35 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     while (rec->time < timeLimit) {
         rec->time = time;
         if (minPrintInterval >= 0.0) {
-            end = timeLimit;
+            if (useMP == 3) {
+                end = timeLimit;
+            } else if (useMP == 2) {
+                for (l = 0; l < size; l++) {
+                    species = speciesArray[l];
+                    newValue = mpRun[l];
+                    SetAmountInSpeciesNode(species, newValue);
+                }
+                if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+                    return ret;
+                }
+                if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
+                    return ret;
+                }
+                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                    return ret;
+                }
+                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                    n = timeStep;
+                } else {
+                    n = (timeStep / rec->totalPropensities);
+                }
+                end = n + rec->time;
+            } else {
+                end = rec->time + timeStep;
+            }
+            if (timeLimit < end) {
+                end = timeLimit;
+            }
         } else {
             if (useMP == 3) {
                 end = nextPrintTime;
