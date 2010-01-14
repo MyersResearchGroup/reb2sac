@@ -5,9 +5,8 @@
 
 BEGIN_C_NAMESPACE
 
-
-DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir );
-DLLSCOPE RET_VAL STDCALL CloseMPDEMonteCarloAnalyzer( BACK_END_PROCESSOR *backend );
+DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, IR *ir);
+DLLSCOPE RET_VAL STDCALL CloseMPDEMonteCarloAnalyzer(BACK_END_PROCESSOR *backend);
 
 #if 0
 #define USE_BIOSPICE_TSD_FORMAT 1
@@ -29,7 +28,7 @@ typedef struct {
     UINT32 constraintsSize;
     EVENT **eventArray;
     UINT32 eventsSize;
-    REACTION *nextReaction;    
+    REACTION *nextReaction;
     SIMULATION_PRINTER *meanPrinter;
     SIMULATION_PRINTER *varPrinter;
     SIMULATION_PRINTER *sdPrinter;
@@ -38,17 +37,18 @@ typedef struct {
     double time;
     double t;
     double printInterval;
+    double minPrintInterval;
     UINT32 currentStep;
     UINT32 numberSteps;
-    double nextPrintTime;    
+    double nextPrintTime;
     double timeLimit;
     double timeStep;
     KINETIC_LAW_EVALUATER *evaluator;
     KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
     double totalPropensities;
     UINT32 seed;
-    UINT32 runs; 
-    char *outDir; 
+    UINT32 runs;
+    char *outDir;
     int startIndex;
     double *oldSpeciesMeans;
     double *oldSpeciesVariances;
@@ -57,8 +57,6 @@ typedef struct {
     double *speciesSD;
     int useMP;
 } MPDE_MONTE_CARLO_RECORD;
-
-
 
 END_C_NAMESPACE
 
