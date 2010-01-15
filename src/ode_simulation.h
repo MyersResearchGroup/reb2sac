@@ -59,6 +59,7 @@ typedef struct {
     double *concentrations;
     double time;
     UINT32 numberSteps;
+    double minPrintInterval;
     double nextPrintTime;    
     double timeLimit;
     double timeStep;

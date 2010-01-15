@@ -126,6 +126,7 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     UINT32 l = 0;
     UINT32 algebraicVars = 0;
     double printInterval = 0.0;
+    double minPrintInterval = 0.0;
     char buf[512];
     char *valueString = NULL;
     SPECIES *species = NULL;
@@ -422,21 +423,30 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
         }
     }
 
-    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
-      if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
-      } else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(rec->numberSteps), valueString ) ) ) ) {
-            rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
-        } 
-      }
-    }
-    else {
-        if( IS_FAILED( ( ret = StrToFloat( &(printInterval), valueString ) ) ) ) {
+    rec->minPrintInterval = -1.0;
+    if ((valueString = properties->GetProperty(properties, ODE_SIMULATION_PRINT_INTERVAL)) == NULL) {
+        if ((valueString = properties->GetProperty(properties, ODE_SIMULATION_NUMBER_STEPS)) == NULL) {
+            if ((valueString = properties->GetProperty(properties, ODE_SIMULATION_MINIMUM_PRINT_INTERVAL))
+                    == NULL) {
+                rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+            } else {
+                if (IS_FAILED((ret = StrToFloat(&(minPrintInterval), valueString)))) {
+                    rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+                } else {
+                    rec->minPrintInterval = minPrintInterval;
+                }
+            }
+        } else {
+            if (IS_FAILED((ret = StrToUINT32(&(rec->numberSteps), valueString)))) {
+                rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+            }
+        }
+    } else {
+        if (IS_FAILED((ret = StrToFloat(&(printInterval), valueString)))) {
             rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
         } else {
-	  rec->numberSteps = rec->timeLimit / printInterval;
-	}
+            rec->numberSteps = rec->timeLimit / printInterval;
+        }
     }
 
 #if GET_SEED_FROM_COMMAND_LINE
@@ -732,8 +742,10 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     double h = ODE_SIMULATION_H;
     double *y = rec->concentrations;
     double nextPrintTime = rec->time;
+    double minPrintInterval = rec->minPrintInterval;
     double time = rec->time;
     double timeStep = rec->timeStep;
+    double timeLimit = rec->timeLimit;
     double nextEventTime;
     double maxTime;
     int curStep = 0;
@@ -776,12 +788,25 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	return ret;
       }
       curStep++;
-      nextPrintTime = (curStep/numberSteps) * rec->timeLimit;
+      if (minPrintInterval == -1.0) {
+	nextPrintTime = (curStep/numberSteps) * timeLimit;
+      } else {
+	nextPrintTime = time + minPrintInterval;
+	if (nextPrintTime > timeLimit) 
+	  nextPrintTime = timeLimit;
+      }
       while( time < nextPrintTime ) {
 	if ((timeStep == DBL_MAX) || (maxTime + timeStep > nextPrintTime)) {
-	  maxTime = nextPrintTime;
+	  if (minPrintInterval == -1.0) {
+	    maxTime = nextPrintTime;
+	  } else {
+	    maxTime = timeLimit;
+	  }
 	} else {
 	  maxTime = maxTime + timeStep;
+	  if (maxTime > timeLimit) {
+	    maxTime = timeLimit;
+	  }
 	}
 	nextEventTime = fireEvents( rec, time );
 	if (nextEventTime==-2.0) {

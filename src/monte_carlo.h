@@ -57,6 +57,7 @@ typedef struct {
     double t;
     UINT32 currentStep;
     UINT32 numberSteps;
+    double minPrintInterval;
     double nextPrintTime;    
     double timeLimit;
     double timeStep;
