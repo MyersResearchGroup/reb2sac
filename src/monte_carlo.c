@@ -141,6 +141,7 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
     UINT32 size = 0;
     UINT32 algebraicVars = 0;
     double printInterval = 0.0;
+    double minPrintInterval = 0.0;
     char buf[512];
     char *valueString = NULL;
     SPECIES *species = NULL;
@@ -342,21 +343,30 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
         }
     }
 
-    if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
-      if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
-      } else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(rec->numberSteps), valueString ) ) ) ) {
-            rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
-        } 
-      }
-    }
-    else {
-        if( IS_FAILED( ( ret = StrToFloat( &(printInterval), valueString ) ) ) ) {
+    rec->minPrintInterval = -1.0;
+    if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL)) == NULL) {
+        if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_NUMBER_STEPS)) == NULL) {
+            if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_MINIMUM_PRINT_INTERVAL))
+                    == NULL) {
+                rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+            } else {
+                if (IS_FAILED((ret = StrToFloat(&(minPrintInterval), valueString)))) {
+                    rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+                } else {
+                    rec->minPrintInterval = minPrintInterval;
+                }
+            }
+        } else {
+            if (IS_FAILED((ret = StrToUINT32(&(rec->numberSteps), valueString)))) {
+                rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
+            }
+        }
+    } else {
+        if (IS_FAILED((ret = StrToFloat(&(printInterval), valueString)))) {
             rec->numberSteps = DEFAULT_MONTE_CARLO_SIMULATION_NUMBER_STEPS_VALUE;
         } else {
-	  rec->numberSteps = rec->timeLimit / printInterval;
-	}
+            rec->numberSteps = rec->timeLimit / printInterval;
+        }
     }
 
 #if GET_SEED_FROM_COMMAND_LINE
@@ -1000,17 +1010,30 @@ static RET_VAL _Print( MONTE_CARLO_RECORD *rec ) {
     double time = rec->time;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
-
-    while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
-      if (nextPrintTime > 0) {
-	printf("Time = %g\n",nextPrintTime);
-	fflush(stdout);
+    
+    if (rec->minPrintInterval == -1.0) {
+      while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
+	if (nextPrintTime > 0) {
+	  printf("Time = %g\n",nextPrintTime);
+	  fflush(stdout);
+	}
+	if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
+	  return ret;
+	}
+	rec->currentStep++;
+	nextPrintTime = (rec->currentStep * rec->timeLimit)/numberSteps;
       }
-      if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
-	return ret;
+    } else {
+      if (( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )) {
+	if (nextPrintTime > 0) {
+	  printf("Time = %g\n",nextPrintTime);
+	  fflush(stdout);
+	}
+	if( IS_FAILED( ( ret = printer->PrintValues( printer, time ) ) ) ) {
+	  return ret;
+	}
+	nextPrintTime = time + rec->minPrintInterval;
       }
-      rec->currentStep++;
-      nextPrintTime = (rec->currentStep * rec->timeLimit)/numberSteps;
     }
     rec->nextPrintTime = nextPrintTime;
     return ret;
