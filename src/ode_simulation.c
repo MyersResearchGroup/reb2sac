@@ -19,9 +19,12 @@
  ***************************************************************************/
 #include <float.h>
 #include <math.h>
+#include "gsl/gsl_vector.h"
+#include "gsl/gsl_multiroots.h"
 #include "gsl/gsl_errno.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_odeiv.h"
+#include "gsl/gsl_linalg.h"
 #include "ode_simulation.h"
 
 
@@ -45,6 +48,8 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec );
 static void ExecuteAssignments( ODE_SIMULATION_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *rec );
 static void SetEventAssignmentsNextValuesTime( EVENT *event, ODE_SIMULATION_RECORD *rec, double time );
+static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec );
+static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoODESimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -117,6 +122,9 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
+    UINT32 k = 0;
+    UINT32 l = 0;
+    UINT32 algebraicVars = 0;
     double printInterval = 0.0;
     char buf[512];
     char *valueString = NULL;
@@ -143,6 +151,9 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     COMPILER_RECORD_T *compRec = backend->record;
     LINKED_LIST *list = NULL;
     REB2SAC_PROPERTIES *properties = NULL;
+    double stoichiometry = 0.0;
+    LINKED_LIST *edges = NULL;
+    IR_EDGE *edge = NULL;
 
 #if GET_SEED_FROM_COMMAND_LINE
     PROPERTIES *options = NULL;
@@ -151,6 +162,7 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     rec->encoding = backend->encoding;
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
+    rec->numberFastReactions = 0;
     if (rec->reactionsSize!=0) {
       if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
@@ -160,6 +172,12 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
       while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
         reactions[i] = reaction;
         i++;
+	if (IsReactionFastInReactionNode( reaction )) {
+	  rec->numberFastReactions++;
+	  if (IsReactionReversibleInReactionNode( reaction )) {
+	    rec->numberFastReactions++;
+	  }
+	}
       }
     }
     rec->reactionArray = reactions;
@@ -175,10 +193,14 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
       }
     }
     i = 0;
+    rec->algebraicRulesSize = 0;
     ResetCurrentElement( list );
     while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
-        ruleArray[i] = rule;
-        i++;
+      ruleArray[i] = rule;
+      i++;
+      if ( GetRuleType( rule ) == RULE_TYPE_ALGEBRAIC ) {
+	rec->algebraicRulesSize++;
+      }
     }
     rec->ruleArray = ruleArray;
 
@@ -196,6 +218,9 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     ResetCurrentElement( list );
     while( ( symbol = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
         symbolArray[i] = symbol;
+	if (IsSymbolAlgebraic( symbol )) {
+	  algebraicVars++;
+	}
         i++;
     }
     rec->symbolArray = symbolArray;
@@ -214,6 +239,9 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     ResetCurrentElement( list );
     while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
         compartmentArray[i] = compartment;
+	if (IsCompartmentAlgebraic( compartment )) {
+	  algebraicVars++;
+	}
         i++;
     }
     rec->compartmentArray = compartmentArray;
@@ -225,13 +253,102 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for species array" );
       }
     }
+
     i = 0;
+    rec->numberFastSpecies = 0;
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
+	if (IsSpeciesNodeAlgebraic( species )) {
+	  algebraicVars++;
+	}
+	if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+	  rec->numberFastSpecies++;
+	}
         i++;
     }
+    if (rec->numberFastSpecies > 0) {
+      if( ( rec->fastCons = (double*)MALLOC( rec->numberFastSpecies * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for fastCons array" );
+      }
+      /*
+      rec->fastStoicMatrix = gsl_matrix_alloc (rec->numberFastSpecies, rec->numberFastReactions);
+      k = 0;
+      for (i = 0; i < rec->speciesSize; i++) {
+	species = speciesArray[i];
+	if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+	  l = 0;
+	  for(j = 0; j < rec->reactionsSize; j++ ) {
+	    reaction = rec->reactionArray[j];
+	    if (IsReactionFastInReactionNode( reaction )) {
+	      stoichiometry = 0.0;
+	      edges = GetReactantsInReactionNode( reaction );
+	      ResetCurrentElement( edges );
+	      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+		if (species == GetSpeciesInIREdge( edge )) {
+		  stoichiometry -= GetStoichiometryInIREdge( edge );
+		}
+	      }
+	      edges = GetProductsInReactionNode( reaction );
+	      ResetCurrentElement( edges );
+	      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+		if (species == GetSpeciesInIREdge( edge )) {
+		  stoichiometry += GetStoichiometryInIREdge( edge );
+		}
+	      }
+	      printf("k = %d l = %d stoic = %g\n",k,l,stoichiometry);
+	      gsl_matrix_set (rec->fastStoicMatrix, k, l, stoichiometry);
+	      l++;
+	      if (IsReactionReversibleInReactionNode( reaction )) {
+		printf("k = %d l = %d stoic = %g\n",k,l,stoichiometry);
+		gsl_matrix_set (rec->fastStoicMatrix, k, l, (-1)*stoichiometry);
+		l++;
+	      }
+	    }
+	  }
+	  k++;
+	}
+      }
+      gsl_matrix *V = gsl_matrix_alloc (rec->numberFastReactions,rec->numberFastReactions);
+      gsl_vector *S = gsl_vector_alloc (rec->numberFastReactions);
+      gsl_vector *work = gsl_vector_alloc (rec->numberFastReactions);
+      printf("A:\n");
+      for (i = 0; i < rec->numberFastSpecies; i++) {
+	for (j = 0; j < rec->numberFastReactions; j++) {
+	  printf("%g ",gsl_matrix_get(rec->fastStoicMatrix,i,j));
+	}
+	printf("\n");
+      }
+      gsl_linalg_SV_decomp(rec->fastStoicMatrix,V,S,work);
+      printf("U:\n");
+      for (i = 0; i < rec->numberFastSpecies; i++) {
+	for (j = 0; j < rec->numberFastReactions; j++) {
+	  printf("%g ",gsl_matrix_get(rec->fastStoicMatrix,i,j));
+	}
+	printf("\n");
+      }
+      printf("S:\n");
+      for (i = 0; i < rec->numberFastReactions; i++) {
+	printf("%g ",gsl_vector_get(S,i));
+      }
+      printf("\n");
+      printf("V:\n");
+      for (i = 0; i < rec->numberFastReactions; i++) {
+	for (j = 0; j < rec->numberFastReactions; j++) {
+	  printf("%g ",gsl_matrix_get(V,i,j));
+	}
+	printf("\n");
+      }
+      */
+    }
+
     rec->speciesArray = speciesArray;
+    if ( algebraicVars > rec->algebraicRulesSize ) {
+      printf("av=%d ar=%d\n",algebraicVars,rec->algebraicRulesSize);
+      return ErrorReport( FAILING, "_InitializeRecord", "model underdetermined" );
+    } else if ( algebraicVars < rec->algebraicRulesSize ) {
+      return ErrorReport( FAILING, "_InitializeRecord", "model overdetermined" );
+    } 
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
@@ -597,6 +714,12 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
     	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
       }
     }
+    if (rec->algebraicRulesSize > 0) {
+      EvaluateAlgebraicRules( rec );
+    }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
+    }
 
     if (change)
       return CHANGE;
@@ -667,9 +790,13 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
 	  maxTime = nextEventTime;
 	}
+	if (rec->numberFastSpecies > 0) {
+	  ExecuteFastReactions( rec );
+	}
 	status = gsl_odeiv_evolve_apply( evolve, control, step,
 					 &system, &time, maxTime,
 					 &h, y );
+
 	if( status != GSL_SUCCESS ) {
 	  return FAILING;
 	}
@@ -838,6 +965,9 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
       }
       if (eventFired) {
 	ExecuteAssignments( rec );
+	if (rec->algebraicRulesSize > 0) {
+	  EvaluateAlgebraicRules( rec );
+	}
       }
     } while (eventFired);
     return firstEventTime;
@@ -854,7 +984,7 @@ static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-    SetEventAssignmentNextValue( eventAssignment, concentration );
+    SetEventAssignmentNextValueTime( eventAssignment, concentration, rec->time );
   }
 }
 
@@ -943,6 +1073,308 @@ static void ExecuteAssignments( ODE_SIMULATION_RECORD *rec ) {
   }
 }
 
+int ODE_print_state (size_t iter,gsl_multiroot_fsolver * s,int n) {
+  UINT32 i = 0;
+
+  printf("i= %d x = [ ",iter);
+  for (i = 0; i < n; i++) {
+    printf(" %g ",gsl_vector_get (s->x, i));
+  }
+  printf("] f = [ ");
+  for (i = 0; i < n; i++) {
+    printf(" %g ",gsl_vector_get (s->f, i));
+  }
+  printf("]\n");
+}
+
+int ODEalgebraicRules(const gsl_vector * x, void *params, gsl_vector * f) {
+  UINT32 i = 0;
+  UINT32 j;
+  double amount = 0.0;
+  ODE_SIMULATION_RECORD *rec = ((ODE_SIMULATION_RECORD*)params);
+  SPECIES *species = NULL;
+  COMPARTMENT *compartment = NULL;
+  REB2SAC_SYMBOL *symbol = NULL;
+  
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (IsSpeciesNodeAlgebraic( species )) {
+      amount = gsl_vector_get (x, j);
+      j++; 
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	SetAmountInSpeciesNode( species, amount );
+      } else {
+	SetConcentrationInSpeciesNode( species, amount );
+      }
+    }
+  }
+  for( i = 0; i < rec->compartmentsSize; i++ ) {
+    compartment = rec->compartmentArray[i];
+    if (IsCompartmentAlgebraic( compartment )) {
+      amount = gsl_vector_get (x, j);
+      j++;
+      SetCurrentSizeInCompartment( compartment, amount );
+    }
+  }
+  for( i = 0; i < rec->symbolsSize; i++ ) {
+    symbol = rec->symbolArray[i];
+    if (IsSymbolAlgebraic( symbol )) {
+      amount = gsl_vector_get (x, j);
+      j++;
+      SetCurrentRealValueInSymbol( symbol, amount );
+    }
+  }
+  j = 0;
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ALGEBRAIC ) {
+      amount = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      gsl_vector_set (f, j, amount);
+      j++;
+    } 
+  }
+     
+  return GSL_SUCCESS;
+}
+
+static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
+  const gsl_multiroot_fsolver_type *T;
+  gsl_multiroot_fsolver *s;
+  SPECIES *species = NULL;
+  COMPARTMENT *compartment = NULL;
+  REB2SAC_SYMBOL *symbol = NULL;
+     
+  int status;
+  size_t i, j, iter = 0;
+  double amount;
+
+  const size_t n = rec->algebraicRulesSize;
+
+  gsl_multiroot_function f = {&ODEalgebraicRules, n, rec};
+
+  gsl_vector *x = gsl_vector_alloc (n);
+  
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (IsSpeciesNodeAlgebraic( species )) {
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	amount = GetAmountInSpeciesNode( species );
+      } else {
+	amount = GetConcentrationInSpeciesNode( species );
+      }
+      gsl_vector_set (x, j, amount);
+      j++;
+    } 
+  }
+  for( i = 0; i < rec->compartmentsSize; i++ ) {
+    compartment = rec->compartmentArray[i];
+    if (IsCompartmentAlgebraic( compartment )) {
+      amount = GetCurrentSizeInCompartment( compartment );
+      gsl_vector_set (x, j, amount);
+      j++;
+    }
+  }
+  for( i = 0; i < rec->symbolsSize; i++ ) {
+    symbol = rec->symbolArray[i];
+    if (IsSymbolAlgebraic( symbol )) {
+      amount = GetCurrentRealValueInSymbol( symbol );
+      gsl_vector_set (x, j, amount);
+      j++;
+    }
+  }
+     
+  T = gsl_multiroot_fsolver_hybrids;
+  s = gsl_multiroot_fsolver_alloc (T, n);
+  gsl_multiroot_fsolver_set (s, &f, x);
+     
+  //ODE_print_state (iter, s, n);
+     
+  do {
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+      
+      //ODE_print_state (iter, s, n);
+      
+      if (status)   /* check if solver is stuck */
+	break;
+      
+      status = gsl_multiroot_test_residual (s->f, 1e-7);
+  } while (status == GSL_CONTINUE && iter < 1000);
+     
+  //printf ("status = %s\n", gsl_strerror (status));
+     
+  gsl_multiroot_fsolver_free (s);
+  gsl_vector_free (x);
+  return 0;
+}
+
+int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
+  RET_VAL ret = SUCCESS;
+  UINT32 i = 0;
+  UINT32 j;
+  double amount = 0.0;
+  ODE_SIMULATION_RECORD *rec = ((ODE_SIMULATION_RECORD*)params);
+  SPECIES *species = NULL;
+  REACTION *reaction = NULL;
+  LINKED_LIST *edges = NULL;
+  IR_EDGE *edge = NULL;
+  double stoichiometry = 0.0;
+  BOOL boundary = FALSE;
+
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      //if (IsSpeciesNodeFast( species )) {
+      amount = gsl_vector_get (x, j);
+      j++; 
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	SetAmountInSpeciesNode( species, amount );
+	rec->concentrations[i] = amount;
+      } else {
+	SetConcentrationInSpeciesNode( species, amount );
+	rec->concentrations[i] = amount;
+      }
+    }
+  }
+  j = 0;
+  if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
+    return GSL_FAILURE;
+  }
+  for( i = 0; i < rec->reactionsSize; i++ ) {
+    reaction = rec->reactionArray[i];
+    if (IsReactionFastInReactionNode( reaction )) {
+      amount = 0.0;
+      edges = GetReactantsInReactionNode( reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+      }
+      edges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+      }
+      amount -= rec->fastCons[j];
+      gsl_vector_set (f, j, amount);
+      j++;
+      if (!boundary) {
+	amount = GetReactionRate( reaction );
+	gsl_vector_set (f, j, amount);
+	j++;
+      }
+    }
+  } 
+       
+  return GSL_SUCCESS;
+}
+
+static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
+  const gsl_multiroot_fsolver_type *T;
+  gsl_multiroot_fsolver *s;
+  SPECIES *species = NULL;
+  REACTION *reaction = NULL;
+  LINKED_LIST *edges = NULL;
+  IR_EDGE *edge = NULL;
+  double stoichiometry = 0.0;
+  int status;
+  size_t i, j, iter = 0;
+  double amount;
+
+  const size_t n = rec->numberFastSpecies;
+
+  j=0;
+  for( i = 0; i < rec->reactionsSize; i++ ) {
+    reaction = rec->reactionArray[i];
+    if (IsReactionFastInReactionNode( reaction )) {
+      amount = 0.0;
+      edges = GetReactantsInReactionNode( reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+      }
+      edges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+      }
+      rec->fastCons[j] = amount;
+      j++;
+    }
+  } 
+
+  gsl_multiroot_function f = {&ODEfastReactions, n, rec};
+
+  gsl_vector *x = gsl_vector_alloc (n);
+  
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	amount = GetAmountInSpeciesNode( species );
+      } else {
+	amount = GetConcentrationInSpeciesNode( species );
+      }
+      gsl_vector_set (x, j, amount);
+      j++;
+    } 
+  }
+     
+  T = gsl_multiroot_fsolver_hybrids;
+  s = gsl_multiroot_fsolver_alloc (T, n);
+  gsl_multiroot_fsolver_set (s, &f, x);
+
+  //printf("time = %g\n",rec->time);
+  //ODE_print_state (iter, s, n);
+     
+  do {
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+      
+      //ODE_print_state (iter, s, n);
+      
+      if (status)   /* check if solver is stuck */
+	break;
+      
+      status = gsl_multiroot_test_residual (s->f, 1e-7);
+  } while (status == GSL_CONTINUE && iter < 1000);
+     
+  //printf ("status = %s\n", gsl_strerror (status));
+     
+  gsl_multiroot_fsolver_free (s);
+  gsl_vector_free (x);
+  return 0;
+}
+
 static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
@@ -1003,6 +1435,9 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     }
 
     ExecuteAssignments( rec );
+    if (rec->algebraicRulesSize > 0) {
+      EvaluateAlgebraicRules( rec );
+    }
 
     /* Update rates using rate rules */
     for (i = 0; i < rec->rulesSize; i++) {
@@ -1033,7 +1468,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     for( i = 0; i < speciesSize; i++ ) {
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
-	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	/* size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) ); */
 	TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ),
             concentration );
         edges = GetReactantEdges( (IR_NODE*)species );
@@ -1041,6 +1476,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
+	    if (IsReactionFastInReactionNode( reaction )) continue;
             rate = GetReactionRate( reaction );
 	    f[i] -= (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
@@ -1051,6 +1487,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
+	    if (IsReactionFastInReactionNode( reaction )) continue;
             rate = GetReactionRate( reaction );
 	    f[i] += (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),

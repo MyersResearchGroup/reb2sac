@@ -1614,7 +1614,6 @@ static RET_VAL _PrintListOfSpeciesForSBML( IR *ir, FILE *file, UINT32 tabCount )
 
 static RET_VAL _PrintSpeciesForSBML( SPECIES *species, FILE *file, UINT32 tabCount ) {
     RET_VAL ret = SUCCESS;
-    int charge = 0;
     double initialQuantity = 0.0;
     COMPARTMENT *compartment = NULL;
     UNIT_DEFINITION *unitDef = NULL;
@@ -1662,11 +1661,6 @@ static RET_VAL _PrintSpeciesForSBML( SPECIES *species, FILE *file, UINT32 tabCou
     flag = HasBoundaryConditionInSpeciesNode( species );
     if( flag ) {
         fprintf( file, " boundaryCondition=\"true\"" );
-    }
-    
-    if( IsChargeSetInSpeciesNode( species ) ) {
-        charge = GetChargeInSpeciesNode( species );
-        fprintf( file, " charge=\"%i\"", charge );                
     }
     
     flag = IsSpeciesNodeConstant( species );

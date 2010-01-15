@@ -1,5 +1,7 @@
 #include <math.h>
 #include <float.h>
+#include "gsl/gsl_vector.h"
+#include "gsl/gsl_multiroots.h"
 #include "marginal_probability_density_evolution_monte_carlo.h"
 
 static BOOL _IsModelConditionSatisfied(IR *ir);
@@ -31,7 +33,8 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time);
 static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
 static void ExecuteAssignments(MPDE_MONTE_CARLO_RECORD *rec);
 static void SetEventAssignmentsNextValues(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
-static void SetEventAssignmentsNextValuesTime(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time);
+static void SetEventAssignmentsNextValuesTime( EVENT *event, MPDE_MONTE_CARLO_RECORD *rec, double time );
+static RET_VAL EvaluateAlgebraicRules( MPDE_MONTE_CARLO_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, IR *ir) {
     RET_VAL ret = SUCCESS;
@@ -113,6 +116,7 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
     UINT32 j = 0;
     UINT32 k = 0;
     UINT32 size = 0;
+    UINT32 algebraicVars = 0;
     double printInterval = 0.0;
     double minPrintInterval = -1.0;
     UINT32 numberSteps = 0;
@@ -180,8 +184,8 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
         }
     }
     i = 0;
-    ResetCurrentElement(list);
-    while ((rule = (RULE*) GetNextFromLinkedList(list)) != NULL) {
+    ResetCurrentElement( list );
+    while( ( rule = (RULE*)GetNextFromLinkedList( list ) ) != NULL ) {
         ruleArray[i] = rule;
         i++;
     }
@@ -201,6 +205,9 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
     ResetCurrentElement(list);
     while ((symbol = (REB2SAC_SYMBOL*) GetNextFromLinkedList(list)) != NULL) {
         symbolArray[i] = symbol;
+	if (IsSymbolAlgebraic( symbol )) {
+	  algebraicVars++;
+	}
         i++;
     }
     rec->symbolArray = symbolArray;
@@ -219,6 +226,9 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
     ResetCurrentElement(list);
     while ((compartment = (COMPARTMENT*) GetNextFromLinkedList(list)) != NULL) {
         compartmentArray[i] = compartment;
+	if (IsCompartmentAlgebraic( compartment )) {
+	  algebraicVars++;
+	}
         i++;
     }
     rec->compartmentArray = compartmentArray;
@@ -263,6 +273,9 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
         newSpeciesMeans[i] = 0;
         newSpeciesVariances[i] = 0;
         speciesSD[i] = 0;
+	if (IsSpeciesNodeAlgebraic( species )) {
+	  algebraicVars++;
+	}
         i++;
     }
     rec->speciesArray = speciesArray;
@@ -271,6 +284,11 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
     rec->newSpeciesMeans = newSpeciesMeans;
     rec->newSpeciesVariances = newSpeciesVariances;
     rec->speciesSD = speciesSD;
+    if ( algebraicVars > rec->algebraicRulesSize ) {
+      return ErrorReport( FAILING, "_InitializeRecord", "model underdetermined" );
+    } else if ( algebraicVars < rec->algebraicRulesSize ) {
+      return ErrorReport( FAILING, "_InitializeRecord", "model overdetermined" );
+    } 
 
     for (i = 0; i < rec->rulesSize; i++) {
         if (GetRuleType(rec->ruleArray[i]) == RULE_TYPE_ASSIGNMENT || GetRuleType(rec->ruleArray[i]) == RULE_TYPE_RATE) {
@@ -654,6 +672,9 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     }
     if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, 0)))) {
         return ret;
+    }
+    if (rec->algebraicRulesSize > 0) {
+      EvaluateAlgebraicRules( rec );
     }
 
     if (change)
@@ -1458,6 +1479,9 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
         }
         if (eventFired) {
             ExecuteAssignments(rec);
+	    if (rec->algebraicRulesSize > 0) {
+	      EvaluateAlgebraicRules( rec );
+	    }
         }
     } while (eventFired);
     return firstEventTime;
@@ -1474,7 +1498,7 @@ static void SetEventAssignmentsNextValues(EVENT *event, MPDE_MONTE_CARLO_RECORD 
     ResetCurrentElement(list);
     while ((eventAssignment = (EVENT_ASSIGNMENT*) GetNextFromLinkedList(list)) != NULL) {
         amount = rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, eventAssignment->assignment);
-        SetEventAssignmentNextValue(eventAssignment, amount);
+        SetEventAssignmentNextValueTime(eventAssignment, amount, rec->time);
     }
 }
 
@@ -1551,6 +1575,133 @@ static void ExecuteAssignments(MPDE_MONTE_CARLO_RECORD *rec) {
             }
         }
     }
+}
+
+int MPDEalgebraicRules(const gsl_vector * x, void *params, gsl_vector * f) {
+  UINT32 i = 0;
+  UINT32 j = 0;
+  double amount = 0.0;
+  MPDE_MONTE_CARLO_RECORD *rec = ((MPDE_MONTE_CARLO_RECORD*)params);
+  SPECIES *species = NULL;
+  COMPARTMENT *compartment = NULL;
+  REB2SAC_SYMBOL *symbol = NULL;
+  
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (IsSpeciesNodeAlgebraic( species )) {
+      amount = gsl_vector_get (x, j);
+      j++; 
+      SetAmountInSpeciesNode( species, amount );
+    }
+  }
+  for( i = 0; i < rec->compartmentsSize; i++ ) {
+    compartment = rec->compartmentArray[i];
+    if (IsCompartmentAlgebraic( compartment )) {
+      amount = gsl_vector_get (x, j);
+      j++;
+      SetCurrentSizeInCompartment( compartment, amount );
+    }
+  }
+  for( i = 0; i < rec->symbolsSize; i++ ) {
+    symbol = rec->symbolArray[i];
+    if (IsSymbolAlgebraic( symbol )) {
+      amount = gsl_vector_get (x, j);
+      j++;
+      SetCurrentRealValueInSymbol( symbol, amount );
+    }
+  }
+  j = 0;
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ALGEBRAIC ) {
+      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      gsl_vector_set (f, j, amount);
+      j++;
+    } 
+  }
+     
+  return GSL_SUCCESS;
+}
+
+int MPDE_print_state (size_t iter,gsl_multiroot_fsolver * s,int n) {
+  UINT32 i = 0;
+
+  printf("x = [ ");
+  for (i = 0; i < n; i++) {
+    printf(" %g ",gsl_vector_get (s->x, i));
+  }
+  printf("] f = [ ");
+  for (i = 0; i < n; i++) {
+    printf(" %g ",gsl_vector_get (s->f, i));
+  }
+  printf("]\n");
+}
+
+static RET_VAL EvaluateAlgebraicRules( MPDE_MONTE_CARLO_RECORD *rec ) {
+  const gsl_multiroot_fsolver_type *T;
+  gsl_multiroot_fsolver *s;
+  SPECIES *species = NULL;
+  COMPARTMENT *compartment = NULL;
+  REB2SAC_SYMBOL *symbol = NULL;
+     
+  int status;
+  size_t i, j, iter = 0;
+  double amount;
+
+  const size_t n = rec->algebraicRulesSize;
+
+  gsl_multiroot_function f = {&MPDEalgebraicRules, n, rec};
+  gsl_vector *x = gsl_vector_alloc (n);
+     
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (IsSpeciesNodeAlgebraic( species )) {
+      amount = GetAmountInSpeciesNode( species );
+      gsl_vector_set (x, j, amount);
+      j++;
+    } 
+  }
+  for( i = 0; i < rec->compartmentsSize; i++ ) {
+    compartment = rec->compartmentArray[i];
+    if (IsCompartmentAlgebraic( compartment )) {
+      amount = GetCurrentSizeInCompartment( compartment );
+      gsl_vector_set (x, j, amount);
+      j++;
+    }
+  }
+  for( i = 0; i < rec->symbolsSize; i++ ) {
+    symbol = rec->symbolArray[i];
+    if (IsSymbolAlgebraic( symbol )) {
+      amount = GetCurrentRealValueInSymbol( symbol );
+      gsl_vector_set (x, j, amount);
+      j++;
+    }
+  }
+     
+  T = gsl_multiroot_fsolver_hybrids;
+  s = gsl_multiroot_fsolver_alloc (T, n);
+  gsl_multiroot_fsolver_set (s, &f, x);
+     
+  //ODE_print_state (iter, s, n);
+     
+  do {
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+      
+      //ODE_print_state (iter, s, n);
+      
+      if (status)   /* check if solver is stuck */
+	break;
+      
+      status = gsl_multiroot_test_residual (s->f, 1e-7);
+  } while (status == GSL_CONTINUE && iter < 1000);
+     
+  //printf ("status = %s\n", gsl_strerror (status));
+     
+  gsl_multiroot_fsolver_free (s);
+  gsl_vector_free (x);
+  return 0;
 }
 
 static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec) {
@@ -1646,6 +1797,9 @@ static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec) {
     }
 
     ExecuteAssignments(rec);
+    if (rec->algebraicRulesSize > 0) {
+      EvaluateAlgebraicRules( rec );
+    }
 
     return ret;
 }

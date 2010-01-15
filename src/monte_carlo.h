@@ -41,6 +41,7 @@ typedef struct {
     UINT32 speciesSize;
     RULE **ruleArray;
     UINT32 rulesSize;
+    UINT32 algebraicRulesSize;
     COMPARTMENT **compartmentArray;
     UINT32 compartmentsSize;
     REB2SAC_SYMBOL **symbolArray;

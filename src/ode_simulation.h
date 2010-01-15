@@ -21,6 +21,7 @@
 #define HAVE_ODE_SIMULATION
 
 #include "simulation_method.h"
+#include <gsl/gsl_matrix.h>
 
 BEGIN_C_NAMESPACE
 
@@ -39,6 +40,10 @@ typedef struct {
     UINT32 speciesSize;
     RULE **ruleArray;
     UINT32 rulesSize;
+    UINT32 algebraicRulesSize;
+    UINT32 numberFastSpecies;
+    UINT32 numberFastReactions;
+    double *fastCons;
     COMPARTMENT **compartmentArray;
     UINT32 compartmentsSize;
     REB2SAC_SYMBOL **symbolArray;
@@ -48,6 +53,7 @@ typedef struct {
     EVENT **eventArray;
     UINT32 eventsSize;
     REACTION *nextReaction;    
+    gsl_matrix *fastStoicMatrix;
     SIMULATION_PRINTER *printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double *concentrations;
