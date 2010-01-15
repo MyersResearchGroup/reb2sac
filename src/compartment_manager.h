@@ -45,6 +45,7 @@ struct _COMPARTMENT {
     COMPARTMENT *outsideCompartment;
     BOOL constant; 
     BOOL print;
+    BOOL algebraic;
     struct KINETIC_LAW *initialAssignment;
 };
 
@@ -93,6 +94,9 @@ COMPARTMENT *GetOutsideCompartmentInCompartment( COMPARTMENT *compartment );
 
 BOOL IsCompartmentConstant( COMPARTMENT *compartment );
 RET_VAL SetCompartmentConstant( COMPARTMENT *compartment, BOOL constant );
+
+BOOL IsCompartmentAlgebraic( COMPARTMENT *compartment );
+RET_VAL SetCompartmentAlgebraic( COMPARTMENT *compartment, BOOL algebraic );
 
 BOOL PrintCompartment( COMPARTMENT *compartment );
 RET_VAL SetPrintCompartment( COMPARTMENT *compartment, BOOL print );

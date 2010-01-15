@@ -100,6 +100,18 @@ BOOL IsSymbolConstant( REB2SAC_SYMBOL *sym ) {
     return sym->isConstant;
 }
 
+BOOL IsSymbolAlgebraic( REB2SAC_SYMBOL *sym ) {
+    START_FUNCTION("IsSymbolConstant");
+
+    if( sym == NULL ) {
+        END_FUNCTION("IsSymbolConstant", FAILING );
+        return FALSE;
+    }
+        
+    END_FUNCTION("IsSymbolConstant", SUCCESS );
+    return sym->algebraic;
+}
+
 BOOL PrintSymbol( REB2SAC_SYMBOL *sym ) {
     START_FUNCTION("PrintSymbol");
 
@@ -153,6 +165,21 @@ RET_VAL SetUnitsInSymbol( REB2SAC_SYMBOL *sym, UNIT_DEFINITION *units ) {
     sym->units = units;
     
     END_FUNCTION("SetUnitsInSymbol", SUCCESS );
+    return SUCCESS;
+}
+
+RET_VAL SetSymbolAlgebraic( REB2SAC_SYMBOL *sym, BOOL algebraic ) {
+    
+    START_FUNCTION("SetSymbolAlgebraic");
+
+    if( sym == NULL ) {
+        END_FUNCTION("SetSymbolAlgebraic", FAILING );
+        return FAILING;
+    }
+    
+    sym->algebraic = algebraic;
+    
+    END_FUNCTION("SetSymbolAlgebraic", SUCCESS );
     return SUCCESS;
 }
 
@@ -226,7 +253,8 @@ static REB2SAC_SYMBOL *_CloneSymbol( REB2SAC_SYMBOL *sym ) {
     clone->isConstant = sym->isConstant;
     clone->units = sym->units;
     clone->initialAssignment = sym->initialAssignment;
-        
+    clone->algebraic = sym->algebraic;
+   
     END_FUNCTION("_CloneSymbol", SUCCESS );
     return clone;
 }
@@ -272,7 +300,7 @@ REB2SAC_SYMTAB *CreateSymtab( REB2SAC_SYMTAB *parent ) {
     symtab->Lookup = _Lookup;
     symtab->LookupRecursively = _LookupRecursively;
     symtab->GenerateListOfSymbols = _GenerateListOfSymbols;
-        
+
     END_FUNCTION("CreateSymtab", SUCCESS );    
     return symtab;
 }
@@ -301,7 +329,7 @@ REB2SAC_SYMTAB *CloneSymtab( REB2SAC_SYMTAB *symtab ) {
     clone->Lookup = symtab->Lookup;
     clone->LookupRecursively = symtab->LookupRecursively;
     clone->GenerateListOfSymbols = symtab->GenerateListOfSymbols;
-    
+
     if( ( list = symtab->GenerateListOfSymbols( symtab ) ) == NULL ) {
         END_FUNCTION("CloneSymtab", FAILING );    
         return NULL;
@@ -421,7 +449,12 @@ static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *propos
     }
     
     symbol->isConstant = isConstant;
-    
+    //if ((strcmp(proposedID,"t")==0) || (strcmp(proposedID,"time")==0) || isConstant) { 
+    symbol->algebraic = FALSE;
+    //} else {
+    //  symbol->algebraic = TRUE;
+    //}
+
     table = symtab->table;
     if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), (CADDR_T)symbol, table ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    
@@ -445,6 +478,7 @@ static REB2SAC_SYMBOL *_AddSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, REB
     symbol->id = id;
     symbol->initialAssignment = NULL;
     symbol->units = NULL;
+    symbol->algebraic = FALSE;
     table = symtab->table;
     if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), (CADDR_T)symbol, table ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    

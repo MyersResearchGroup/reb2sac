@@ -25,16 +25,14 @@
 #define SPECIES_NODE_FLAG_IS_CONSTANT 0x02
 #define SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS 0x04
 #define SPECIES_NODE_FLAG_HAS_BOUNDARY_CONDITION 0x08
-#define SPECIES_NODE_FLAG_CHARGE 0x10
+#define SPECIES_NODE_FLAG_IS_FAST 0x10
 #define SPECIES_NODE_FLAG_KEEP 0x20
 #define SPECIES_NODE_FLAG_PRINT 0x40
+#define SPECIES_NODE_FLAG_IS_ALGEBRAIC 0x80
 
 static IR_NODE *_Clone( IR_NODE *species );    
 static char * _GetType(  );                                                                              
 static RET_VAL _ReleaseResource( IR_NODE *species );
-
-
-
 
 RET_VAL InitSpeciesNode( SPECIES *species, char *name ) {
     RET_VAL ret = SUCCESS;
@@ -46,6 +44,7 @@ RET_VAL InitSpeciesNode( SPECIES *species, char *name ) {
         return FAILING;
     }
     species->initialAssignment = NULL;
+    species->flags = SPECIES_NODE_FLAG_NONE;
     species->Clone = _Clone;
     species->GetType = _GetType;
     species->ReleaseResource = _ReleaseResource;
@@ -197,15 +196,39 @@ BOOL IsSpeciesNodeConstant( SPECIES *species ) {
 }
 
 
+BOOL IsSpeciesNodeAlgebraic( SPECIES *species ) {
+    START_FUNCTION("IsSpeciesNodeAlgebraic");
+    if( species == NULL ) {
+        END_FUNCTION("IsSpeciesNodeAlgebraic", FAILING );
+        return FALSE;
+    }
+    END_FUNCTION("IsSpeciesNodeAlgebraic", SUCCESS );
+    return ( ( ( species->flags & SPECIES_NODE_FLAG_IS_ALGEBRAIC ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
+}
+
+
+BOOL IsSpeciesNodeFast( SPECIES *species ) {
+    START_FUNCTION("IsSpeciesNodeFast");
+    if( species == NULL ) {
+        END_FUNCTION("IsSpeciesNodeFast", FAILING );
+        return FALSE;
+    }
+    END_FUNCTION("IsSpeciesNodeFast", SUCCESS );
+    return ( ( ( species->flags & SPECIES_NODE_FLAG_IS_FAST ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
+}
+
+
 BOOL HasOnlySubstanceUnitsInSpeciesNode( SPECIES *species ) {
     START_FUNCTION("HasOnlySubstanceUnitsInSpeciesNode");
     if( species == NULL ) {
         END_FUNCTION("HasOnlySubstanceUnitsInSpeciesNode", FAILING );
         return FALSE;
     }
+    /*
     if (GetSpatialDimensionsInCompartment( GetCompartmentInSpeciesNode( species ) ) == 0) {
       species->flags = ( species->flags | SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS );
     }
+    */
     END_FUNCTION("HasOnlySubstanceUnitsInSpeciesNode", SUCCESS );
     return ( ( ( species->flags & SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
 }
@@ -220,27 +243,6 @@ BOOL HasBoundaryConditionInSpeciesNode( SPECIES *species ) {
     END_FUNCTION("HasBoundaryConditionInSpeciesNode", SUCCESS );
     return ( ( ( species->flags & SPECIES_NODE_FLAG_HAS_BOUNDARY_CONDITION ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
 }
-
-BOOL IsChargeSetInSpeciesNode( SPECIES *species ) {
-    START_FUNCTION("IsChargeSetInSpeciesNode");
-    if( species == NULL ) {
-        END_FUNCTION("HasBouIsChargeSetInSpeciesNode", FAILING );
-        return FALSE;
-    }
-    END_FUNCTION("IsChargeSetInSpeciesNode", SUCCESS );
-    return ( ( ( species->flags & SPECIES_NODE_FLAG_CHARGE ) != SPECIES_NODE_FLAG_NONE ) ? TRUE : FALSE );
-}
-
-int GetChargeInSpeciesNode( SPECIES *species ) {
-    START_FUNCTION("GetChargeInSpeciesNode");
-    if( species == NULL ) {
-        END_FUNCTION("GetChargeInSpeciesNode", FAILING );
-        return 0;
-    }
-    END_FUNCTION("GetChargeInSpeciesNode", SUCCESS );
-    return species->charge;
-}
-
 
 double GetInitialAmountInSpeciesNode( SPECIES *species ) {
     START_FUNCTION("GetInitialAmountInSpeciesNode");
@@ -357,19 +359,6 @@ RET_VAL SetSpatialSizeUnitsInSpeciesNode( SPECIES *species, UNIT_DEFINITION *spa
     return ret;
 }
 
-RET_VAL SetChargeInSpeciesNode( SPECIES *species, int charge ) {
-    RET_VAL ret = SUCCESS;
-    
-    START_FUNCTION("SetChargeInSpeciesNode");
-    if( species == NULL ) {
-        return ErrorReport( FAILING, "SetChargeInSpeciesNode", "input species node is NULL" );
-    }
-    species->flags = ( species->flags | SPECIES_NODE_FLAG_CHARGE );
-    species->charge = charge;
-    END_FUNCTION("SetChargeInSpeciesNode", SUCCESS );
-    return ret;
-}
-
 RET_VAL SetInitialAmountInSpeciesNode( SPECIES *species, double initialAmount ) {
     RET_VAL ret = SUCCESS;
     
@@ -447,27 +436,64 @@ RET_VAL SetInitialAssignmentInSpeciesNode( SPECIES *species, struct KINETIC_LAW 
 RET_VAL SetSpeciesNodeConstant( SPECIES *species, BOOL flag ) {
     RET_VAL ret = SUCCESS;
     
-    START_FUNCTION("SetChargeInSpeciesNode");
+    START_FUNCTION("SetSpeciesNodeConstant");
     if( species == NULL ) {
-        return ErrorReport( FAILING, "SetChargeInSpeciesNode", "input species node is NULL" );
+        return ErrorReport( FAILING, "SetSpeciesNodeConstant", "input species node is NULL" );
     }
     if( flag ) {
         species->flags = ( species->flags | SPECIES_NODE_FLAG_IS_CONSTANT );
+        species->flags = ( species->flags & (~SPECIES_NODE_FLAG_IS_ALGEBRAIC) );
     }
     else {
         species->flags = ( species->flags & (~SPECIES_NODE_FLAG_IS_CONSTANT) );
     }
     
-    END_FUNCTION("SetChargeInSpeciesNode", SUCCESS );
+    END_FUNCTION("SetSpeciesNodeConstant", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetAlgebraicInSpeciesNode( SPECIES *species, BOOL flag ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetSpeciesNodeAlgebraic");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetSpeciesNodeAlgebraic", "input species node is NULL" );
+    }
+    if( flag ) {
+        species->flags = ( species->flags | SPECIES_NODE_FLAG_IS_ALGEBRAIC );
+    }
+    else {
+        species->flags = ( species->flags & (~SPECIES_NODE_FLAG_IS_ALGEBRAIC) );
+    }
+    
+    END_FUNCTION("SetSpeciesNodeAlgebraic", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetFastInSpeciesNode( SPECIES *species, BOOL flag ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetSpeciesNodeFast");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetSpeciesNodeFast", "input species node is NULL" );
+    }
+    if( flag ) {
+        species->flags = ( species->flags | SPECIES_NODE_FLAG_IS_FAST );
+    }
+    else {
+        species->flags = ( species->flags & (~SPECIES_NODE_FLAG_IS_FAST) );
+    }
+    
+    END_FUNCTION("SetSpeciesNodeFast", SUCCESS );
     return ret;
 }
 
 RET_VAL SetOnlySubstanceUnitsInSpeciesNode( SPECIES *species, BOOL flag ) {
     RET_VAL ret = SUCCESS;
     
-    START_FUNCTION("SetChargeInSpeciesNode");
+    START_FUNCTION("SetOnlySubstanceUnitsInSpeciesNode");
     if( species == NULL ) {
-        return ErrorReport( FAILING, "SetChargeInSpeciesNode", "input species node is NULL" );
+        return ErrorReport( FAILING, "SetOnlySubstanceUnitsInSpeciesNode", "input species node is NULL" );
     }
     if( flag ) {
         species->flags = ( species->flags | SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS );
@@ -476,16 +502,16 @@ RET_VAL SetOnlySubstanceUnitsInSpeciesNode( SPECIES *species, BOOL flag ) {
         species->flags = ( species->flags & (~SPECIES_NODE_FLAG_HAS_ONLY_SUBSTANCE_UNITS) );
     }
     
-    END_FUNCTION("SetChargeInSpeciesNode", SUCCESS );
+    END_FUNCTION("SetOnlySubstanceUnitsInSpeciesNode", SUCCESS );
     return ret;
 }
 
 RET_VAL SetBoundaryConditionInSpeciesNode( SPECIES *species, BOOL flag ) {
     RET_VAL ret = SUCCESS;
     
-    START_FUNCTION("SetChargeInSpeciesNode");
+    START_FUNCTION("SetBoundaryConditionInSpeciesNode");
     if( species == NULL ) {
-        return ErrorReport( FAILING, "SetChargeInSpeciesNode", "input species node is NULL" );
+        return ErrorReport( FAILING, "SetBoundaryConditionInSpeciesNode", "input species node is NULL" );
     }
     if( flag ) {
         species->flags = ( species->flags | SPECIES_NODE_FLAG_HAS_BOUNDARY_CONDITION );
@@ -494,7 +520,7 @@ RET_VAL SetBoundaryConditionInSpeciesNode( SPECIES *species, BOOL flag ) {
         species->flags = ( species->flags & (~SPECIES_NODE_FLAG_HAS_BOUNDARY_CONDITION) );
     }
     
-    END_FUNCTION("SetChargeInSpeciesNode", SUCCESS );
+    END_FUNCTION("SetBoundaryConditionInSpeciesNode", SUCCESS );
     return ret;
 }
 

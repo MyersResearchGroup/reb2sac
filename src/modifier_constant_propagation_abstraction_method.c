@@ -24,6 +24,7 @@
 #include "species_node.h"
 #include "reaction_node.h"
 #include "kinetic_law.h"
+#include "kinetic_law_support.h"
 
 static char * _GetModifierConstantPropagationMethodID( ABSTRACTION_METHOD *method );
 static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *method, IR *ir );      
@@ -60,6 +61,23 @@ static char * _GetModifierConstantPropagationMethodID( ABSTRACTION_METHOD *metho
 }
 
 
+static BOOL _SpeciesInAlgebraicRule( KINETIC_LAW *kineticLaw, KINETIC_LAW_SUPPORT *kineticLawSupport, 
+				     SPECIES *species ) {
+  LINKED_LIST *supportList = NULL;
+  STRING *sym;
+ 
+  if (kineticLaw != NULL) {
+    supportList = kineticLawSupport->Support( kineticLawSupport, kineticLaw );
+    ResetCurrentElement( supportList );
+    while( ( sym = (STRING*)GetNextFromLinkedList( supportList ) ) != NULL ) {
+      if( CompareString(GetSpeciesNodeID(species), sym )==0 ) {
+	return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
 
 static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *method, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -88,13 +106,14 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
     BOOL foundIt;
     REB2SAC_SYMBOL *symbol = NULL;
     REB2SAC_SYMTAB *symtab = NULL;
+    KINETIC_LAW_SUPPORT *kineticLawSupport;
 #ifdef DEBUG
     STRING *kineticLawString = NULL;
 #endif        
     START_FUNCTION("_ApplyModifierConstantPropagationMethod");
     
     speciesList = ir->GetListOfSpeciesNodes( ir );
-    
+    kineticLawSupport = CreateKineticLawSupport();
     ResetCurrentElement( speciesList );    
     while( ( species = (SPECIES*)GetNextFromLinkedList( speciesList ) ) != NULL ) {
         if( IsKeepFlagSetInSpeciesNode( species ) ) {
@@ -142,6 +161,11 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	       ( GetRuleType( rule ) == RULE_TYPE_RATE ) ) {
 	    if ( strcmp( GetCharArrayOfString(GetRuleVar( rule )),
 			 GetCharArrayOfString(GetSpeciesNodeID( species ) ) ) == 0 ) {
+	      foundIt = TRUE;
+	      break;
+	    }
+	  } else {
+	    if ( _SpeciesInAlgebraicRule( GetMathInRule( rule ), kineticLawSupport, species) ) {
 	      foundIt = TRUE;
 	      break;
 	    }
@@ -265,7 +289,8 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
             return ret;
         }
     }
-         
+    FreeKineticLawSupport(&(kineticLawSupport));
+
     END_FUNCTION("_ApplyModifierConstantPropagationMethod", SUCCESS );
     return ret;
 }      

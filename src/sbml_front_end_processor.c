@@ -24,6 +24,7 @@
 */
 #include "sbml_front_end_processor.h"
 #include "symtab.h"
+#include "kinetic_law_support.h"
 
 #ifdef DEBUG
 #include "sbml/math/FormulaFormatter.h"
@@ -40,6 +41,9 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
 
 static RET_VAL _HandleFunctionDefinitions( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t *model, FunctionDefinition_t *functionDef );
+
+static RET_VAL _HandleAlgebraicRules( FRONT_END_PROCESSOR *frontend, Model_t *model );
+static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_t *ruleDef );
 
 static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model );
 static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_t *ruleDef );
@@ -253,6 +257,11 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     }
         
     if( IS_FAILED( ( ret = _CreateSpeciesNodes( frontend, ir, model ) ) ) ) {
+        END_FUNCTION("_GenerateIR", ret );
+        return ret;
+    }
+        
+    if( IS_FAILED( ( ret = _HandleAlgebraicRules( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
         return ret;
     }
@@ -651,6 +660,102 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
     return ret;
 }
 
+static RET_VAL _HandleAlgebraicRules( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
+    RET_VAL ret = SUCCESS;
+    UINT i = 0;
+    UINT size = 0;
+    ListOf_t *list = NULL;
+    Rule_t *ruleDef = NULL;
+    
+    START_FUNCTION("_HandleAlgebraicRules");
+    
+    list = Model_getListOfRules( model );
+    size = Model_getNumRules( model );
+    for( i = 0; i < size; i++ ) {
+        ruleDef = (Rule_t*)ListOf_get( list, i );
+	if (Rule_isAlgebraic( ruleDef )) {
+	  if( IS_FAILED( ( ret = _HandleAlgebraicRule( frontend, model, ruleDef ) ) ) ) {
+            END_FUNCTION("_HandleAlgebraicRules", ret );
+            return ret;
+	  } 
+	}
+    }
+    
+    END_FUNCTION("_HandleRules", SUCCESS );
+    return ret;
+}
+
+static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_t *source ) {
+    RET_VAL ret = SUCCESS;
+    HASH_TABLE *table = NULL;
+    ASTNode_t *node = NULL;
+    KINETIC_LAW *law = NULL;
+    SBML_SYMTAB_MANAGER *manager = NULL;
+    RULE *ruleDef = NULL; 
+    RULE_MANAGER *ruleManager = NULL;
+    SPECIES *speciesNode = NULL;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    REB2SAC_SYMBOL *symbol = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT_MANAGER *compartmentManager = NULL;
+    LINKED_LIST *list = NULL;
+    KINETIC_LAW_SUPPORT *kineticLawSupport;
+    LINKED_LIST *supportList = NULL;
+    STRING *sym;
+    char *var;
+
+    START_FUNCTION("_HandleAlgebraicRule");
+    
+    kineticLawSupport = CreateKineticLawSupport();
+    if( ( ruleManager = GetRuleManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleAlgebraicRule", "could not get an instance of rule manager" );
+    }
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        END_FUNCTION("_HandleAlgebraicRule", FAILING );
+        return NULL;
+    }
+    table = (HASH_TABLE*)frontend->_internal2;
+    TRACE_1("creating rule on %s", var );
+    if( ( ruleDef = ruleManager->CreateRule( ruleManager, RULE_TYPE_ALGEBRAIC, NULL ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "could not allocate algebraic rule");
+    }
+    node = (ASTNode_t*)Rule_getMath( source );
+    if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
+    }
+    if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+        return ErrorReport( FAILING, "_HandleRule", "failed to create rule on %s", var );        
+    }
+    if( IS_FAILED( ( ret = AddMathInRule( ruleDef, law ) ) ) ) {
+      END_FUNCTION("_HandleRuleDefinition", ret );
+      return ret;
+    }
+    if (law != NULL) {
+      supportList = kineticLawSupport->Support( kineticLawSupport, law );
+      ResetCurrentElement( supportList );
+      while( ( sym = (STRING*)GetNextFromLinkedList( supportList ) ) != NULL ) {
+	var = GetCharArrayOfString( sym );
+	if ( (speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
+	  if (!IsSpeciesNodeConstant( speciesNode )) {
+	    SetAlgebraicInSpeciesNode( speciesNode, TRUE );
+	  }
+	} else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
+	  if (!IsSymbolConstant( symbol )) {
+	    SetSymbolAlgebraic( symbol, TRUE );
+	  }
+	} else if (compartment = compartmentManager->LookupCompartment( compartmentManager, var )) {
+	  if (!IsCompartmentConstant( compartment )) {
+	    SetCompartmentAlgebraic( compartment, TRUE );
+	  }
+	}
+      }
+    }
+    FreeKineticLawSupport(&(kineticLawSupport));
+
+    END_FUNCTION("_HandleAlgebraicRule", SUCCESS );
+    return ret;
+}
+
 static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
@@ -658,19 +763,21 @@ static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
     ListOf_t *list = NULL;
     Rule_t *ruleDef = NULL;
     
-    START_FUNCTION("_HandleFunctionDefinitions");
+    START_FUNCTION("_HandleRules");
     
     list = Model_getListOfRules( model );
     size = Model_getNumRules( model );
     for( i = 0; i < size; i++ ) {
         ruleDef = (Rule_t*)ListOf_get( list, i );
-        if( IS_FAILED( ( ret = _HandleRule( frontend, model, ruleDef ) ) ) ) {
-            END_FUNCTION("_HandleFunctionDefinitions", ret );
+	if (!Rule_isAlgebraic( ruleDef )) {
+	  if( IS_FAILED( ( ret = _HandleRule( frontend, model, ruleDef ) ) ) ) {
+            END_FUNCTION("_HandleRules", ret );
             return ret;
-        } 
+	  } 
+	}
     }
     
-    END_FUNCTION("_HandleFunctionDefinitions", SUCCESS );
+    END_FUNCTION("_HandleRules", SUCCESS );
     return ret;
 }
 
@@ -686,23 +793,47 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
     ASTNode_t *node = NULL;
     KINETIC_LAW *law = NULL;
     SBML_SYMTAB_MANAGER *manager = NULL;
-    
+    SPECIES *speciesNode = NULL;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    REB2SAC_SYMBOL *symbol = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT_MANAGER *compartmentManager = NULL;
+
     START_FUNCTION("_HandleRule");
     
     if( ( ruleManager = GetRuleManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "could not get an instance of rule manager" );
     }
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        END_FUNCTION("_HandleRule", FAILING );
+        return NULL;
+    }
+    table = (HASH_TABLE*)frontend->_internal2;    
     if (Rule_isAlgebraic( source )) {
-      printf("Algebraic rules are currently ignored.\n");
+      //printf("Algebraic rules are currently ignored.\n");
       type = RULE_TYPE_ALGEBRAIC;
       var = NULL;
       //return ret;
     } else if (Rule_isAssignment( source )) {
       type = RULE_TYPE_ASSIGNMENT;
       var = (char *)Rule_getVariable( source );
+      if ( (speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
+	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
+      } else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
+	SetSymbolAlgebraic( symbol, FALSE );
+      } else if (compartment = compartmentManager->LookupCompartment( compartmentManager, var )) {
+	SetCompartmentAlgebraic( compartment, FALSE );
+      }
     } else {
       type = RULE_TYPE_RATE;
       var = (char *)Rule_getVariable( source );
+      if ((speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
+	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
+      } else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
+	SetSymbolAlgebraic( symbol, FALSE );
+      } else if (compartment = compartmentManager->LookupCompartment( compartmentManager, var )) {
+	SetCompartmentAlgebraic( compartment, FALSE );
+      }
     }
     TRACE_1("creating rule on %s", var );
     if( ( ruleDef = ruleManager->CreateRule( ruleManager, type, var ) ) == NULL ) {
@@ -713,7 +844,6 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
     }
-    table = (HASH_TABLE*)frontend->_internal2;    
     if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "failed to create rule on %s", var );        
     }
@@ -837,11 +967,21 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     UINT size = 0;
     ListOf_t *list = NULL;
     EventAssignment_t *eventAssignmentDef;
+    char *var = NULL;
+    SPECIES *speciesNode = NULL;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    REB2SAC_SYMBOL *symbol = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT_MANAGER *compartmentManager = NULL;
 
     START_FUNCTION("_HandleEvent");
     
     if( ( eventManager = GetEventManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "could not get an instance of event manager" );
+    }
+    if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
+        END_FUNCTION("_HandleEvent", FAILING );
+        return NULL;
     }
     id = (char *)Event_getId( source );
     if( ( eventDef = eventManager->CreateEvent( eventManager, id ) ) == NULL ) {
@@ -885,6 +1025,14 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
 	node  = (ASTNode_t*)EventAssignment_getMath( eventAssignmentDef );
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+	}
+	var = (char*)EventAssignment_getVariable(eventAssignmentDef);
+	if ((speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
+	  SetAlgebraicInSpeciesNode( speciesNode, FALSE );
+	} else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
+	  SetSymbolAlgebraic( symbol, FALSE );
+	} else if (compartment = compartmentManager->LookupCompartment( compartmentManager, var )) {
+	  SetCompartmentAlgebraic( compartment, FALSE );
 	}
 	if( IS_FAILED( ( ret = AddEventAssignmentToEvent( eventDef, (char*)EventAssignment_getVariable(eventAssignmentDef), law ) ) ) ) {
 	  return ErrorReport( FAILING, "_HandleEvent", "could not allocate event %s", id );
@@ -1040,7 +1188,6 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     double initialQuantity = 0.0;
     COMPARTMENT *compartment = NULL;
     UNIT_DEFINITION *units = NULL;
-    int charge = 0;    
     SPECIES *speciesNode = NULL; 
     HASH_TABLE *table = NULL;
     COMPARTMENT_MANAGER *compartmentManager = NULL;
@@ -1144,15 +1291,6 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
             return ret;   
         }
     }        
-
-    if( Species_isSetCharge( species ) ) {
-        charge = Species_getCharge( species );                
-        TRACE_1( "\tsetting charge %i", charge );
-        if( IS_FAILED( ( ret = SetChargeInSpeciesNode(speciesNode, charge ) ) ) ) {
-            END_FUNCTION("_CreateSpeciesNode", ret );
-            return ret;   
-        }
-    }
 
     if( Species_getSpeciesType( species ) ) {
         type = (char *)Species_getSpeciesType( species );                
@@ -2553,10 +2691,14 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
         }
+	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
         if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, reactionNode, speciesNode, stoichiometry ) ) ) ) {
             END_FUNCTION("_ResolveNodeLinks", SUCCESS );
             return ret;
         }
+	if (IsReactionFastInReactionNode( reactionNode )) {
+	  SetFastInSpeciesNode( speciesNode, TRUE );
+	}
         TRACE_2( "species %s is a reactant of reaction %s", GetCharArrayOfString( GetSpeciesNodeName( speciesNode ) ), GetCharArrayOfString( GetReactionNodeName( reactionNode ) ) );
     }    
   
@@ -2585,10 +2727,14 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
         }
+	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
         if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reactionNode, speciesNode, stoichiometry ) ) ) ) {
             END_FUNCTION("_ResolveNodeLinks", SUCCESS );
             return ret;
         }
+	if (IsReactionFastInReactionNode( reactionNode )) {
+	  SetFastInSpeciesNode( speciesNode, TRUE );
+	}
         TRACE_2( "species %s is a product of reaction %s", GetCharArrayOfString( GetSpeciesNodeName( speciesNode ) ), GetCharArrayOfString( GetReactionNodeName( reactionNode ) ) );
     }
 
@@ -2611,7 +2757,5 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     END_FUNCTION("_ResolveNodeLinks", SUCCESS );
     return ret;
 }
-
- 
  
  

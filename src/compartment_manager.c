@@ -342,7 +342,36 @@ RET_VAL SetCompartmentConstant( COMPARTMENT *compartment, BOOL constant ) {
     }
     
     compartment->constant = constant;
+    if (constant) {
+      compartment->algebraic = FALSE;
+    } 
     END_FUNCTION("SetCompartmentConstant", SUCCESS );
+    return SUCCESS;
+}
+
+BOOL IsCompartmentAlgebraic( COMPARTMENT *compartment ) {
+    START_FUNCTION("IsCompartmentAlgebraic");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("IsCompartmentAlgebraic", FAILING );
+        return FALSE;
+    }
+    
+    END_FUNCTION("IsCompartmentAlgebraic", SUCCESS );
+    return compartment->algebraic;
+}
+
+
+RET_VAL SetCompartmentAlgebraic( COMPARTMENT *compartment, BOOL algebraic ) {
+    START_FUNCTION("SetCompartmentAlgebraic");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("SetCompartmentAlgebraic", FAILING );
+        return FAILING;
+    }
+    
+    compartment->algebraic = algebraic;
+    END_FUNCTION("SetCompartmentAlgebraic", SUCCESS );
     return SUCCESS;
 }
 
@@ -390,6 +419,7 @@ static COMPARTMENT *_CreateCompartment( COMPARTMENT_MANAGER *manager, char *id )
     compartment->initialAssignment = NULL;
     compartment->outside = NULL;
     compartment->type = NULL;
+    compartment->algebraic = FALSE;
     if( IS_FAILED( PutInHashTable( GetCharArrayOfString( compartment->id ), GetStringLength( compartment->id ), (CADDR_T)compartment, manager->table ) ) ) {
         FREE( compartment );
         END_FUNCTION("_CreateCompartment", FAILING );

@@ -25,8 +25,8 @@
 static RET_VAL _AddPreProcessingMethods( COMPILER_RECORD_T *record, char *methodIDs[] );
 
 static char *__SBML_PRE_PROCESSING_METHODS[] = {
-    "modifier-structure-transformer",
-    "modifier-constant-propagation",
+  /*    "modifier-structure-transformer",
+	"modifier-constant-propagation",*/
     NULL    
 };
 
