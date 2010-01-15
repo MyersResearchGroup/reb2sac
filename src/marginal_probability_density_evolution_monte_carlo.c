@@ -706,9 +706,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     }
     rec->currentStep++;
     if (minPrintInterval >= 0.0) {
-        nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
-    } else {
         nextPrintTime = minPrintInterval;
+    } else {
+        nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
     }
     if (IS_FAILED((ret = meanPrinter->PrintValues(meanPrinter, rec->time)))) {
         return ret;
@@ -982,12 +982,12 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         }
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
+                nextPrintTime += minPrintInterval;
+            } else {
                 time = nextPrintTime;
                 rec->time = nextPrintTime;
                 rec->currentStep++;
                 nextPrintTime = (rec->currentStep * rec->timeLimit) / numberSteps;
-            } else {
-                nextPrintTime += minPrintInterval;
             }
             printf("Time = %g\n", time);
             fflush(stdout);
