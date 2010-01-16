@@ -51,6 +51,7 @@ typedef struct {
     double timeStep;
     UINT32 currentStep;
     UINT32 numberSteps;
+    double minPrintInterval;
     double nextPrintTime;    
     double timeLimit;
     KINETIC_LAW_EVALUATER *evaluator;

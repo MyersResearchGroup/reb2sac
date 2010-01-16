@@ -131,6 +131,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     UINT32 i = 0;
     UINT32 j = 0;
     double printInterval = 0.0;
+    double minPrintInterval = 0.0;
     UINT32 size = 0;
     UINT32 algebraicVars = 0;
     char buf[512];
@@ -313,21 +314,30 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
         }
     }
 
-    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_PRINT_INTERVAL ) ) == NULL ) {
-      if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_NUMBER_STEPS ) ) == NULL ) {
-        rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
-      } else {
-        if( IS_FAILED( ( ret = StrToUINT32( &(rec->numberSteps), valueString ) ) ) ) {
-            rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
-        } 
-      }
-    }
-    else {
-        if( IS_FAILED( ( ret = StrToFloat( &(printInterval), valueString ) ) ) ) {
+    rec->minPrintInterval = -1.0;
+    if ((valueString = properties->GetProperty(properties, ODE_SIMULATION_PRINT_INTERVAL)) == NULL) {
+        if ((valueString = properties->GetProperty(properties, ODE_SIMULATION_NUMBER_STEPS)) == NULL) {
+            if ((valueString = properties->GetProperty(properties, ODE_SIMULATION_MINIMUM_PRINT_INTERVAL))
+                    == NULL) {
+                rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+            } else {
+                if (IS_FAILED((ret = StrToFloat(&(minPrintInterval), valueString)))) {
+                    rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+                } else {
+                    rec->minPrintInterval = minPrintInterval;
+                }
+            }
+        } else {
+            if (IS_FAILED((ret = StrToUINT32(&(rec->numberSteps), valueString)))) {
+                rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
+            }
+        }
+    } else {
+        if (IS_FAILED((ret = StrToFloat(&(printInterval), valueString)))) {
             rec->numberSteps = DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE;
         } else {
-	  rec->numberSteps = rec->timeLimit / printInterval;
-	}
+            rec->numberSteps = rec->timeLimit / printInterval;
+        }
     }
 
 #if GET_SEED_FROM_COMMAND_LINE
@@ -725,16 +735,29 @@ static RET_VAL _Print( EULER_SIMULATION_RECORD *rec ) {
     double time = rec->time;
     SIMULATION_PRINTER *printer = rec->printer;
 
-    while( nextPrintTime <= time ) {
-      if (nextPrintTime > 0.0) {
-	printf("Time = %.2f\n",nextPrintTime);
-	fflush(stdout);
+    if (rec->minPrintInterval == -1.0) {
+      while( nextPrintTime <= time ) {
+	if (nextPrintTime > 0.0) {
+	  printf("Time = %.2f\n",nextPrintTime);
+	  fflush(stdout);
+	}
+	if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
+	  return ret;
+	}
+	rec->currentStep++;
+	nextPrintTime = (rec->currentStep/numberSteps) * rec->timeLimit;
       }
-      if( IS_FAILED( ( ret = printer->PrintValues( printer, nextPrintTime ) ) ) ) {
-	return ret;
+    } else {
+      if ( nextPrintTime <= time ) {
+	if (nextPrintTime > 0.0) {
+	  printf("Time = %.2f\n",nextPrintTime);
+	  fflush(stdout);
+	}
+	if( IS_FAILED( ( ret = printer->PrintValues( printer, time ) ) ) ) {
+	  return ret;
+	}
+	nextPrintTime = time + rec->minPrintInterval;
       }
-      rec->currentStep++;
-      nextPrintTime = (rec->currentStep/numberSteps) * rec->timeLimit;
     }
     rec->nextPrintTime = nextPrintTime;
     return ret;
