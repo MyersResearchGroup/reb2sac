@@ -373,7 +373,7 @@ static RET_VAL _FindIrrelevant( IR *ir, IRRELEVANT_SPECIES_ELIMINATION_INTERNAL 
       ResetCurrentElement( ruleList );
       while( ( rule = (RULE*)GetNextFromLinkedList( ruleList ) ) != NULL ) {
 	if ( ( ( GetRuleType( rule ) == RULE_TYPE_ALGEBRAIC ) && (_RelevantAlgebraicRule( GetMathInRule( rule ), internal, kineticLawSupport ) ) ) ||
-	     ( ( ( GetRuleType( rule ) == RULE_TYPE_ASSIGNMENT ) || ( GetRuleType( rule ) == RULE_TYPE_RATE ) ) &&
+	     ( ( ( GetRuleType( rule ) == RULE_TYPE_ASSIGNMENT ) || ( GetRuleType( rule ) == RULE_TYPE_RATE_ASSIGNMENT ) ) &&
 	       (_IsRelevant(GetRuleVar( rule ),internal) ) ) ) {
 	  kineticLaw = GetMathInRule( rule );
 	  if( IS_FAILED( ( ret = _RemoveSupportFromIrrelevant( kineticLaw, internal, kineticLawSupport ) ) ) ) {

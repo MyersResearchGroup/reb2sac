@@ -28,6 +28,7 @@
 #include "back_end_processor.h"
 #include "util.h"
 #include "random_number_generator.h"
+#include "default_reb2sac_properties.h"
 
 #if defined(__cplusplus)
 extern "C" {

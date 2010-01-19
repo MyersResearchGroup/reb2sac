@@ -310,9 +310,11 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 	  k++;
 	}
       }
+
       gsl_matrix *V = gsl_matrix_alloc (rec->numberFastReactions,rec->numberFastReactions);
       gsl_vector *S = gsl_vector_alloc (rec->numberFastReactions);
       gsl_vector *work = gsl_vector_alloc (rec->numberFastReactions);
+
       printf("A:\n");
       for (i = 0; i < rec->numberFastSpecies; i++) {
 	for (j = 0; j < rec->numberFastReactions; j++) {
@@ -320,6 +322,7 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 	}
 	printf("\n");
       }
+
       gsl_linalg_SV_decomp(rec->fastStoicMatrix,V,S,work);
       printf("U:\n");
       for (i = 0; i < rec->numberFastSpecies; i++) {
@@ -340,6 +343,27 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 	}
 	printf("\n");
       }
+
+      gsl_matrix *At = gsl_matrix_alloc(rec->numberFastReactions, rec->numberFastSpecies);
+      gsl_matrix_transpose_memcpy(At,rec->fastStoicMatrix);
+      printf("At:\n");
+      for (i = 0; i < rec->numberFastReactions; i++) {
+	for (j = 0; j < rec->numberFastSpecies; j++) {
+	  printf("%g ",gsl_matrix_get(At,i,j));
+	}
+	printf("\n");
+      }
+      int min = (rec->numberFastReactions < rec->numberFastSpecies?rec->numberFastReactions:rec->numberFastSpecies);
+      gsl_vector *tau = gsl_vector_alloc(min);
+      gsl_linalg_QR_decomp(At,tau);
+      printf("R:\n");
+      for (i = 0; i < rec->numberFastReactions; i++) {
+	for (j = 0; j < rec->numberFastSpecies; j++) {
+	  if (j < i) gsl_matrix_set(At,i,j,0.0);
+	  printf("%g ",gsl_matrix_get(At,i,j));
+	}
+	printf("\n");
+      }
       */
     }
 
@@ -353,7 +377,7 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
-	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	for (j = 0; j < rec->speciesSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
 		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
@@ -413,6 +437,7 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 	rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
       }
     }
+    rec->originalTimeStep = rec->timeStep;
 
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
@@ -739,12 +764,12 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
 static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     int status = GSL_SUCCESS;
+    int i;
     double h = ODE_SIMULATION_H;
     double *y = rec->concentrations;
     double nextPrintTime = rec->time;
     double minPrintInterval = rec->minPrintInterval;
     double time = rec->time;
-    double timeStep = rec->timeStep;
     double timeLimit = rec->timeLimit;
     double nextEventTime;
     double maxTime;
@@ -796,14 +821,14 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	  nextPrintTime = timeLimit;
       }
       while( time < nextPrintTime ) {
-	if ((timeStep == DBL_MAX) || (maxTime + timeStep > nextPrintTime)) {
+	if ((rec->timeStep == DBL_MAX) || (maxTime + rec->timeStep > nextPrintTime)) {
 	  if (minPrintInterval == -1.0) {
 	    maxTime = nextPrintTime;
 	  } else {
 	    maxTime = timeLimit;
 	  }
 	} else {
-	  maxTime = maxTime + timeStep;
+	  maxTime = maxTime + rec->timeStep;
 	  if (maxTime > timeLimit) {
 	    maxTime = timeLimit;
 	  }
@@ -821,7 +846,21 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	status = gsl_odeiv_evolve_apply( evolve, control, step,
 					 &system, &time, maxTime,
 					 &h, y );
-
+	//printf("TIME = %g\n",time);
+	if (status == GSL_ETOL) {
+	  maxTime = time + rec->timeStep;
+	  for( i = 0; i < rec->speciesSize; i++ ) {
+	    SetAmountInSpeciesNode( rec->speciesArray[i], y[i] );
+	  }
+	  for( i = 0; i < rec->compartmentsSize; i++ ) {
+	    SetCurrentSizeInCompartment( rec->compartmentArray[i], y[rec->speciesSize + i] );
+	  }
+	  for( i = 0; i < rec->symbolsSize; i++ ) {
+	    SetCurrentRealValueInSymbol( rec->symbolArray[i], y[rec->speciesSize + rec->compartmentsSize + i] );
+	  }
+	  status = GSL_SUCCESS;
+	  //printf("Adjusting time step\n");
+	}
 	if( status != GSL_SUCCESS ) {
 	  return FAILING;
 	}
@@ -998,6 +1037,33 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
     return firstEventTime;
 }
 
+static BOOL canTriggerEvent( ODE_SIMULATION_RECORD *rec, double time ) {
+    int i;
+    double nextEventTime;
+    BOOL triggerEnabled;
+
+    rec->time = time;
+    for (i = 0; i < rec->eventsSize; i++) {
+      nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+      triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+      if (nextEventTime != -1.0) {
+	if  (time >= nextEventTime) {
+	  if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+	    SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	  }
+	  return TRUE;
+	}
+      }
+      if (!triggerEnabled) {
+	if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+								    (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	  return TRUE;
+	}
+      }
+    }
+    return FALSE;
+}
+
 static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
   LINKED_LIST *list = NULL;
   EVENT_ASSIGNMENT *eventAssignment;
@@ -1035,6 +1101,7 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
   UINT j;
   BYTE varType;
 
+  rec->timeStep = rec->originalTimeStep;
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
@@ -1463,10 +1530,14 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     if (rec->algebraicRulesSize > 0) {
       EvaluateAlgebraicRules( rec );
     }
+    if ((rec->timeStep != 0.00001) && (canTriggerEvent( rec, t ))) {
+      rec->timeStep = 0.00001;
+      return GSL_ETOL;
+    }
 
     /* Update rates using rate rules */
     for (i = 0; i < rec->rulesSize; i++) {
-      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	rate = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	varType = GetRuleVarType( rec->ruleArray[i] );

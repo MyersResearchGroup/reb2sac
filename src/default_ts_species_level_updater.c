@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "default_ts_species_level_updater.h"
 #include "reaction_node.h" 
+#include "IR.h"
  
 static RET_VAL _Initialize( DEFAULT_TIME_SERIES_SPECIES_LEVEL_UPDATER *updater );
 static double _GetNextUpdateTime( DEFAULT_TIME_SERIES_SPECIES_LEVEL_UPDATER *updater );    
@@ -216,7 +217,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SPECIES *species, double time ) {
     updateEdges = GetReactantEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-      reaction = (REACTION*)GetReactionInIREdge( updateEdge );
+      reaction = GetReactionInIREdge( updateEdge );
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
             return ret;                
         }
@@ -225,7 +226,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SPECIES *species, double time ) {
     updateEdges = GetModifierEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-        reaction = (REACTION*)GetReactionInIREdge( updateEdge );
+        reaction = GetReactionInIREdge( updateEdge );
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
             return ret;                
         }
@@ -234,7 +235,7 @@ static RET_VAL _UpdateReactionRateUpdateTime( SPECIES *species, double time ) {
     updateEdges = GetProductEdges( (IR_NODE*)species );
     ResetCurrentElement( updateEdges );
     while( ( updateEdge = GetNextEdge( updateEdges ) ) != NULL ) {
-        reaction = (REACTION*)GetReactionInIREdge( updateEdge );
+        reaction = GetReactionInIREdge( updateEdge );
         if( IS_FAILED( ( ret = SetReactionRateUpdatedTime( reaction, time ) ) ) ) {
             return ret;                
         }

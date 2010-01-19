@@ -268,7 +268,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
-	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	for (j = 0; j < rec->speciesSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
 		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
@@ -1096,7 +1096,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     BYTE varType;
 
     for (i = 0; i < rec->rulesSize; i++) {
-      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
 								    (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	varType = GetRuleVarType( rec->ruleArray[i] );
@@ -1117,7 +1117,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
       }
     }
     for (i = 0; i < rec->rulesSize; i++) {
-      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	concentration = GetRuleCurValue( rec->ruleArray[i] );
 	varType = GetRuleVarType( rec->ruleArray[i] );
 	j = GetRuleIndex( rec->ruleArray[i] );
