@@ -235,7 +235,7 @@ static RET_VAL _InitializeRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec, BACK_EN
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ||
-	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+	   GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	for (j = 0; j < rec->speciesSize; j++) {
 	  if ( strcmp( GetCharArrayOfString(GetRuleVar( rec->ruleArray[i] )),
 		       GetCharArrayOfString(GetSpeciesNodeID( rec->speciesArray[j] ) ) ) == 0 ) {
@@ -994,7 +994,7 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR1_SIMUL
 
     /* Update rates using rate rules */
     for (i = 0; i < rec->rulesSize; i++) {
-      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE ) {
+      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
 	rate = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								  (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	varType = GetRuleVarType( rec->ruleArray[i] );

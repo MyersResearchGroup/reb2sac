@@ -158,7 +158,7 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	ResetCurrentElement( ruleList );
 	while( ( rule = (RULE*)GetNextFromLinkedList( ruleList ) ) != NULL ) {
 	  if ( ( GetRuleType( rule ) == RULE_TYPE_ASSIGNMENT ) ||
-	       ( GetRuleType( rule ) == RULE_TYPE_RATE ) ) {
+	       ( GetRuleType( rule ) == RULE_TYPE_RATE_ASSIGNMENT ) ) {
 	    if ( strcmp( GetCharArrayOfString(GetRuleVar( rule )),
 			 GetCharArrayOfString(GetSpeciesNodeID( species ) ) ) == 0 ) {
 	      foundIt = TRUE;

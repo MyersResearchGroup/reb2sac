@@ -50,7 +50,17 @@
 #include "sbml/Parameter.h"
 #include "sbml/KineticLaw.h"
 #include "sbml/math/ASTNode.h"
-
+#include "sbml/InitialAssignment.h"
+#include "sbml/Rule.h"
+#include "sbml/Constraint.h"
+#include "sbml/Event.h"
+#include "sbml/EventAssignment.h"
+#include "sbml/Trigger.h"
+#include "sbml/Delay.h"
+#include "sbml/StoichiometryMath.h"
+#include "sbml/FunctionDefinition.h"
+#include "sbml/math/FormulaFormatter.h"
+#include "sbml/xml/XMLNode.h"
 
 BEGIN_C_NAMESPACE
 

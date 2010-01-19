@@ -208,7 +208,7 @@ static REB2SAC_PROPERTIES *_CreateReb2sacProperties( COMPILER_RECORD_T *record )
     }
     
     if( strcmp( value, "default" ) == 0 ) {
-      properties = (REB2SAC_PROPERTIES*)DefaultReb2sacPropertiesConstructor( record );
+      properties = DefaultReb2sacPropertiesConstructor( record );
         if( IS_FAILED( ( ret = properties->Init( properties ) ) ) ) {
             END_FUNCTION("_CreateReb2sacProperties", ret );
             return NULL;
