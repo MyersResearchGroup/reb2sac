@@ -27,24 +27,30 @@ static RET_VAL _SetProperty( REB2SAC_PROPERTIES *properties, char *key, char *va
 static char * _GetProperty(  REB2SAC_PROPERTIES *properties, char *key );
 static RET_VAL _Free(  REB2SAC_PROPERTIES *properties );
 
-static REB2SAC_PROPERTIES instance;
+//static REB2SAC_PROPERTIES instance;
 
 
 REB2SAC_PROPERTIES * DefaultReb2sacPropertiesConstructor( COMPILER_RECORD_T *record ) {
-    
+
+    REB2SAC_PROPERTIES *instance;
+
     START_FUNCTION("DefaultReb2sacPropertiesConstructor");
+    if( ( instance = (REB2SAC_PROPERTIES*)MALLOC( sizeof( REB2SAC_PROPERTIES ) ) ) == NULL ) {
+        END_FUNCTION("DefaultReb2sacPropertiesConstructor", FAILING );
+        return NULL;
+    }
    
-    if( instance.record == NULL ) {
-        instance.record = record;
-        instance.Init = _Init;
-        instance.LoadProperties = _LoadProperties;
-        instance.SetProperty = _SetProperty;
-        instance.GetProperty = _GetProperty;
-        instance.Free = _Free;
+    if( instance->record == NULL ) {
+        instance->record = record;
+        instance->Init = _Init;
+        instance->LoadProperties = _LoadProperties;
+        instance->SetProperty = _SetProperty;
+        instance->GetProperty = _GetProperty;
+        instance->Free = _Free;
     }
             
     END_FUNCTION("DefaultReb2sacPropertiesConstructor", SUCCESS );
-    return &instance;
+    return instance;
 }
 
 
