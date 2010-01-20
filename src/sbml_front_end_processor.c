@@ -389,8 +389,8 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
     sizeC = GetLinkedListSize( listC );
     for( i = 0; i < size; i++ ) {
       initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
-      id = InitialAssignment_getSymbol(initialAssignment);
-      node = InitialAssignment_getMath( initialAssignment );
+      id = (char *)InitialAssignment_getSymbol(initialAssignment);
+      node = (ASTNode_t *)InitialAssignment_getMath( initialAssignment );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	return ErrorReport( FAILING, "_HandleInitialAssignments", "failed to create initial assignment for %s", id );        
       }
@@ -461,8 +461,8 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
     for( i = 0; i < size; i++ ) {
       rule = (Rule_t*)ListOf_get( list, i );
       if (Rule_isAssignment( rule )) {
-	char * id = Rule_getVariable( rule );
-	node = Rule_getMath( rule );
+	id = (char *)Rule_getVariable( rule );
+	node = (ASTNode_t *)Rule_getMath( rule );
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleRuleAssignments", "failed to create initial assignment for rule %s", id );        
 	}
@@ -624,7 +624,7 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
         return ErrorReport( FAILING, "_HandleFunctionDefinition", "could not get an instance of function manager" );
     }
     
-    id = FunctionDefinition_getId( source );
+    id = (char *)FunctionDefinition_getId( source );
     TRACE_1("creating function definition %s", id );
     if( ( functionDef = functionManager->CreateFunctionDefinition( functionManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleFunctionDefinition", "could not allocate function def %s", id );
@@ -639,7 +639,7 @@ static RET_VAL _HandleFunctionDefinition( FRONT_END_PROCESSOR *frontend, Model_t
 	return ret;
       }
     }                             
-    node = FunctionDefinition_getBody( source );
+    node = (ASTNode_t *)FunctionDefinition_getBody( source );
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleFunctionDefinition", "error on getting symtab manager" ); 
     }
@@ -715,7 +715,7 @@ static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *mod
     if( ( ruleDef = ruleManager->CreateRule( ruleManager, RULE_TYPE_ALGEBRAIC, NULL ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "could not allocate algebraic rule");
     }
-    node = Rule_getMath( source );
+    node = (ASTNode_t *)Rule_getMath( source );
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
     }
@@ -812,7 +812,7 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
       //return ret;
     } else if (Rule_isAssignment( source )) {
       type = RULE_TYPE_ASSIGNMENT;
-      var = Rule_getVariable( source );
+      var = (char *)Rule_getVariable( source );
       if ( (speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
 	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
       } else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
@@ -822,7 +822,7 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
       }
     } else {
       type = RULE_TYPE_RATE_ASSIGNMENT;
-      var = Rule_getVariable( source );
+      var = (char *)Rule_getVariable( source );
       if ((speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
 	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
       } else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
@@ -836,7 +836,7 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
         return ErrorReport( FAILING, "_HandleRule", "could not allocate rule on %s", var );
     }
 
-    node = Rule_getMath( source );
+    node = (ASTNode_t *)Rule_getMath( source );
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
     }
@@ -899,7 +899,7 @@ static RET_VAL _HandleConstraint( FRONT_END_PROCESSOR *frontend, Model_t *model,
         return ErrorReport( FAILING, "_HandleConstraint", "could not allocate constraint %s", id );
     }
 
-    node = Constraint_getMath( source );
+    node = (ASTNode_t *)Constraint_getMath( source );
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleConstraint", "error on getting symtab manager" ); 
     }
@@ -913,7 +913,7 @@ static RET_VAL _HandleConstraint( FRONT_END_PROCESSOR *frontend, Model_t *model,
     }
     message = NULL;
     if (Constraint_isSetMessage( source )) {
-      message = XMLNode_convertXMLNodeToString( (const XMLNode_t*)Constraint_getMessage( source ));
+      message = (char *)XMLNode_convertXMLNodeToString( (const XMLNode_t*)Constraint_getMessage( source ));
       message = strstr(message,"xhtml") + 7;
       *(strstr(message,"</p>")) = '\0';
       AddMessageInConstraint( constraintDef, message);
@@ -979,7 +979,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
         END_FUNCTION("_HandleEvent", FAILING );
         return FAILING;
     }
-    id = Event_getId( source );
+    id = (char *)Event_getId( source );
     if( ( eventDef = eventManager->CreateEvent( eventManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "could not allocate event %s", id );
     }
@@ -992,7 +992,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     SetUseValuesFromTriggerTime( eventDef, Event_getUseValuesFromTriggerTime( source ) );
     if (Event_isSetTrigger( source ) ) {
       trigger = Event_getTrigger( source );
-      node  = Trigger_getMath( trigger );
+      node  = (ASTNode_t *)Trigger_getMath( trigger );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
       }
@@ -1004,7 +1004,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
 
     if (Event_isSetDelay( source ) ) {
       delay = Event_getDelay( source );
-      node  = Delay_getMath( delay );
+      node  = (ASTNode_t *)Delay_getMath( delay );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
       }
@@ -1018,11 +1018,11 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     size = Event_getNumEventAssignments( source );
     for( i = 0; i < size; i++ ) {
         eventAssignmentDef = (EventAssignment_t*)ListOf_get( list, i );
-	node  = EventAssignment_getMath( eventAssignmentDef );
+	node  = (ASTNode_t *)EventAssignment_getMath( eventAssignmentDef );
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
 	}
-	var = EventAssignment_getVariable(eventAssignmentDef);
+	var = (char *)EventAssignment_getVariable(eventAssignmentDef);
 	if ((speciesNode = (SPECIES*)GetValueFromHashTable( var, strlen( var ), table )) != NULL) {
 	  SetAlgebraicInSpeciesNode( speciesNode, FALSE );
 	} else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
@@ -1471,7 +1471,7 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
     if( IS_FAILED( ( ret = manager->SetLocal( manager, list ) ) ) ) {
         return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
     }     
-    if( IS_FAILED( ( ret = manager->SetLocalID( manager, Reaction_getId( reaction ) ) ) ) ) {
+    if( IS_FAILED( ( ret = manager->SetLocalID( manager, (char *)Reaction_getId( reaction ) ) ) ) ) {
         return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
     }     
         
@@ -2670,7 +2670,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
         species = (char*)SpeciesReference_getSpecies( speciesRef );
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = (StoichiometryMath_t *)SpeciesReference_getStoichiometryMath( speciesRef );
-	  node = StoichiometryMath_getMath( sm );
+	  node = (ASTNode_t *)StoichiometryMath_getMath( sm );
 	  if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	    return ErrorReport( FAILING, "_ResolveNodeLinks", "failed to create stoichiometry math" );        
 	  }
@@ -2706,7 +2706,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
         species = (char*)SpeciesReference_getSpecies( speciesRef );
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = SpeciesReference_getStoichiometryMath( speciesRef );
-	  node = StoichiometryMath_getMath( sm );
+	  node = (ASTNode_t *)StoichiometryMath_getMath( sm );
 	  if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	    return ErrorReport( FAILING, "_ResolveNodeLinks", "failed to create stoichiometry math" );        
 	  }
@@ -2739,7 +2739,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     for( i = 0; i < num; i++ ) {
         modifierRef = (SpeciesReference_t *)ListOf_get( modifiers, i );
 	//        modifierRef = (ModifierSpeciesReference_t*)ListOf_get( modifiers, i );
-        species = SpeciesReference_getSpecies( modifierRef );
+        species = (char *)SpeciesReference_getSpecies( modifierRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
