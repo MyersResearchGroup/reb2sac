@@ -152,19 +152,19 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
       //FreeKineticLaw( &right );
       //FreeKineticLaw( &left );
       END_FUNCTION("_DoTransformation", FAILING );
-      return NULL;
+      return FAILING;
     }
     if( ( kineticLawRight = CreateOpKineticLaw( KINETIC_LAW_OP_TIMES, constKineticLaw2, backwardKineticLaw ) ) == NULL ) {
       //FreeKineticLaw( &right );
       //FreeKineticLaw( &left );
       END_FUNCTION("_DoTransformation", FAILING );
-      return NULL;
+      return FAILING;
     }
     if( ( kineticLaw = CreateOpKineticLaw( KINETIC_LAW_OP_MINUS, kineticLawLeft, kineticLawRight ) ) == NULL ) {
       //FreeKineticLaw( &right );
       //FreeKineticLaw( &left );
       END_FUNCTION("_DoTransformation", FAILING );
-      return NULL;
+      return FAILING;
     }
 
     if( IS_FAILED( ( ret = SetKineticLawInReactionNode( reaction, kineticLaw ) ) ) ) {

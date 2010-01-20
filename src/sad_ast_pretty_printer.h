@@ -21,6 +21,7 @@
 #define HAVE_SAD_AST_PRETTY_PRINTER
 
 #include "sad_ast.h"
+#include "species_node.h"
 
 BEGIN_C_NAMESPACE
 

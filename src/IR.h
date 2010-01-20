@@ -33,6 +33,7 @@
 #include "constraint_manager.h"
 #include "event_manager.h"
 #include "reaction_manager.h"
+#include "kinetic_law.h"
 
 BEGIN_C_NAMESPACE
 

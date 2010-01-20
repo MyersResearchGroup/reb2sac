@@ -592,7 +592,7 @@ static int _CompareSpeciesEdge( CADDR_T e1, CADDR_T e2 ) {
     s1 = GetSpeciesInIREdge( (IR_EDGE*)e1 );
     s2 = GetSpeciesInIREdge( (IR_EDGE*)e2 );
             
-    return (int)s1 - (int)s2;
+    return (s1 - s2);
 }
 
 

@@ -290,8 +290,9 @@ static RET_VAL _PrintReactionInXHTML( REACTION *reaction, FILE *file ) {
     
     START_FUNCTION("_PrintReactionInXHTML");
 
-    printf("HERE\n");
-    fprintf( file, REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
+    fprintf( file, REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+	     IsReactionReversibleInReactionNode( reaction ) ? "True" : "False",
+	     IsReactionFastInReactionNode( reaction ) ? "True" : "False");
     
     list = GetReactantsInReactionNode( reaction );
     if( IS_FAILED( ( ret = _PrintListOfReactantsInXHTML( list, file ) ) ) ) {

@@ -211,7 +211,7 @@ RET_VAL _IncreaseCapacity( VECTOR *vector ) {
 }
 
 int _CompareElementInVector( CADDR_T a, CADDR_T b ) {
-    return (int)b - (int)a;
+  return (b - a);
 }
 
 

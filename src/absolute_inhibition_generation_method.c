@@ -452,5 +452,5 @@ static RET_VAL _FreeAbsoluteInhibitionInternal( ABSOLUTE_INHIBITION_INTERNAL *in
 }
 
 static int _CompareLogicalSpecies( CADDR_T species1, CADDR_T species2 ) {
-    return (int)species1 - (int)species2;
+  return (species1 - species2);
 }
