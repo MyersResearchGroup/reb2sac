@@ -165,7 +165,7 @@ double GetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double
     while ( ( nextValueTimePtr = (NEXT_VALUE_TIME*)GetNextFromLinkedList( eventAssignDef->nextValueTime ) ) != NULL ){
       if (nextValueTimePtr->nextTime == nextTime) {
 	nextValue = nextValueTimePtr->nextValue;
-	RemoveElementFromLinkedList( nextValueTimePtr, eventAssignDef->nextValueTime );
+	RemoveElementFromLinkedList( (CADDR_T)nextValueTimePtr, eventAssignDef->nextValueTime );
 	break;
       } 
     }
@@ -189,7 +189,7 @@ void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime ) {
 	}
       } 
       if (nextEventTimePtrRm != NULL) {
-	RemoveElementFromLinkedList( nextEventTimePtrRm, eventDef->nextEventTime );
+	RemoveElementFromLinkedList( (CADDR_T)nextEventTimePtrRm, eventDef->nextEventTime );
       }
     } else {
       if( ( nextEventTimePtr = (double*)MALLOC( sizeof(double) ) ) == NULL ) {

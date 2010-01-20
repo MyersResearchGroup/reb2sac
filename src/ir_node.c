@@ -39,7 +39,7 @@ RET_VAL InitIRNode(  IR_NODE *node, char *name ) {
     
     START_FUNCTION("InitIRNode");
     
-    sprintf( buf, "N_%X", (int)node );
+    sprintf( buf, "N_%X", node );
     if( ( node->id = CreateString( buf ) ) == NULL ) {
         END_FUNCTION("InitIRNode", FAILING );
         return FAILING;
@@ -79,7 +79,7 @@ RET_VAL CopyIRNode( IR_NODE *from, IR_NODE *to ) {
     
     START_FUNCTION("CopyIRNode");
 
-    sprintf( buf, "N_%X", (int)to );
+    sprintf( buf, "N_%X", to );
     if( ( to->id = CreateString( buf ) ) == NULL ) {
         END_FUNCTION("CopyIRNode", FAILING );
         return FAILING;

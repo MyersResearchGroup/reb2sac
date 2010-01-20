@@ -2557,7 +2557,7 @@ static RET_VAL _PrintSymbolKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *fil
 
 static RET_VAL _PrintCompartmentKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, UINT32 tabCount ) {
     RET_VAL ret = SUCCESS;
-    REB2SAC_SYMBOL *sym = NULL;
+    COMPARTMENT *sym = NULL;
     
     START_FUNCTION("_PrintSymbolKineticLawForSBML");
     

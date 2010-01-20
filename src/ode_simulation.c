@@ -369,7 +369,6 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 
     rec->speciesArray = speciesArray;
     if ( algebraicVars > rec->algebraicRulesSize ) {
-      printf("av=%d ar=%d\n",algebraicVars,rec->algebraicRulesSize);
       return ErrorReport( FAILING, "_InitializeRecord", "model underdetermined" );
     } else if ( algebraicVars < rec->algebraicRulesSize ) {
       return ErrorReport( FAILING, "_InitializeRecord", "model overdetermined" );
@@ -777,7 +776,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     double numberSteps = rec->numberSteps;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
-    gsl_odeiv_step_type *stepType;
+    const gsl_odeiv_step_type *stepType;
     gsl_odeiv_step *step = NULL;
     gsl_odeiv_control *control = NULL;
     gsl_odeiv_evolve *evolve = NULL;
@@ -1166,7 +1165,7 @@ static void ExecuteAssignments( ODE_SIMULATION_RECORD *rec ) {
 }
 
 int ODE_print_state (size_t iter,gsl_multiroot_fsolver * s,int n) {
-  UINT32 i = 0;
+  int i = 0;
 
   printf("i= %d x = [ ",iter);
   for (i = 0; i < n; i++) {

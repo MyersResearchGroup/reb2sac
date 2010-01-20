@@ -1158,12 +1158,12 @@ static STRING *_CreateNewReactionID( REACTION *newReaction ) {
         if( IsLogicalSpecies( species ) ) {
             sprintf( buf, "Deg_%s__%X", 
                      GetCharArrayOfString( GetOriginalSpeciesName( (LOGICAL_SPECIES*)species ) ), 
-                     (int)newReaction );
+                     newReaction );
         }
         else {
             sprintf( buf, "Deg_%s__%X", 
                      GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
-                     (int)newReaction );
+                     newReaction );
         }
         newID = CreateString( buf );
         return newID;
@@ -1176,12 +1176,12 @@ static STRING *_CreateNewReactionID( REACTION *newReaction ) {
         if( IsLogicalSpecies( species ) ) {
             sprintf( buf, "Prod_%s__%X", 
                      GetCharArrayOfString( GetOriginalSpeciesName( (LOGICAL_SPECIES*)species ) ), 
-                     (int)newReaction );
+                     newReaction );
         }
         else {
             sprintf( buf, "Prod_%s__%X", 
                      GetCharArrayOfString( GetSpeciesNodeName( species ) ), 
-                     (int)newReaction );
+                     newReaction );
         }
         newID = CreateString( buf );
         return newID;

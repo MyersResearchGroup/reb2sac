@@ -708,7 +708,7 @@ static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *mod
     }
     if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
         END_FUNCTION("_HandleAlgebraicRule", FAILING );
-        return NULL;
+        return FAILING;
     }
     table = (HASH_TABLE*)frontend->_internal2;
     TRACE_1("creating rule on %s", var );
@@ -802,7 +802,7 @@ static RET_VAL _HandleRule( FRONT_END_PROCESSOR *frontend, Model_t *model, Rule_
     }
     if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
         END_FUNCTION("_HandleRule", FAILING );
-        return NULL;
+        return FAILING;
     }
     table = (HASH_TABLE*)frontend->_internal2;    
     if (Rule_isAlgebraic( source )) {
@@ -977,7 +977,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     }
     if( ( compartmentManager = GetCompartmentManagerInstance( frontend->record ) ) == NULL ) {
         END_FUNCTION("_HandleEvent", FAILING );
-        return NULL;
+        return FAILING;
     }
     id = Event_getId( source );
     if( ( eventDef = eventManager->CreateEvent( eventManager, id ) ) == NULL ) {
@@ -2702,7 +2702,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     products = Reaction_getListOfProducts( reaction );
     num = Reaction_getNumProducts( reaction );
     for( i = 0; i < num; i++ ) {
-        speciesRef = ListOf_get( products, i );
+        speciesRef = (SpeciesReference_t *)ListOf_get( products, i );
         species = (char*)SpeciesReference_getSpecies( speciesRef );
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = SpeciesReference_getStoichiometryMath( speciesRef );
@@ -2737,7 +2737,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     modifiers = Reaction_getListOfModifiers( reaction );
     num = Reaction_getNumModifiers( reaction );
     for( i = 0; i < num; i++ ) {
-        modifierRef = ListOf_get( modifiers, i );
+        modifierRef = (SpeciesReference_t *)ListOf_get( modifiers, i );
 	//        modifierRef = (ModifierSpeciesReference_t*)ListOf_get( modifiers, i );
         species = SpeciesReference_getSpecies( modifierRef );
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );

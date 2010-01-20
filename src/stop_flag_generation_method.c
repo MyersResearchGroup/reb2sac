@@ -90,12 +90,12 @@ static RET_VAL _ApplyStopFlagGenerationMethod( ABSTRACTION_METHOD *method, IR *i
 
     
     
-    if( !((BOOL)(method->_internal1)) ) {
+    if( !(method->_internal1) ) {
         END_FUNCTION("_ApplyStopFlagGenerationMethod", SUCCESS );
         return ret;
     }
     
-    if( (BOOL)(method->_internal2) ) {
+    if( (method->_internal2) ) {
         END_FUNCTION("_ApplyStopFlagGenerationMethod", SUCCESS );
         return ret;
     }
