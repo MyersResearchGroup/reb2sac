@@ -98,7 +98,8 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION 
         return FALSE;
     }
     
-    if( KINETIC_LAW_OP_MINUS != GetOpTypeFromKineticLaw( kineticLaw ) ) {
+    if( ( KINETIC_LAW_OP_MINUS != GetOpTypeFromKineticLaw( kineticLaw ) ) &&
+	( KINETIC_LAW_OP_PLUS != GetOpTypeFromKineticLaw( kineticLaw ) ) ) {
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
@@ -117,18 +118,25 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
     KINETIC_LAW *kineticLaw = NULL;
     KINETIC_LAW *forwardKineticLaw = NULL;
     KINETIC_LAW *backwardKineticLaw = NULL;
+    KINETIC_LAW *negOne = NULL;
     IR_EDGE *edge = NULL;
     SPECIES *species = NULL;
     LINKED_LIST *list = NULL;
-    
+    BYTE OpType;
+
     START_FUNCTION("_DoTransformation");
 
     kineticLaw = GetKineticLawInReactionNode( reaction );
+    OpType = GetOpTypeFromKineticLaw( kineticLaw );
     if( ( forwardKineticLaw = CloneKineticLaw( GetOpLeftFromKineticLaw( kineticLaw ) ) ) == NULL ) {
         return ErrorReport( FAILING, "_DoTransformation", "failed to clone the forward kinetic law of %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
     }
     if( ( backwardKineticLaw = CloneKineticLaw( GetOpRightFromKineticLaw( kineticLaw ) ) ) == NULL ) {
         return ErrorReport( FAILING, "_DoTransformation", "failed to clone the backward kinetic law of %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
+    }
+    if (OpType == KINETIC_LAW_OP_PLUS) {
+      negOne = CreateIntValueKineticLaw( -1 );
+      backwardKineticLaw = CreateOpKineticLaw( KINETIC_LAW_OP_TIMES, negOne, backwardKineticLaw );
     }
     originalName = GetReactionNodeName( reaction );
     sprintf( buf, "%s_b", GetCharArrayOfString( originalName ) );
@@ -177,6 +185,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         } 
     } 
 
+    SetReactionFastInReactionNode( backwardReaction, IsReactionFastInReactionNode( reaction ) );
     
     sprintf( buf, "%s_f", GetCharArrayOfString( originalName ) );    
     if( ( newName = CreateString( buf ) ) == NULL ) {

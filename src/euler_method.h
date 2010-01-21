@@ -36,6 +36,9 @@ typedef struct {
     RULE **ruleArray;
     UINT32 rulesSize;
     UINT32 algebraicRulesSize;
+    UINT32 numberFastSpecies;
+    UINT32 numberFastReactions;
+    double *fastCons;
     COMPARTMENT **compartmentArray;
     UINT32 compartmentsSize;
     REB2SAC_SYMBOL **symbolArray;

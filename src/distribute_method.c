@@ -112,7 +112,8 @@ static BOOL _IsConditionSatisfied( ABSTRACTION_METHOD *method, IR *ir, REACTION 
         return FALSE;
     }
     
-    if( KINETIC_LAW_OP_MINUS != GetOpTypeFromKineticLaw( kineticLawRight ) ) {
+    if( ( KINETIC_LAW_OP_MINUS != GetOpTypeFromKineticLaw( kineticLawRight ) )&&
+	( KINETIC_LAW_OP_PLUS != GetOpTypeFromKineticLaw( kineticLawRight ) ) ){
         END_FUNCTION("_IsConditionSatisfied", SUCCESS );
         return FALSE;
     }
@@ -131,6 +132,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
     KINETIC_LAW *constKineticLaw2 = NULL;
     KINETIC_LAW *forwardKineticLaw = NULL;
     KINETIC_LAW *backwardKineticLaw = NULL;
+    BYTE OpType;
     
     START_FUNCTION("_DoTransformation");
 
@@ -142,6 +144,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
         return ErrorReport( FAILING, "_DoTransformation", "failed to clone the forward kinetic law of %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
     }
     kineticLawRight = GetOpRightFromKineticLaw( kineticLaw );
+    OpType = GetOpTypeFromKineticLaw( kineticLawRight );
     if( ( forwardKineticLaw = CloneKineticLaw( GetOpLeftFromKineticLaw( kineticLawRight ) ) ) == NULL ) {
         return ErrorReport( FAILING, "_DoTransformation", "failed to clone the forward kinetic law of %s", GetCharArrayOfString( GetReactionNodeName( reaction ) ) );
     }
@@ -160,7 +163,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
       END_FUNCTION("_DoTransformation", FAILING );
       return FAILING;
     }
-    if( ( kineticLaw = CreateOpKineticLaw( KINETIC_LAW_OP_MINUS, kineticLawLeft, kineticLawRight ) ) == NULL ) {
+    if( ( kineticLaw = CreateOpKineticLaw( OpType, kineticLawLeft, kineticLawRight ) ) == NULL ) {
       //FreeKineticLaw( &right );
       //FreeKineticLaw( &left );
       END_FUNCTION("_DoTransformation", FAILING );

@@ -53,7 +53,7 @@ typedef struct {
     EVENT **eventArray;
     UINT32 eventsSize;
     REACTION *nextReaction;    
-    gsl_matrix *fastStoicMatrix;
+  //gsl_matrix *fastStoicMatrix;
     SIMULATION_PRINTER *printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double *concentrations;
