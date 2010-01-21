@@ -175,13 +175,20 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
         i++;
 	if (IsReactionFastInReactionNode( reaction )) {
 	  rec->numberFastReactions++;
+	  /*
 	  if (IsReactionReversibleInReactionNode( reaction )) {
 	    rec->numberFastReactions++;
 	  }
+	  */
 	}
       }
     }
     rec->reactionArray = reactions;
+
+    if( rec->numberFastReactions > 1 ) {
+        return ErrorReport( FAILING, "_InitializeRecord",
+                            "Simulator supports only a single fast reaction" );
+    }
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
@@ -1309,7 +1316,8 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   ODE_SIMULATION_RECORD *rec = ((ODE_SIMULATION_RECORD*)params);
   SPECIES *species = NULL;
   REACTION *reaction = NULL;
-  LINKED_LIST *edges = NULL;
+  LINKED_LIST *Redges = NULL;
+  LINKED_LIST *Pedges = NULL;
   IR_EDGE *edge = NULL;
   double stoichiometry = 0.0;
   BOOL boundary = FALSE;
@@ -1330,46 +1338,69 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       }
     }
   }
-  j = 0;
   if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
     return GSL_FAILURE;
   }
+  j = 0;
   for( i = 0; i < rec->reactionsSize; i++ ) {
     reaction = rec->reactionArray[i];
     if (IsReactionFastInReactionNode( reaction )) {
       amount = 0.0;
-      edges = GetReactantsInReactionNode( reaction );
-      ResetCurrentElement( edges );
-      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+      Redges = GetReactantsInReactionNode( reaction );
+      Pedges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( Redges );
+      if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
 	} else {
-	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	ResetCurrentElement( Pedges );
+	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  } else {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  }
 	}
       }
-      edges = GetProductsInReactionNode( reaction );
-      ResetCurrentElement( edges );
-      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+      ResetCurrentElement( Pedges );
+      if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
 	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
 	} else {
-	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  } else {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  }
 	}
       }
-      amount -= rec->fastCons[j];
-      gsl_vector_set (f, j, amount);
-      j++;
       if (!boundary) {
 	amount = GetReactionRate( reaction );
 	gsl_vector_set (f, j, amount);
 	j++;
       }
+      break;
     }
   } 
        
@@ -1381,13 +1412,13 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
   gsl_multiroot_fsolver *s;
   SPECIES *species = NULL;
   REACTION *reaction = NULL;
-  LINKED_LIST *edges = NULL;
+  LINKED_LIST *Redges = NULL;
+  LINKED_LIST *Pedges = NULL;
   IR_EDGE *edge = NULL;
   double stoichiometry = 0.0;
   int status;
   size_t i, j, iter = 0;
   double amount;
-
   const size_t n = rec->numberFastSpecies;
 
   j=0;
@@ -1395,30 +1426,52 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
     reaction = rec->reactionArray[i];
     if (IsReactionFastInReactionNode( reaction )) {
       amount = 0.0;
-      edges = GetReactantsInReactionNode( reaction );
-      ResetCurrentElement( edges );
-      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+      Redges = GetReactantsInReactionNode( reaction );
+      Pedges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( Redges );
+      if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
 	} else {
-	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	ResetCurrentElement( Pedges );
+	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    j++;
+	  } else {
+	    rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	    j++;
+	  }
 	}
       }
-      edges = GetProductsInReactionNode( reaction );
-      ResetCurrentElement( edges );
-      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+      ResetCurrentElement( Pedges );
+      if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount += stoichiometry * GetAmountInSpeciesNode( species );
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
 	} else {
-	  amount += stoichiometry * GetConcentrationInSpeciesNode( species );
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    j++;
+	  } else {
+	    rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	    j++;
+	  }
 	}
       }
-      rec->fastCons[j] = amount;
-      j++;
+      break;
     }
   } 
 
@@ -1460,6 +1513,23 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
   } while (status == GSL_CONTINUE && iter < 1000);
      
   //printf ("status = %s\n", gsl_strerror (status));
+
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      //if (IsSpeciesNodeFast( species )) {
+      amount = gsl_vector_get (s->x, j);
+      j++; 
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	SetAmountInSpeciesNode( species, amount );
+	rec->concentrations[i] = amount;
+      } else {
+	SetConcentrationInSpeciesNode( species, amount );
+	rec->concentrations[i] = amount;
+      }
+    }
+  }
      
   gsl_multiroot_fsolver_free (s);
   gsl_vector_free (x);

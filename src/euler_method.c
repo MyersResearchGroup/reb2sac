@@ -47,6 +47,7 @@ static void ExecuteAssignments( EULER_SIMULATION_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, EULER_SIMULATION_RECORD *rec );
 static void SetEventAssignmentsNextValuesTime( EVENT *event, EULER_SIMULATION_RECORD *rec, double time );
 static RET_VAL EvaluateAlgebraicRules( EULER_SIMULATION_RECORD *rec );
+static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -166,6 +167,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
 
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
+    rec->numberFastReactions = 0;
     if (rec->reactionsSize!=0) {
       if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
@@ -175,9 +177,22 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
       while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
         reactions[i] = reaction;
         i++;
+	if (IsReactionFastInReactionNode( reaction )) {
+	  rec->numberFastReactions++;
+	  /*
+	  if (IsReactionReversibleInReactionNode( reaction )) {
+	    rec->numberFastReactions++;
+	  }
+	  */
+	}
       }
     }
     rec->reactionArray = reactions;
+
+    if( rec->numberFastReactions > 1 ) {
+        return ErrorReport( FAILING, "_InitializeRecord",
+                            "Simulator supports only a single fast reaction" );
+    }
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
@@ -251,13 +266,22 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
       }
     }
     i = 0;
+    rec->numberFastSpecies = 0;
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
 	if (IsSpeciesNodeAlgebraic( species )) {
 	  algebraicVars++;
 	}
+	if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+	  rec->numberFastSpecies++;
+	}
         i++;
+    }
+    if (rec->numberFastSpecies > 0) {
+      if( ( rec->fastCons = (double*)MALLOC( rec->numberFastSpecies * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for fastCons array" );
+      }
     }
     rec->speciesArray = speciesArray;
     if ( algebraicVars > rec->algebraicRulesSize ) {
@@ -603,6 +627,9 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
     }
     if (rec->algebraicRulesSize > 0) {
       EvaluateAlgebraicRules( rec );
+    }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
     }
 
     if (change)
@@ -1053,13 +1080,13 @@ static RET_VAL EvaluateAlgebraicRules( EULER_SIMULATION_RECORD *rec ) {
   s = gsl_multiroot_fsolver_alloc (T, n);
   gsl_multiroot_fsolver_set (s, &f, x);
      
-  //ODE_print_state (iter, s, n);
+  //Euler_print_state (iter, s, n);
      
   do {
       iter++;
       status = gsl_multiroot_fsolver_iterate (s);
       
-      //ODE_print_state (iter, s, n);
+      //Euler_print_state (iter, s, n);
       
       if (status)   /* check if solver is stuck */
 	break;
@@ -1068,6 +1095,230 @@ static RET_VAL EvaluateAlgebraicRules( EULER_SIMULATION_RECORD *rec ) {
   } while (status == GSL_CONTINUE && iter < 1000);
      
   //printf ("status = %s\n", gsl_strerror (status));
+     
+  gsl_multiroot_fsolver_free (s);
+  gsl_vector_free (x);
+  return 0;
+}
+
+int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
+  RET_VAL ret = SUCCESS;
+  UINT32 i = 0;
+  UINT32 j;
+  double amount = 0.0;
+  EULER_SIMULATION_RECORD *rec = ((EULER_SIMULATION_RECORD*)params);
+  SPECIES *species = NULL;
+  REACTION *reaction = NULL;
+  LINKED_LIST *Redges = NULL;
+  LINKED_LIST *Pedges = NULL;
+  IR_EDGE *edge = NULL;
+  double stoichiometry = 0.0;
+  BOOL boundary = FALSE;
+
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      //if (IsSpeciesNodeFast( species )) {
+      amount = gsl_vector_get (x, j);
+      j++; 
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	SetAmountInSpeciesNode( species, amount );
+      } else {
+	SetConcentrationInSpeciesNode( species, amount );
+      }
+    }
+  }
+  if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
+    return GSL_FAILURE;
+  }
+  j = 0;
+  for( i = 0; i < rec->reactionsSize; i++ ) {
+    reaction = rec->reactionArray[i];
+    if (IsReactionFastInReactionNode( reaction )) {
+      amount = 0.0;
+      Redges = GetReactantsInReactionNode( reaction );
+      Pedges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( Redges );
+      if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	ResetCurrentElement( Pedges );
+	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  } else {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  }
+	}
+      }
+      ResetCurrentElement( Pedges );
+      if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  } else {
+	    gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	    j++;
+	  }
+	}
+      }
+      if (!boundary) {
+	amount = GetReactionRate( reaction );
+	gsl_vector_set (f, j, amount);
+	j++;
+      }
+      break;
+    }
+  } 
+       
+  return GSL_SUCCESS;
+}
+
+static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
+  const gsl_multiroot_fsolver_type *T;
+  gsl_multiroot_fsolver *s;
+  SPECIES *species = NULL;
+  REACTION *reaction = NULL;
+  LINKED_LIST *Redges = NULL;
+  LINKED_LIST *Pedges = NULL;
+  IR_EDGE *edge = NULL;
+  double stoichiometry = 0.0;
+  int status;
+  size_t i, j, iter = 0;
+  double amount;
+  const size_t n = rec->numberFastSpecies;
+
+  j=0;
+  for( i = 0; i < rec->reactionsSize; i++ ) {
+    reaction = rec->reactionArray[i];
+    if (IsReactionFastInReactionNode( reaction )) {
+      amount = 0.0;
+      Redges = GetReactantsInReactionNode( reaction );
+      Pedges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( Redges );
+      if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	ResetCurrentElement( Pedges );
+	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    j++;
+	  } else {
+	    rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	    j++;
+	  }
+	}
+      }
+      ResetCurrentElement( Pedges );
+      if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	} else {
+	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	}
+	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    j++;
+	  } else {
+	    rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	    j++;
+	  }
+	}
+      }
+      break;
+    }
+  } 
+
+  gsl_multiroot_function f = {&EulerfastReactions, n, rec};
+
+  gsl_vector *x = gsl_vector_alloc (n);
+  
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	amount = GetAmountInSpeciesNode( species );
+      } else {
+	amount = GetConcentrationInSpeciesNode( species );
+      }
+      gsl_vector_set (x, j, amount);
+      j++;
+    } 
+  }
+     
+  T = gsl_multiroot_fsolver_hybrids;
+  s = gsl_multiroot_fsolver_alloc (T, n);
+  gsl_multiroot_fsolver_set (s, &f, x);
+
+  //printf("time = %g\n",rec->time);
+  //Euler_print_state (iter, s, n);
+     
+  do {
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+      
+      //Euler_print_state (iter, s, n);
+      
+      if (status)   /* check if solver is stuck */
+	break;
+      
+      status = gsl_multiroot_test_residual (s->f, 1e-7);
+  } while (status == GSL_CONTINUE && iter < 1000);
+     
+  //printf ("status = %s\n", gsl_strerror (status));
+
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      //if (IsSpeciesNodeFast( species )) {
+      amount = gsl_vector_get (s->x, j);
+      j++; 
+      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	SetAmountInSpeciesNode( species, amount );
+      } else {
+	SetConcentrationInSpeciesNode( species, amount );
+      }
+    }
+  }
      
   gsl_multiroot_fsolver_free (s);
   gsl_vector_free (x);
@@ -1144,6 +1395,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
+	    if (IsReactionFastInReactionNode( reaction )) continue;
             rate = GetReactionRate( reaction );
             change -= (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
@@ -1154,6 +1406,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
             stoichiometry = GetStoichiometryInIREdge( edge );
             reaction = GetReactionInIREdge( edge );
+	    if (IsReactionFastInReactionNode( reaction )) continue;
             rate = GetReactionRate( reaction );
             change += (stoichiometry * rate);
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
@@ -1181,6 +1434,9 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     ExecuteAssignments( rec );
     if (rec->algebraicRulesSize > 0) {
       EvaluateAlgebraicRules( rec );
+    }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
     }
 
     return ret;

@@ -56,6 +56,7 @@ static void ExecuteAssignments( MONTE_CARLO_RECORD *rec );
 static void SetEventAssignmentsNextValues( EVENT *event, MONTE_CARLO_RECORD *rec );
 static void SetEventAssignmentsNextValuesTime( EVENT *event, MONTE_CARLO_RECORD *rec, double time );
 static RET_VAL EvaluateAlgebraicRules( MONTE_CARLO_RECORD *rec );
+static RET_VAL ExecuteFastReactions( MONTE_CARLO_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -175,18 +176,32 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
     rec->encoding = backend->encoding;
     list = ir->GetListOfReactionNodes( ir );
     rec->reactionsSize = GetLinkedListSize( list );
-    if (rec->reactionsSize > 0) {
+    rec->numberFastReactions = 0;
+    if (rec->reactionsSize!=0) {
       if( ( reactions = (REACTION**)MALLOC( rec->reactionsSize * sizeof(REACTION*) ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for reaction array" );
       }
-    }
-    i = 0;
-    ResetCurrentElement( list );
-    while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
-      reactions[i] = reaction;
-      i++;
+      i = 0;
+      ResetCurrentElement( list );
+      while( ( reaction = (REACTION*)GetNextFromLinkedList( list ) ) != NULL ) {
+        reactions[i] = reaction;
+        i++;
+	if (IsReactionFastInReactionNode( reaction )) {
+	  rec->numberFastReactions++;
+	  /*
+	  if (IsReactionReversibleInReactionNode( reaction )) {
+	    rec->numberFastReactions++;
+	  }
+	  */
+	}
+      }
     }
     rec->reactionArray = reactions;
+
+    if( rec->numberFastReactions > 1 ) {
+        return ErrorReport( FAILING, "_InitializeRecord",
+                            "Simulator supports only a single fast reaction" );
+    }
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
@@ -263,13 +278,22 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
     properties = compRec->properties;
 
     i = 0;
+    rec->numberFastSpecies = 0;
     ResetCurrentElement( list );
     while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
         speciesArray[i] = species;
 	if (IsSpeciesNodeAlgebraic( species )) {
 	  algebraicVars++;
 	}
+	if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+	  rec->numberFastSpecies++;
+	}
         i++;
+    }
+    if (rec->numberFastSpecies > 0) {
+      if( ( rec->fastCons = (double*)MALLOC( rec->numberFastSpecies * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for fastCons array" );
+      }
     }
     rec->speciesArray = speciesArray;
     if ( algebraicVars > rec->algebraicRulesSize ) {
@@ -624,6 +648,9 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
     if (rec->algebraicRulesSize > 0) {
       EvaluateAlgebraicRules( rec );
     }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
+    }
 
     if (change)
       return CHANGE;
@@ -669,8 +696,8 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	}
 	if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
 	  TRACE_1( "the total propensity is 0 at iteration %i", i );
-	  rec->t = maxTime - rec->time;
-	  rec->time = maxTime;
+	  rec->t = timeLimit - rec->time;
+	  rec->time = timeLimit;
 	  reaction = NULL;
 	  rec->nextReaction = NULL;
 	  if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
@@ -1125,6 +1152,9 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	if (rec->algebraicRulesSize > 0) {
 	  EvaluateAlgebraicRules( rec );
 	}
+	if (rec->numberFastSpecies > 0) {
+	  ExecuteFastReactions( rec );
+	}
       }
     } while (eventFired);
     return firstEventTime;
@@ -1347,6 +1377,180 @@ static RET_VAL EvaluateAlgebraicRules( MONTE_CARLO_RECORD *rec ) {
   return 0;
 }
 
+int MonteCarlofastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
+  RET_VAL ret = SUCCESS;
+  UINT32 i = 0;
+  UINT32 j;
+  double amount = 0.0;
+  MONTE_CARLO_RECORD *rec = ((MONTE_CARLO_RECORD*)params);
+  SPECIES *species = NULL;
+  REACTION *reaction = NULL;
+  LINKED_LIST *Redges = NULL;
+  LINKED_LIST *Pedges = NULL;
+  IR_EDGE *edge = NULL;
+  double stoichiometry = 0.0;
+  BOOL boundary = FALSE;
+
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      //if (IsSpeciesNodeFast( species )) {
+      amount = gsl_vector_get (x, j);
+      j++; 
+      SetAmountInSpeciesNode( species, amount );
+    }
+  }
+  _CalculatePropensities( rec );
+  j = 0;
+  for( i = 0; i < rec->reactionsSize; i++ ) {
+    reaction = rec->reactionArray[i];
+    if (IsReactionFastInReactionNode( reaction )) {
+      amount = 0.0;
+      Redges = GetReactantsInReactionNode( reaction );
+      Pedges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( Redges );
+      if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	ResetCurrentElement( Pedges );
+	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	  gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	  j++;
+	}
+      }
+      ResetCurrentElement( Pedges );
+      if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
+	  gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	  j++;
+	}
+      }
+      if (!boundary) {
+	amount = GetReactionRate( reaction );
+	gsl_vector_set (f, j, amount);
+	j++;
+      }
+      break;
+    }
+  } 
+       
+  return GSL_SUCCESS;
+}
+
+static RET_VAL ExecuteFastReactions( MONTE_CARLO_RECORD *rec ) {
+  const gsl_multiroot_fsolver_type *T;
+  gsl_multiroot_fsolver *s;
+  SPECIES *species = NULL;
+  REACTION *reaction = NULL;
+  LINKED_LIST *Redges = NULL;
+  LINKED_LIST *Pedges = NULL;
+  IR_EDGE *edge = NULL;
+  double stoichiometry = 0.0;
+  int status;
+  size_t i, j, iter = 0;
+  double amount;
+  const size_t n = rec->numberFastSpecies;
+
+  j=0;
+  for( i = 0; i < rec->reactionsSize; i++ ) {
+    reaction = rec->reactionArray[i];
+    if (IsReactionFastInReactionNode( reaction )) {
+      amount = 0.0;
+      Redges = GetReactantsInReactionNode( reaction );
+      Pedges = GetProductsInReactionNode( reaction );
+      ResetCurrentElement( Redges );
+      if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	ResetCurrentElement( Pedges );
+	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	  j++;
+	}
+      }
+      ResetCurrentElement( Pedges );
+      if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+	species = GetSpeciesInIREdge( edge );
+	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  species = GetSpeciesInIREdge( edge );
+	  rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	  j++;
+	}
+      }
+      break;
+    }
+  } 
+
+  gsl_multiroot_function f = {&MonteCarlofastReactions, n, rec};
+
+  gsl_vector *x = gsl_vector_alloc (n);
+  
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      amount = GetAmountInSpeciesNode( species );
+      gsl_vector_set (x, j, amount);
+      j++;
+    } 
+  }
+     
+  T = gsl_multiroot_fsolver_hybrids;
+  s = gsl_multiroot_fsolver_alloc (T, n);
+  gsl_multiroot_fsolver_set (s, &f, x);
+
+  //printf("time = %g\n",rec->time);
+  //print_state (iter, s, n);
+     
+  do {
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+      
+      //print_state (iter, s, n);
+      
+      if (status)   /* check if solver is stuck */
+	break;
+      
+      status = gsl_multiroot_test_residual (s->f, 1e-7);
+  } while (status == GSL_CONTINUE && iter < 1000);
+     
+  //printf ("status = %s\n", gsl_strerror (status));
+
+  j = 0;
+  for( i = 0; i < rec->speciesSize; i++ ) {
+    species = rec->speciesArray[i];
+    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      //if (IsSpeciesNodeFast( species )) {
+      amount = gsl_vector_get (s->x, j);
+      j++; 
+      SetAmountInSpeciesNode( species, amount );
+    }
+  }
+     
+  gsl_multiroot_fsolver_free (s);
+  gsl_vector_free (x);
+  return 0;
+}
+
 static RET_VAL _UpdateSpeciesValues( MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
     double stoichiometry = 0;
@@ -1444,6 +1648,9 @@ static RET_VAL _UpdateSpeciesValues( MONTE_CARLO_RECORD *rec ) {
     ExecuteAssignments( rec );
     if (rec->algebraicRulesSize > 0) {
       EvaluateAlgebraicRules( rec );
+    }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
     }
 
     return ret;
