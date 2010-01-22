@@ -143,6 +143,9 @@
 #define REB2SAC_XHTML_MATHML_L_CEILING_FORMAT "<mo>&lceil;</mo>"
 #define REB2SAC_XHTML_MATHML_R_CEILING_FORMAT "<mo>&rceil;</mo>"
 
+#define REB2SAC_XHTML_MODEL_ID_FORMAT \
+"<table border=\"2\"><tr><th>Model ID</th><th>Model Name</th></tr><tr><td>%s</td><td>%s</td></tr></table>" NEW_LINE
+
 #define REB2SAC_XHTML_START_CONSTANTS_FORMAT \
 "<table border=\"2\"><tr><th>Parameter ID</th><th>Initial Value</th><th>Units</th><th>Constant</th></tr>" NEW_LINE
  

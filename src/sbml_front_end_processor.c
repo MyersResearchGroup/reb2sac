@@ -193,6 +193,9 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
     frontend->_internal3 = (CADDR_T)symtab;
     
     workingOnFunctions = 0;
+
+    ir->SetModelId( ir, Model_getId( model ) );
+    ir->SetModelName( ir, Model_getName( model ) );
         
     if( IS_FAILED( ( ret = _HandleUnitDefinitions( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );

@@ -44,6 +44,8 @@ typedef struct _IR IR;
 */
 
 struct _IR {            
+    STRING *modelId;
+    STRING *modelName;
     LINKED_LIST *speciesList;
     LINKED_LIST *reactionList;
     LINKED_LIST *reactantEdges;
@@ -67,6 +69,11 @@ struct _IR {
     LINKED_LIST * (*GetListOfReactantEdges)( IR *ir );    
     LINKED_LIST * (*GetListOfModifierEdges)( IR *ir );
     LINKED_LIST * (*GetListOfProductEdges)( IR *ir );
+
+    RET_VAL (*SetModelId)( IR *ir, char *modelId );
+    RET_VAL (*SetModelName)( IR *ir, char *modelId );
+    STRING* (*GetModelId)( IR *ir );
+    STRING* (*GetModelName)( IR *ir );
     
     SPECIES* (*CreateSpecies)( IR *ir, char *name );    
     REACTION* (*CreateReaction)( IR *ir, char *name );

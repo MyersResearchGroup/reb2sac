@@ -88,6 +88,11 @@ static RET_VAL _HandleIR( BACK_END_PROCESSOR *backend, IR *ir, FILE *file ) {
     fprintf( file, REB2SAC_XHTML_START_FORMAT_ON_LINE );
     fprintf( file, NEW_LINE );
     fprintf( file, NEW_LINE );
+    fprintf( file, REB2SAC_XHTML_MODEL_ID_FORMAT, GetCharArrayOfString( ir->GetModelId( ir ) ),
+	     GetCharArrayOfString( ir->GetModelName( ir ) ));
+    fprintf( file, NEW_LINE );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
+    fprintf( file, REB2SAC_XHTML_LINE_BREAK );
 
     if( ( functionManager = ir->GetFunctionManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the function manager" );
