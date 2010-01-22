@@ -33,6 +33,11 @@ static LINKED_LIST * _GetListOfModifierEdges( IR *ir );
 static LINKED_LIST * _GetListOfProductEdges( IR *ir );
 
     
+static RET_VAL _SetModelId( IR *ir, char *modelId );    
+static RET_VAL _SetModelName( IR *ir, char *modelName );    
+static STRING *_GetModelId( IR *ir );
+static STRING *_GetModelName( IR *ir );
+
 static SPECIES *_CreateSpecies( IR *ir, char *name );    
 static REACTION *_CreateReaction( IR *ir, char *name );
 
@@ -155,7 +160,10 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
     }
     
     ir = &irObject;
-    
+
+    ir->modelId = NULL;
+    ir->modelName = NULL;
+
     if( ( ir->speciesList = CreateLinkedList() ) == NULL ) {                
         return ErrorReport( FAILING, "InitIR", "could not allocate internal data for IR" );
     }
@@ -188,6 +196,11 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
     ir->GetListOfModifierEdges = _GetListOfModifierEdges;
     ir->GetListOfProductEdges = _GetListOfProductEdges;
     
+    ir->SetModelId = _SetModelId;
+    ir->SetModelName = _SetModelName;
+    ir->GetModelId = _GetModelId;
+    ir->GetModelName = _GetModelName;
+
     ir->CreateSpecies = _CreateSpecies;
     ir->CreateReaction = _CreateReaction;
 
@@ -345,6 +358,27 @@ static LINKED_LIST * _GetListOfProductEdges( IR *ir ) {
     return ir->productEdges;
 }
 
+static RET_VAL _SetModelId( IR *ir, char *modelId ) {
+  if ( ( ir->modelId = CreateString( modelId ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static RET_VAL _SetModelName( IR *ir, char *modelName ) {
+  if ( ( ir->modelName = CreateString( modelName ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static STRING *_GetModelId( IR *ir ) {
+  return ir->modelId;
+}
+
+static STRING *_GetModelName( IR *ir ) {
+  return ir->modelName;
+}
         
 static SPECIES *_CreateSpecies( IR *ir, char *name ) {
     SPECIES *speciesNode = NULL;
