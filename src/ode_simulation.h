@@ -62,6 +62,7 @@ typedef struct {
     double minPrintInterval;
     double nextPrintTime;    
     double timeLimit;
+    double minTimeStep;
     double timeStep;
     double originalTimeStep;
     double absoluteError;

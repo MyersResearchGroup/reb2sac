@@ -45,6 +45,9 @@
 #define ODE_SIMULATION_NUMBER_STEPS "ode.simulation.number.steps"
 #define DEFAULT_ODE_SIMULATION_NUMBER_STEPS_VALUE 10
 
+#define ODE_SIMULATION_MIN_TIME_STEP "ode.simulation.min.time.step"
+#define DEFAULT_ODE_SIMULATION_MIN_TIME_STEP 0.0001
+
 #define ODE_SIMULATION_TIME_STEP "ode.simulation.time.step"
 #define DEFAULT_ODE_SIMULATION_TIME_STEP 1.0
 

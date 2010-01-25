@@ -445,6 +445,15 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
     }
     rec->originalTimeStep = rec->timeStep;
 
+    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_MIN_TIME_STEP ) ) == NULL ) {
+        rec->minTimeStep = DEFAULT_ODE_SIMULATION_MIN_TIME_STEP;
+    }
+    else {
+      if( IS_FAILED( ( ret = StrToFloat( &(rec->minTimeStep), valueString ) ) ) ) {
+	rec->minTimeStep = DEFAULT_ODE_SIMULATION_MIN_TIME_STEP;
+      }
+    }
+
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -773,12 +782,14 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     int i;
     double h = ODE_SIMULATION_H;
     double *y = rec->concentrations;
+    double *y_err;
     double nextPrintTime = rec->time;
     double minPrintInterval = rec->minPrintInterval;
     double time = rec->time;
     double timeLimit = rec->timeLimit;
     double nextEventTime;
     double maxTime;
+    double minTimeStep = rec->minTimeStep;
     int curStep = 0;
     double numberSteps = rec->numberSteps;
     SIMULATION_PRINTER *printer = NULL;
@@ -795,7 +806,9 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
         size,
         rec
     };
-
+    if( ( y_err = (double*)MALLOC( (rec->symbolsSize + rec->compartmentsSize + rec->speciesSize) * sizeof( double ) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_RunSimulation", "could not allocate memory for y_err" );
+    }
     if (strcmp(rec->encoding,"rkf45")==0) {
       stepType = gsl_odeiv_step_rkf45;
     } else if (strcmp(rec->encoding,"rk8pd")==0) {
@@ -849,10 +862,19 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	if (rec->numberFastSpecies > 0) {
 	  ExecuteFastReactions( rec );
 	}
-	status = gsl_odeiv_evolve_apply( evolve, control, step,
-					 &system, &time, maxTime,
-					 &h, y );
-	//printf("TIME = %g\n",time);
+	if (h >= minTimeStep) {
+	  status = gsl_odeiv_evolve_apply( evolve, control, step,
+					   &system, &time, maxTime,
+					   &h, y );
+	} else {
+	  h = minTimeStep;
+	  if (time + h > maxTime) {
+	    h = maxTime - time;
+	  }
+	  status = gsl_odeiv_step_apply( step, time, h, y, y_err, NULL, NULL, &system );
+	  time = time + h;
+	}
+	//printf("TIME = %g STEP = %g MIN = %g\n",time,h,minTimeStep);
 	if (status == GSL_ETOL) {
 	  maxTime = time + rec->timeStep;
 	  for( i = 0; i < rec->speciesSize; i++ ) {
