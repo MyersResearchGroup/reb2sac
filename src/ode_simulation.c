@@ -866,6 +866,8 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	  status = gsl_odeiv_evolve_apply( evolve, control, step,
 					   &system, &time, maxTime,
 					   &h, y );
+	  //printf("TIME = %g STEP = %g MIN = %g\n",time,h,minTimeStep);
+	  //if (h < 1e-3) h = 1e-3;
 	} else {
 	  h = minTimeStep;
 	  if (time + h > maxTime) {
@@ -874,7 +876,6 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	  status = gsl_odeiv_step_apply( step, time, h, y, y_err, NULL, NULL, &system );
 	  time = time + h;
 	}
-	//printf("TIME = %g STEP = %g MIN = %g\n",time,h,minTimeStep);
 	if (status == GSL_ETOL) {
 	  maxTime = time + rec->timeStep;
 	  for( i = 0; i < rec->speciesSize; i++ ) {
