@@ -593,12 +593,10 @@ static RET_VAL _DoEnzymeKineticQSSA1Transformation( ABSTRACTION_METHOD *method, 
             return ret;
         } 
     }
-    
     if( IS_FAILED( ( ret = ir->RemoveSpecies( ir, enzyme ) ) ) ) {
         END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
         return ret;
     } 
-    
     DeleteLinkedList( &modifierEdges );
     FreeKineticLaw( &totalConKineticLaw );
     FreeKineticLaw( &denom );
