@@ -86,7 +86,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	analysis_def_parser.tab.c sad_ast.c sad_ast_func_registry.c sad_ast_pretty_printer.c \
 	sad_ast_exp_evaluator.c sad_ast_creator.c sad_simulation_run_termination_decider.c \
 	analysis_def_scanner.c constraint_simulation_run_termination_decider.c
-reb2sac_LDADD = -lgslcblas -lgsl -lsbml
+reb2sac_LDADD = -lgsl -lgslcblas -lsbml
 
 #manually inserted
 analysis_def_scanner.c: analysis_def_scanner.l
