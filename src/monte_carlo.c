@@ -696,8 +696,8 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	}
 	if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
 	  TRACE_1( "the total propensity is 0 at iteration %i", i );
-	  rec->t = timeLimit - rec->time;
-	  rec->time = timeLimit;
+	  rec->t = maxTime - rec->time; //timeLimit - rec->time;
+	  rec->time = maxTime; //timeLimit;
 	  reaction = NULL;
 	  rec->nextReaction = NULL;
 	  if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
@@ -1204,11 +1204,7 @@ static void fireEvent( EVENT *event, MONTE_CARLO_RECORD *rec ) {
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     /* printf("varType = %d j = %d\n",varType,j); */
-    if (!GetUseValuesFromTriggerTime( event )) {
-      amount = GetEventAssignmentNextValue( eventAssignment );
-    } else {
-      amount = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
-    }
+    amount = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
     /* printf("conc = %g\n",amount); */
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
       SetAmountInSpeciesNode( rec->speciesArray[j], amount );
