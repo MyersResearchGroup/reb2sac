@@ -1138,11 +1138,7 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
-    if (!GetUseValuesFromTriggerTime( event )) {
-      concentration = GetEventAssignmentNextValue( eventAssignment );
-    } else {
-      concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
-    }
+    concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
     //printf("conc = %g\n",amount);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
 	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {

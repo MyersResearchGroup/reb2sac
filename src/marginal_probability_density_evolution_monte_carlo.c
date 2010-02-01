@@ -1558,11 +1558,7 @@ static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec) {
         varType = GetEventAssignmentVarType(eventAssignment);
         j = GetEventAssignmentIndex(eventAssignment);
         //printf("varType = %d j = %d\n",varType,j);
-        if (!GetUseValuesFromTriggerTime(event)) {
-            amount = GetEventAssignmentNextValue(eventAssignment);
-        } else {
-            amount = GetEventAssignmentNextValueTime(eventAssignment, rec->time);
-        }
+	amount = GetEventAssignmentNextValueTime(eventAssignment, rec->time);
         //printf("conc = %g\n",amount);
         if (varType == SPECIES_EVENT_ASSIGNMENT) {
             SetAmountInSpeciesNode(rec->speciesArray[j], amount);
