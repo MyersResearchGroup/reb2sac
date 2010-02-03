@@ -532,8 +532,13 @@ static RET_VAL _DoEnzymeKineticRapidEquilibrium1Transformation( ABSTRACTION_METH
     
     symtab = ir->GetGlobalSymtab( ir );    
     TRACE_2("total concentration of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( enzyme ) ), totalConcentration );
+    /*
     if( ( totalConKineticLaw = CreateTotalConcentrationKineticLaw( enzyme, symtab, totalConcentration ) ) == NULL ) {
-        return ErrorReport( FAILING, "_DoEnzymeKineticRapidEquilibrium1Transformation", "error creating kinetic law for totail concentration %s", totalConcentration );
+        return ErrorReport( FAILING, "_DoEnzymeKineticRapidEquilibrium1Transformation", "error creating kinetic law for total concentration %s", totalConcentration );
+    }
+    */
+    if( ( totalConKineticLaw = CreateSpeciesKineticLaw( enzyme ) ) == NULL ) {
+        return ErrorReport( FAILING, "_DoEnzymeKineticRapidEquilibrium1Transformation", "error creating kinetic law for total concentration %s", totalConcentration );
     }
     
     while( ( element = (ENZYME_KINETIC_RAPID_EQUILIBRIUM_1_INTERNAL_ELEMENT*)GetNextFromLinkedList( elements ) ) != NULL ) {
@@ -602,13 +607,21 @@ static RET_VAL _DoEnzymeKineticRapidEquilibrium1Transformation( ABSTRACTION_METH
             END_FUNCTION("_DoEnzymeKineticRapidEquilibrium1Transformation", ret );
             return ret;
         } 
+	if( IS_FAILED( ( ret = ir->RemoveReactantInReaction( ir, complexFormationReaction, enzyme ) ) ) ) {
+	  END_FUNCTION("_DoEnzymeKineticRapidEquilibrium1Transformation", ret );
+	  return ret;
+	} 
+	if( IS_FAILED( ( ret = ir->AddModifierEdge( ir, complexFormationReaction, enzyme, 1 ) ) ) ) {
+	  END_FUNCTION("_DoEnzymeKineticRapidEquilibrium1Transformation", ret );
+	  return ret;
+	} 
     }
-    
+    /*
     if( IS_FAILED( ( ret = ir->RemoveSpecies( ir, enzyme ) ) ) ) {
         END_FUNCTION("_DoEnzymeKineticRapidEquilibrium1Transformation", ret );
         return ret;
     } 
-    
+    */
     DeleteLinkedList( &modifierEdges );
     FreeKineticLaw( &totalConKineticLaw );
     FreeKineticLaw( &denom );

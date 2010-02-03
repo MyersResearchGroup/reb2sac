@@ -370,6 +370,31 @@ KINETIC_LAW *CreateUnaryOpKineticLaw( BYTE opType, KINETIC_LAW *child ) {
 }
 
 
+LINKED_LIST *CloneChildren( LINKED_LIST *children ) {
+    LINKED_LIST *clones = NULL;
+    KINETIC_LAW *child = NULL;
+    KINETIC_LAW *clone = NULL;
+
+    START_FUNCTION("CloneChildren");
+
+    if( ( clones = CreateLinkedList() ) == NULL ) {
+      END_FUNCTION("CloneChildren", FAILING );
+      return NULL;        
+    }    
+    ResetCurrentElement( children );
+    while ( child = (KINETIC_LAW*)GetNextFromLinkedList( children )) {
+      if( ( clone = CloneKineticLaw( child ) )  == NULL ) {
+	END_FUNCTION("CloneChildren", FAILING );        
+	return NULL;
+      }
+      if( IS_FAILED( ( AddElementInLinkedList( (CADDR_T)clone, clones ) ) ) ) {
+	END_FUNCTION("CloneChildren", FAILING );        
+	return NULL;
+      }
+    }  
+    return clones;
+}
+
 KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law ) {
     KINETIC_LAW *clone = NULL;
 #ifdef DEBUG
@@ -437,7 +462,7 @@ KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law ) {
     }
     else if( law->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
       clone->valueType = KINETIC_LAW_VALUE_TYPE_PW;
-      if( ( clone->value.pw.children = CloneLinkedList( law->value.pw.children ) )  == NULL ) {
+      if( ( clone->value.pw.children = CloneChildren( law->value.pw.children ) )  == NULL ) {
 #ifdef DEBUG
 	string = ToStringKineticLaw( law->value.pw.children );
 	printf( "could not create a clone of %s", GetCharArrayOfString( string ) );
@@ -1530,7 +1555,7 @@ static RET_VAL _VisitSpeciesToReplaceSpeciesWithKineticLaw( KINETIC_LAW_VISITOR 
             } 
         } else if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
             if( IS_FAILED( ( ret = SetPWKineticLaw( kineticLaw, replacement->value.pw.opType, 
-                CloneLinkedList( replacement->value.pw.children ) ) ) ) ) {
+                CloneChildren( replacement->value.pw.children ) ) ) ) ) {
                 string = ToStringKineticLaw( replacement );
                 return ErrorReport( FAILING, "_VisitSpeciesToReplaceSpeciesWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
             } 
@@ -1574,7 +1599,7 @@ static RET_VAL _VisitFunctionSymbolToReplaceWithKineticLaw( KINETIC_LAW_VISITOR 
             } 
         } else if( replacement->valueType == KINETIC_LAW_VALUE_TYPE_PW ) {
             if( IS_FAILED( ( ret = SetPWKineticLaw( kineticLaw, replacement->value.pw.opType, 
-                CloneLinkedList( replacement->value.pw.children ) ) ) ) ) {
+                CloneChildren( replacement->value.pw.children ) ) ) ) ) {
                 string = ToStringKineticLaw( replacement );
                 return ErrorReport( FAILING, "_VisitSpeciesToReplaceSpeciesWithKineticLaw", "failed to create clone for %s", GetCharArrayOfString( string ) );
             } 

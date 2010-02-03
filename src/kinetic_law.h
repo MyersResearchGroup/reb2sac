@@ -195,6 +195,7 @@ KINETIC_LAW *CreateUnaryOpKineticLaw( BYTE opType, KINETIC_LAW *child );
 KINETIC_LAW *CreateFunctionSymbolKineticLaw( char *funcSymbol );
 
 KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law );
+LINKED_LIST *CloneChildren( LINKED_LIST *children );
 
 RET_VAL SetIntValueKineticLaw( KINETIC_LAW *law, long value );
 RET_VAL SetRealValueKineticLaw( KINETIC_LAW *law, double value );
