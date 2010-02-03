@@ -188,8 +188,7 @@ static BOOL _IsEnzymeKineticQSSA1ConditionSatisfied( ABSTRACTION_METHOD *method,
     KINETIC_LAW_EVALUATER *evaluater = (KINETIC_LAW_EVALUATER*)(method->_internal2);
         
     START_FUNCTION("_IsEnzymeKineticQSSA1ConditionSatisfied");
-    
-    
+
     /*
     * this species S is not one of properties of interest   
     */
@@ -522,7 +521,12 @@ static RET_VAL _DoEnzymeKineticQSSA1Transformation( ABSTRACTION_METHOD *method, 
     
     symtab = ir->GetGlobalSymtab( ir );    
     TRACE_2("total concentration of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( enzyme ) ), totalConcentration );
+    /*
     if( ( totalConKineticLaw = CreateTotalConcentrationKineticLaw( enzyme, symtab, totalConcentration ) ) == NULL ) {
+        return ErrorReport( FAILING, "_DoEnzymeKineticQSSA1Transformation", "error creating kinetic law for total concentration %s", totalConcentration );
+    }
+    */
+    if( ( totalConKineticLaw = CreateSpeciesKineticLaw( enzyme ) ) == NULL ) {
         return ErrorReport( FAILING, "_DoEnzymeKineticQSSA1Transformation", "error creating kinetic law for totail concentration %s", totalConcentration );
     }
     
@@ -592,11 +596,21 @@ static RET_VAL _DoEnzymeKineticQSSA1Transformation( ABSTRACTION_METHOD *method, 
             END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
             return ret;
         } 
+	if( IS_FAILED( ( ret = ir->RemoveReactantInReaction( ir, complexFormationReaction, enzyme ) ) ) ) {
+	  END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
+	  return ret;
+	} 
+	if( IS_FAILED( ( ret = ir->AddModifierEdge( ir, complexFormationReaction, enzyme, 1 ) ) ) ) {
+	  END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
+	  return ret;
+	} 
     }
+    /*
     if( IS_FAILED( ( ret = ir->RemoveSpecies( ir, enzyme ) ) ) ) {
         END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
         return ret;
     } 
+    */
     DeleteLinkedList( &modifierEdges );
     FreeKineticLaw( &totalConKineticLaw );
     FreeKineticLaw( &denom );
