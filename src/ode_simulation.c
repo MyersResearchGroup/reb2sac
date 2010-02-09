@@ -866,8 +866,8 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	  status = gsl_odeiv_evolve_apply( evolve, control, step,
 					   &system, &time, maxTime,
 					   &h, y );
-	  //printf("TIME = %g STEP = %g MIN = %g\n",time,h,minTimeStep);
-	  //if (h < 1e-3) h = 1e-3;
+	  //printf("TIME = %g STEP = %g\n",time,h);
+	  //if (h < ODE_SIMULATION_H) h = ODE_SIMULATION_H;
 	} else {
 	  h = minTimeStep;
 	  if (time + h > maxTime) {
