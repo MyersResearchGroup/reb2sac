@@ -757,7 +757,7 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
     for (i = 0; i < rec->eventsSize; i++) {
       /* SetTriggerEnabledInEvent( rec->eventArray[i], FALSE ); */
       /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
-      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
     	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
       } else {
@@ -1002,6 +1002,15 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
 	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
 	if (nextEventTime != -1.0) {
+	  if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
+	    if (!rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	      nextEventTime = -1.0;
+	      SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	      SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	      continue;
+	    }
+	  }
 	  if  (time >= nextEventTime) {
 	    if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
 	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 

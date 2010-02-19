@@ -955,6 +955,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     int num = 0;
     char *id = NULL;
     char *message = NULL;
+    char *annotation = NULL;
     EVENT *eventDef = NULL; 
     EVENT_MANAGER *eventManager = NULL;
     HASH_TABLE *table = NULL;
@@ -995,6 +996,12 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     SetUseValuesFromTriggerTime( eventDef, Event_getUseValuesFromTriggerTime( source ) );
     if (Event_isSetTrigger( source ) ) {
       trigger = Event_getTrigger( source );
+      annotation = SBase_getAnnotationString( trigger );
+      if (annotation != NULL && strstr(annotation,"TriggerCanBeDisabled") != NULL) {
+	SetTriggerCanBeDisabled( eventDef, TRUE );
+      } else {
+	SetTriggerCanBeDisabled( eventDef, FALSE );
+      }
       node  = (ASTNode_t *)Trigger_getMath( trigger );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        

@@ -618,7 +618,7 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
     for (i = 0; i < rec->eventsSize; i++) {
       /* SetTriggerEnabledInEvent( rec->eventArray[i], FALSE ); */
       /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
-      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
     	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
       } else {
@@ -814,6 +814,15 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
 	if (nextEventTime != -1.0) {
+	  if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
+	    if (!rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	      nextEventTime = -1.0;
+	      SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	      SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	      continue;
+	    }
+	  }
 	  if (time >= nextEventTime) {
 	    if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
 	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
@@ -834,14 +843,14 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	  firstEventTime = nextEventTime;
 	}
 	if (!triggerEnabled) {
-	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	  if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
 	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
 	      deltaTime = 0;
 	    }
 	    else {
-	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
 	    }
 	    if (deltaTime > 0) {
@@ -862,7 +871,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	    }
 	  }
 	} else {
-	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	  if (!rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	  }
@@ -903,7 +912,7 @@ static void SetEventAssignmentsNextValuesTime( EVENT *event, EULER_SIMULATION_RE
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator, eventAssignment->assignment );
+    amount = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator, eventAssignment->assignment );
     SetEventAssignmentNextValueTime( eventAssignment, amount, time );
   }
 }
@@ -1002,7 +1011,7 @@ int EulerAlgebraicRules(const gsl_vector * x, void *params, gsl_vector * f) {
   j = 0;
   for (i = 0; i < rec->rulesSize; i++) {
     if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ALGEBRAIC ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      amount = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
       gsl_vector_set (f, j, amount);
       j++;
