@@ -261,6 +261,13 @@ BOOL GetUseValuesFromTriggerTime( EVENT *eventDef ) {
     return eventDef->useValuesFromTriggerTime;
 }
 
+BOOL GetTriggerCanBeDisabled( EVENT *eventDef ) {
+    START_FUNCTION("GetTriggerCanBeDisabled");
+            
+    END_FUNCTION("GetTriggerCanBeDisabled", SUCCESS );
+    return eventDef->TriggerCanBeDisabled;
+}
+
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef ) {
     START_FUNCTION("GetTriggerEnabledInEvent");
             
@@ -269,11 +276,19 @@ BOOL GetTriggerEnabledInEvent( EVENT *eventDef ) {
 }
 
 void SetUseValuesFromTriggerTime( EVENT *eventDef, BOOL useValuesFromTriggerTime ) {
-    START_FUNCTION("SetTriggerEnabledInEvent");
+    START_FUNCTION("SetUseValuesFromTriggerTime");
   
     eventDef->useValuesFromTriggerTime = useValuesFromTriggerTime;
   
-    END_FUNCTION("GetTriggerEnabledInEvent", SUCCESS );
+    END_FUNCTION("SetUseValuesFromTriggerTime", SUCCESS );
+}
+
+void SetTriggerCanBeDisabled( EVENT *eventDef, BOOL TriggerCanBeDisabled ) {
+    START_FUNCTION("SetTriggerCanBeDisabled");
+  
+    eventDef->TriggerCanBeDisabled = TriggerCanBeDisabled;
+  
+    END_FUNCTION("SetTriggerCanBeDisabled", SUCCESS );
 }
 
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled ) {
@@ -281,7 +296,7 @@ void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled ) {
   
     eventDef->triggerEnabled = triggerEnabled;
   
-    END_FUNCTION("GetTriggerEnabledInEvent", SUCCESS );
+    END_FUNCTION("SetTriggerEnabledInEvent", SUCCESS );
 }
 
 RET_VAL AddTriggerInEvent( EVENT *eventDef, KINETIC_LAW *trigger ) {

@@ -911,8 +911,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 }
                 if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
                     TRACE_1("the total propensity is 0 at iteration %i", i);
-		    rec->t = timeLimit - rec->time;
-		    rec->time = timeLimit;
+		    rec->t = maxTime - rec->time;
+		    rec->time = maxTime;
                     reaction = NULL;
                     rec->nextReaction = NULL;
                     if (IS_FAILED((ret = _UpdateNodeValues(rec)))) {
@@ -1449,18 +1449,27 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
             nextEventTime = GetNextEventTimeInEvent(rec->eventArray[i]);
             triggerEnabled = GetTriggerEnabledInEvent(rec->eventArray[i]);
             if (nextEventTime != -1.0) {
-                if (time >= nextEventTime) {
-                    if (!GetUseValuesFromTriggerTime(rec->eventArray[i])) {
-                        SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-                    }
-                    fireEvent(rec->eventArray[i], rec);
-                    SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
-                    eventFired = TRUE;
-                } else {
-                    if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
-                        firstEventTime = nextEventTime;
-                    }
-                }
+	      if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
+		if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+		  nextEventTime = -1.0;
+		  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+		  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+		  continue;
+		}
+	      }
+	      if (time >= nextEventTime) {
+		if (!GetUseValuesFromTriggerTime(rec->eventArray[i])) {
+		  SetEventAssignmentsNextValues(rec->eventArray[i], rec);
+		}
+		fireEvent(rec->eventArray[i], rec);
+		SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
+		eventFired = TRUE;
+	      } else {
+		if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+		  firstEventTime = nextEventTime;
+		}
+	      }
             }
             nextEventTime = rec->time + rec->findNextTime->FindNextTimeWithCurrentAmounts(rec->findNextTime,
                     (KINETIC_LAW*) GetTriggerInEvent(rec->eventArray[i]));
