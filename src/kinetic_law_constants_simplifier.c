@@ -595,6 +595,26 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
         case KINETIC_LAW_OP_LOGNORMAL:
 	  result = GetNextLogNormalRandomNumber(leftValue,rightValue);
 	break;
+
+        case KINETIC_LAW_OP_BITWISE_AND:
+	  result = ((int)rint(leftValue) & (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_OR:
+	  result = ((int)rint(leftValue) | (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_XOR:
+	  result = ((int)rint(leftValue) ^ (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_MOD:
+	  result = ((int)rint(leftValue) % (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BIT:
+	  result = ((int)rint(leftValue) >> (int)rint(rightValue)) & 1;
+        break;
         
         default:
         return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
@@ -778,6 +798,12 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
         break;
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  result = GetNextBernoulliRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
+	  result = ~((int)rint(childValue));
+	break;
+        case KINETIC_LAW_UNARY_OP_INT:
+	  result = childValue;
         break;
         
         default:
@@ -1211,6 +1237,26 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
         case KINETIC_LAW_OP_LOGNORMAL:
 	  return ret;
 	break;
+
+        case KINETIC_LAW_OP_BITWISE_AND:
+	  result = ((int)rint(leftValue) & (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_OR:
+	  result = ((int)rint(leftValue) | (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_XOR:
+	  result = ((int)rint(leftValue) ^ (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_MOD:
+	  result = ((int)rint(leftValue) % (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BIT:
+	  result = ((int)rint(leftValue) >> (int)rint(rightValue)) & 1;
+        break;
         
         default:
         return ErrorReport( FAILING, "_VisitOpToSimplifyKineticLaw", "invalid operator type" );        
@@ -1386,7 +1432,13 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  return ret;
         break;
-        
+        case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
+	  result = ~((int)rint(childValue));
+	break;
+        case KINETIC_LAW_UNARY_OP_INT:
+	  result = childValue;
+	break;
+
         default:
         return ErrorReport( FAILING, "_VisitUnaryOpToSimplifyKineticLaw", "invalid operator type" );        
     }

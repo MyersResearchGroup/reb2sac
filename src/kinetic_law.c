@@ -2342,9 +2342,16 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_GT ) ||
 	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_MOD ) ||
 	( parentOpType == KINETIC_LAW_OP_UNIFORM ) ||
 	( parentOpType == KINETIC_LAW_OP_GAMMA ) ||
 	( parentOpType == KINETIC_LAW_OP_NORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_LOGNORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_BINOMIAL ) ||
+	( parentOpType == KINETIC_LAW_OP_BITWISE_AND ) ||
+	( parentOpType == KINETIC_LAW_OP_BITWISE_OR ) ||
+	( parentOpType == KINETIC_LAW_OP_BITWISE_XOR ) ||
+	( parentOpType == KINETIC_LAW_OP_BIT ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2396,9 +2403,16 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_GT ) ||
 	( parentOpType == KINETIC_LAW_OP_LEQ ) ||
 	( parentOpType == KINETIC_LAW_OP_LT ) ||
+	( parentOpType == KINETIC_LAW_OP_MOD ) ||
 	( parentOpType == KINETIC_LAW_OP_UNIFORM ) ||
 	( parentOpType == KINETIC_LAW_OP_GAMMA ) ||
 	( parentOpType == KINETIC_LAW_OP_NORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_LOGNORMAL ) ||
+	( parentOpType == KINETIC_LAW_OP_BINOMIAL ) ||
+	( parentOpType == KINETIC_LAW_OP_BITWISE_AND ) ||
+	( parentOpType == KINETIC_LAW_OP_BITWISE_OR ) ||
+	( parentOpType == KINETIC_LAW_OP_BITWISE_XOR ) ||
+	( parentOpType == KINETIC_LAW_OP_BIT ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2422,9 +2436,16 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	    ( childOpType == KINETIC_LAW_OP_GT ) ||
 	    ( childOpType == KINETIC_LAW_OP_LEQ ) ||
 	    ( childOpType == KINETIC_LAW_OP_LT ) ||
+	    ( childOpType == KINETIC_LAW_OP_MOD ) ||
 	    ( childOpType == KINETIC_LAW_OP_UNIFORM ) ||
 	    ( childOpType == KINETIC_LAW_OP_GAMMA ) ||
 	    ( childOpType == KINETIC_LAW_OP_NORMAL ) ||
+	    ( childOpType == KINETIC_LAW_OP_LOGNORMAL ) ||
+	    ( childOpType == KINETIC_LAW_OP_BINOMIAL ) ||
+	    ( childOpType == KINETIC_LAW_OP_BITWISE_AND ) ||
+	    ( childOpType == KINETIC_LAW_OP_BITWISE_OR ) ||
+	    ( childOpType == KINETIC_LAW_OP_BITWISE_XOR ) ||
+	    ( childOpType == KINETIC_LAW_OP_BIT ) ||
 	    ( childOpType == KINETIC_LAW_OP_AND ) ||
 	    ( childOpType == KINETIC_LAW_OP_XOR ) ||
 	    ( childOpType == KINETIC_LAW_OP_OR ) ) {

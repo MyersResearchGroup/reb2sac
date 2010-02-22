@@ -1886,6 +1886,90 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    FREE( children );
 	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	    return law;
+	  } else if (strcmp(funcId,"BITAND")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_BITWISE_AND, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"BITOR")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_BITWISE_OR, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"BITXOR")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_BITWISE_XOR, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"BIT")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_BIT, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"MOD")==0) {
+	    if( num != 2 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_MOD, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"BITNOT")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_BITWISE_NOT, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"INT")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_INT, children[0] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
 	  }
 	  functionManager = GetFunctionManagerInstance( frontend->record );
 	  if( ( functionDef = functionManager->LookupFunctionDefinition( functionManager, funcId ) ) == NULL ) {
