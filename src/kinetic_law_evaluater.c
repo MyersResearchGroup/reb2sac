@@ -526,6 +526,26 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
         case KINETIC_LAW_OP_LOGNORMAL:
 	    *result = GetNextLogNormalRandomNumber(leftValue,rightValue);
         break;
+
+        case KINETIC_LAW_OP_BITWISE_AND:
+	  *result = ((int)rint(leftValue) & (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_OR:
+	  *result = ((int)rint(leftValue) | (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_XOR:
+	  *result = ((int)rint(leftValue) ^ (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_MOD:
+	  *result = ((int)rint(leftValue) % (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BIT:
+	  *result = ((int)rint(leftValue) >> (int)rint(rightValue)) & 1;
+        break;
         
         default:
             END_FUNCTION("_VisitOpToEvaluate", E_WRONGDATA );
@@ -680,6 +700,12 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  *result = GetNextBernoulliRandomNumber(childValue);
         break;
+        case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
+	  *result = ~((int)rint(childValue));
+	break;
+        case KINETIC_LAW_UNARY_OP_INT:
+	  *result = childValue;
+        break;
         
         default:
             END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
@@ -803,6 +829,26 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 
         case KINETIC_LAW_OP_LOGNORMAL:
 	    *result = exp(leftValue + (rightValue * rightValue)/2);
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_AND:
+	  *result = ((int)rint(leftValue) & (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_OR:
+	  *result = ((int)rint(leftValue) | (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_XOR:
+	  *result = ((int)rint(leftValue) ^ (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_MOD:
+	  *result = ((int)rint(leftValue) % (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BIT:
+	  *result = ((int)rint(leftValue) >> (int)rint(rightValue)) & 1;
         break;
         
         default:
@@ -958,7 +1004,13 @@ static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINET
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  *result = childValue;
         break;
-        
+        case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
+	  *result = ~((int)rint(childValue));
+	break;
+        case KINETIC_LAW_UNARY_OP_INT:
+	  *result = childValue;
+        break;
+
         default:
             END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
         return E_WRONGDATA;

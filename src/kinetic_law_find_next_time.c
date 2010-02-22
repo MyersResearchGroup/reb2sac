@@ -583,6 +583,26 @@ static RET_VAL _VisitOpToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
         case KINETIC_LAW_OP_LOGNORMAL:
 	    *result = GetNextLogNormalRandomNumber(leftValue,rightValue);
         break;
+
+        case KINETIC_LAW_OP_BITWISE_AND:
+	  *result = ((int)rint(leftValue) & (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_OR:
+	  *result = ((int)rint(leftValue) | (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_XOR:
+	  *result = ((int)rint(leftValue) ^ (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_MOD:
+	  *result = ((int)rint(leftValue) % (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BIT:
+	  *result = ((int)rint(leftValue) >> (int)rint(rightValue)) & 1;
+        break;
         
         default:
             END_FUNCTION("_VisitOpToFindNextTime", E_WRONGDATA );
@@ -733,6 +753,12 @@ static RET_VAL _VisitUnaryOpToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETI
         break;
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  *result = GetNextBernoulliRandomNumber(childValue);
+        break;
+        case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
+	  *result = ~((int)rint(childValue));
+	break;
+        case KINETIC_LAW_UNARY_OP_INT:
+	  *result = childValue;
         break;
         
         default:
@@ -918,6 +944,26 @@ static RET_VAL _VisitOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, KINETI
         case KINETIC_LAW_OP_LOGNORMAL:
 	    *result = exp(leftValue + (rightValue * rightValue)/2);
         break;
+
+        case KINETIC_LAW_OP_BITWISE_AND:
+	  *result = ((int)rint(leftValue) & (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_OR:
+	  *result = ((int)rint(leftValue) | (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BITWISE_XOR:
+	  *result = ((int)rint(leftValue) ^ (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_MOD:
+	  *result = ((int)rint(leftValue) % (int)rint(rightValue));
+        break;
+
+        case KINETIC_LAW_OP_BIT:
+	  *result = ((int)rint(leftValue) >> (int)rint(rightValue)) & 1;
+        break;
         
         default:
             END_FUNCTION("_VisitOpToFindNextTime", E_WRONGDATA );
@@ -1070,6 +1116,12 @@ static RET_VAL _VisitUnaryOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, K
 	  *result = childValue;
         break;
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
+	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
+	  *result = ~((int)rint(childValue));
+	break;
+        case KINETIC_LAW_UNARY_OP_INT:
 	  *result = childValue;
         break;
         
