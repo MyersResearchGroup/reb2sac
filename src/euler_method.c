@@ -273,7 +273,7 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
 	if (IsSpeciesNodeAlgebraic( species )) {
 	  algebraicVars++;
 	}
-	if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+	if (IsSpeciesNodeFast( species )) {
 	  rec->numberFastSpecies++;
 	}
         i++;
@@ -1123,8 +1123,7 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   j = 0;
   for( i = 0; i < rec->speciesSize; i++ ) {
     species = rec->speciesArray[i];
-    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
-      //if (IsSpeciesNodeFast( species )) {
+    if (IsSpeciesNodeFast( species )) {
       amount = gsl_vector_get (x, j);
       j++; 
       if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
@@ -1148,22 +1147,56 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
-	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetAmountInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetAmountInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	} else {
-	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetConcentrationInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
-	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	    gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    if (boundary) {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, amount + GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount - rec->fastCons[j]);
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	      }
+	    }
 	    j++;
 	  } else {
-	    gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	    if (boundary) {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, amount + GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount - rec->fastCons[j]);
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	      }
+	    }
 	    j++;
 	  }
 	}
@@ -1172,30 +1205,62 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
-	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetAmountInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetAmountInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	} else {
-	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetConcentrationInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
-	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	    gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    if (boundary) {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, amount + GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount - rec->fastCons[j]);
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	      }
+	    }
 	    j++;
 	  } else {
-	    gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	    if (boundary) {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, amount + GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount - rec->fastCons[j]);
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		gsl_vector_set (f, j, GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	      } else {
+		gsl_vector_set (f, j, amount + stoichiometry * GetConcentrationInSpeciesNode( species ) - rec->fastCons[j]);
+	      }
+	    }
 	    j++;
 	  }
 	}
       }
-      if (!boundary) {
-	amount = GetReactionRate( reaction );
-	gsl_vector_set (f, j, amount);
-	j++;
-      }
+      amount = GetReactionRate( reaction );
+      gsl_vector_set (f, j, amount);
+      j++;
       break;
     }
   } 
@@ -1216,6 +1281,7 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
   size_t i, j, iter = 0;
   double amount;
   const size_t n = rec->numberFastSpecies;
+  BOOL boundary = FALSE;
 
   j=0;
   for( i = 0; i < rec->reactionsSize; i++ ) {
@@ -1229,19 +1295,53 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetAmountInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetAmountInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	} else {
-	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetConcentrationInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	    rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    if (boundary) {
+	      rec->fastCons[j] = amount;
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] += GetAmountInSpeciesNode( species );
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] = GetAmountInSpeciesNode( species );
+	      } else {
+		rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	      }
+	    }
 	    j++;
 	  } else {
-	    rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	    if (boundary) {
+	      rec->fastCons[j] = amount;
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] += GetConcentrationInSpeciesNode( species );
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] = GetConcentrationInSpeciesNode( species );
+	      } else {
+		rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	      }
+	    }
 	    j++;
 	  }
 	}
@@ -1251,18 +1351,52 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetAmountInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetAmountInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	} else {
-	  amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	  if (HasBoundaryConditionInSpeciesNode( species )) {
+	    amount = GetConcentrationInSpeciesNode( species );
+	    boundary = TRUE;
+	  } else {
+	    amount = stoichiometry * GetConcentrationInSpeciesNode( species );
+	    boundary = FALSE;
+	  }
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	    rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    if (boundary) {
+	      rec->fastCons[j] = amount;
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] += GetAmountInSpeciesNode( species );
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] = GetAmountInSpeciesNode( species );
+	      } else {
+		rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	      }
+	    }
 	    j++;
 	  } else {
-	    rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	    if (boundary) {
+	      rec->fastCons[j] = amount;
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] += GetConcentrationInSpeciesNode( species );
+	      }
+	    } else {
+	      if (HasBoundaryConditionInSpeciesNode( species )) {
+		rec->fastCons[j] = GetConcentrationInSpeciesNode( species );
+	      } else {
+		rec->fastCons[j] = amount + stoichiometry * GetConcentrationInSpeciesNode( species );
+	      }
+	    }
 	    j++;
 	  }
 	}
