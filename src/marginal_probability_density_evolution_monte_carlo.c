@@ -289,7 +289,7 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
 	if (IsSpeciesNodeAlgebraic( species )) {
 	  algebraicVars++;
 	}
-	if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+	if (IsSpeciesNodeFast( species )) {
 	  rec->numberFastSpecies++;
 	}
         i++;
@@ -1753,8 +1753,7 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   j = 0;
   for( i = 0; i < rec->speciesSize; i++ ) {
     species = rec->speciesArray[i];
-    if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
-      //if (IsSpeciesNodeFast( species )) {
+    if (IsSpeciesNodeFast( species )) {
       amount = gsl_vector_get (x, j);
       j++; 
       if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
@@ -1776,14 +1775,30 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
-	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
-	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	if (HasBoundaryConditionInSpeciesNode( species )) {
+	  amount = GetAmountInSpeciesNode( species );
+	  boundary = TRUE;
+	} else {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  boundary = FALSE;
+	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
-	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
-	  gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	  if (boundary) {
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      gsl_vector_set (f, j, amount + GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    } else {
+	      gsl_vector_set (f, j, amount - rec->fastCons[j]);
+	    }
+	  } else {
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      gsl_vector_set (f, j, GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    } else {
+	      gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    }
+	  }
 	  j++;
 	}
       }
@@ -1791,13 +1806,29 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
-	if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
-	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	if (HasBoundaryConditionInSpeciesNode( species )) {
+	  amount = GetAmountInSpeciesNode( species );
+	  boundary = TRUE;
+	} else {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  boundary = FALSE;
+	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
-	  if (HasBoundaryConditionInSpeciesNode(species)) boundary = TRUE;
-	  gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	  if (boundary) {
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      gsl_vector_set (f, j, amount + GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    } else {
+	      gsl_vector_set (f, j, amount - rec->fastCons[j]);
+	    }
+	  } else {
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      gsl_vector_set (f, j, GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    } else {
+	      gsl_vector_set (f, j, amount + stoichiometry * GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
+	    }
+	  }
 	  j++;
 	}
       }
@@ -1826,6 +1857,7 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
   size_t i, j, iter = 0;
   double amount;
   const size_t n = rec->numberFastSpecies;
+  BOOL boundary = FALSE;
 
   j=0;
   for( i = 0; i < rec->reactionsSize; i++ ) {
@@ -1838,12 +1870,29 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
-	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	if (HasBoundaryConditionInSpeciesNode( species )) {
+	  amount = GetAmountInSpeciesNode( species );
+	  boundary = TRUE;
+	} else {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  boundary = FALSE;
+	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
-	  rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	  if (boundary) {
+	    rec->fastCons[j] = amount;
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      rec->fastCons[j] += GetAmountInSpeciesNode( species );
+	    }
+	  } else {
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      rec->fastCons[j] = GetAmountInSpeciesNode( species );
+	    } else {
+	      rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    }
+	  }
 	  j++;
 	}
       }
@@ -1851,11 +1900,28 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
 	stoichiometry = GetStoichiometryInIREdge( edge );
 	species = GetSpeciesInIREdge( edge );
-	amount = stoichiometry * GetAmountInSpeciesNode( species );
+	if (HasBoundaryConditionInSpeciesNode( species )) {
+	  amount = GetAmountInSpeciesNode( species );
+	  boundary = TRUE;
+	} else {
+	  amount = stoichiometry * GetAmountInSpeciesNode( species );
+	  boundary = FALSE;
+	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
 	  stoichiometry = GetStoichiometryInIREdge( edge );
 	  species = GetSpeciesInIREdge( edge );
-	  rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	  if (boundary) {
+	    rec->fastCons[j] = amount;
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      rec->fastCons[j] += GetAmountInSpeciesNode( species );
+	    }
+	  } else {
+	    if (HasBoundaryConditionInSpeciesNode( species )) {
+	      rec->fastCons[j] = GetAmountInSpeciesNode( species );
+	    } else {
+	      rec->fastCons[j] = amount + stoichiometry * GetAmountInSpeciesNode( species );
+	    }
+	  }
 	  j++;
 	}
       }
