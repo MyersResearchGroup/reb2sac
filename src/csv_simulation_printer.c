@@ -90,16 +90,16 @@ static RET_VAL _PrintHeader( SIMULATION_PRINTER *printer ) {
     REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
 
     fprintf( out, "time" );    
-    for( i = 0; i < compSize; i++ ) {
-      if (PrintCompartment( compartmentArray[i] )) {
-        fprintf( out, ", %s", GetCharArrayOfString(GetCompartmentID( compartmentArray[i] )) );
-      }
-    }
     for( i = 0; i < size; i++ ) {
       if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
         fprintf( out, ", %s", GetCharArrayOfString(GetSpeciesNodeName( speciesArray[i] )) );
       }
     }                 
+    for( i = 0; i < compSize; i++ ) {
+      if (PrintCompartment( compartmentArray[i] )) {
+        fprintf( out, ", %s", GetCharArrayOfString(GetCompartmentID( compartmentArray[i] )) );
+      }
+    }
     for( i = 0; i < symSize; i++ ) {
       if (PrintSymbol( symbolArray[i] )) {
         fprintf( out, ", %s", GetCharArrayOfString(GetSymbolID( symbolArray[i] )) );
@@ -124,7 +124,7 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     fprintf( out, "%g", time );
     for( i = 0; i < size; i++ ) {
       fprintf( out, ", %g", GetAmountInSpeciesNode( speciesArray[i] ) );
-    }                 
+    }
     for( i = 0; i < compSize; i++ ) {
       if (PrintCompartment( compartmentArray[i] )) {
         fprintf( out, ", %g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
