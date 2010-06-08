@@ -1442,84 +1442,120 @@ static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time) {
     double deltaTime;
     BOOL eventFired = FALSE;
     double firstEventTime = -1.0;
-
+    int eventToFire = -1;
+    double prMax = -1.0;
+    double priority = 0.0;
+    double randChoice = 0.0;
+    
     do {
-        eventFired = FALSE;
-        for (i = 0; i < rec->eventsSize; i++) {
-            nextEventTime = GetNextEventTimeInEvent(rec->eventArray[i]);
-            triggerEnabled = GetTriggerEnabledInEvent(rec->eventArray[i]);
-            if (nextEventTime != -1.0) {
-	      if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
-		if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      eventFired = FALSE;
+      for (i = 0; i < rec->eventsSize; i++) {
+	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
+	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+	if (nextEventTime != -1.0) {
+	  /* Disable event, if necessary */
+	  if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
+	    if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	      nextEventTime = -1.0;
+	      SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
+	      SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	      continue;
+	    }
+	  }
+	  if (time >= nextEventTime) {
+	    if (GetPriorityInEvent( rec->eventArray[i] )==NULL) {
+	      priority = 0;
+	    }
+	    else {
+	      priority = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+								     (KINETIC_LAW*)GetPriorityInEvent( rec->eventArray[i] ) );
+	    }
+	    if (priority > prMax) {
+	      eventToFire = i;
+	      prMax = priority;
+	    } else if (priority == prMax) {
+	      randChoice=GetNextUniformRandomNumber(0,1);	   
+	      if (randChoice > 0.5) {
+		eventToFire = i;
+		prMax = priority;
+	      }
+	    }
+	  } else {
+	    /* Determine time to next event */
+	    if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	      firstEventTime = nextEventTime;
+	    }
+	  }
+	}
+	/* Try to find time to next event trigger */
+	nextEventTime = rec->time + 
+	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
+							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
+	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
+	  firstEventTime = nextEventTime;
+	}
+	if (!triggerEnabled) {
+	  /* Check if event has been triggered */
+	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
 								 (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
-		  nextEventTime = -1.0;
-		  SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
-		  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
-		  continue;
-		}
-	      }
-	      if (time >= nextEventTime) {
-		if (!GetUseValuesFromTriggerTime(rec->eventArray[i])) {
-		  SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-		}
-		fireEvent(rec->eventArray[i], rec);
-		SetNextEventTimeInEvent(rec->eventArray[i], -1.0);
-		eventFired = TRUE;
-	      } else {
-		if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
-		  firstEventTime = nextEventTime;
-		}
-	      }
-            }
-            nextEventTime = rec->time + rec->findNextTime->FindNextTimeWithCurrentAmounts(rec->findNextTime,
-                    (KINETIC_LAW*) GetTriggerInEvent(rec->eventArray[i]));
-            if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
-                firstEventTime = nextEventTime;
-            }
-            if (!triggerEnabled) {
-                if (rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, (KINETIC_LAW*) GetTriggerInEvent(
-                        rec->eventArray[i]))) {
-                    SetTriggerEnabledInEvent(rec->eventArray[i], TRUE);
-                    if (GetDelayInEvent(rec->eventArray[i]) == NULL) {
-                        deltaTime = 0;
-                    } else {
-                        deltaTime = rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator,
-                                (KINETIC_LAW*) GetDelayInEvent(rec->eventArray[i]));
-                    }
-                    if (deltaTime >= 0) {
-                        SetNextEventTimeInEvent(rec->eventArray[i], time + deltaTime);
-                        if (GetUseValuesFromTriggerTime(rec->eventArray[i])) {
-                            SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-                        }
-                        if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
-                            firstEventTime = time + deltaTime;
-                        }
-                    } /* else if (deltaTime == 0) {
-                        SetEventAssignmentsNextValues(rec->eventArray[i], rec);
-                        fireEvent(rec->eventArray[i], rec);
-                        eventFired = TRUE;
-			} */ else {
-                        ErrorReport(FAILING, "_Update", "delay for event evaluates to a negative number");
-                        return -2;
-                    }
-                }
-            } else {
-                if (!rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, (KINETIC_LAW*) GetTriggerInEvent(
-                        rec->eventArray[i]))) {
-                    SetTriggerEnabledInEvent(rec->eventArray[i], FALSE);
-                }
-            }
-        }
-        if (eventFired) {
-            ExecuteAssignments(rec);
-	    if (rec->algebraicRulesSize > 0) {
-	      EvaluateAlgebraicRules( rec );
+	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	    /* Calculate delay until the event fires */
+	    if (GetDelayInEvent( rec->eventArray[i] )==NULL) {
+	      deltaTime = 0;
 	    }
-	    if (rec->numberFastSpecies > 0) {
-	      ExecuteFastReactions( rec );
+	    else {
+	      deltaTime = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
 	    }
-        }
+	    if (deltaTime >= 0) {
+	      /* Set time for event to fire and get assignment values, if necessary */
+	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
+	      if (GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
+		SetEventAssignmentsNextValuesTime( rec->eventArray[i], rec, time + deltaTime ); 
+	      }
+	      if ((firstEventTime == -1.0) || (time + deltaTime < firstEventTime)) {
+		firstEventTime = time + deltaTime;
+	      }
+	    } /* else if (deltaTime == 0) {
+	      SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
+	      fireEvent( rec->eventArray[i], rec );
+	      eventFired = TRUE;
+	      } */ else {
+	      ErrorReport( FAILING, "_Update", "delay for event evaluates to a negative number" );
+	      return -2;
+	    }
+	  }
+	} else {
+	  /* Set trigger enabled to false, if it has become disabled */
+	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
+	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
+	  } 
+	}
+      }
+      /* Fire event */
+      if (eventToFire >= 0) {
+	if (!GetUseValuesFromTriggerTime( rec->eventArray[eventToFire] )) {
+	  SetEventAssignmentsNextValues( rec->eventArray[eventToFire], rec ); 
+	}
+	fireEvent( rec->eventArray[eventToFire], rec );
+	SetNextEventTimeInEvent( rec->eventArray[eventToFire], -1.0 );
+	eventFired = TRUE;
+	eventToFire = -1;
+
+	/* When an event fires, update algebraic rules and fast reactions */
+	ExecuteAssignments( rec );
+	if (rec->algebraicRulesSize > 0) {
+	  EvaluateAlgebraicRules( rec );
+	}
+	if (rec->numberFastSpecies > 0) {
+	  ExecuteFastReactions( rec );
+	}
+      }
+      /* Repeat as long as events are firing */
     } while (eventFired);
+    /* Return the time for the next event firing or potential triggering */
     return firstEventTime;
 }
 

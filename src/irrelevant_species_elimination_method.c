@@ -391,6 +391,10 @@ static RET_VAL _FindIrrelevant( IR *ir, IRRELEVANT_SPECIES_ELIMINATION_INTERNAL 
 	if( IS_FAILED( ( ret = _RemoveSupportFromIrrelevant( kineticLaw, internal, kineticLawSupport ) ) ) ) {
 	    return ret;
 	} else if (ret == CHANGE) change = TRUE;
+	kineticLaw = GetPriorityInEvent( event );
+	if( IS_FAILED( ( ret = _RemoveSupportFromIrrelevant( kineticLaw, internal, kineticLawSupport ) ) ) ) {
+	    return ret;
+	} else if (ret == CHANGE) change = TRUE;
 	list = GetEventAssignments( event );
 	ResetCurrentElement( list );
 	while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {

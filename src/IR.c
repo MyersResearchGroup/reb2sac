@@ -1812,6 +1812,7 @@ static RET_VAL _PrintListOfEventsForSBML( IR *ir, FILE *file, UINT32 tabCount ) 
 static RET_VAL _PrintEventForSBML( EVENT *event, FILE *file, UINT32 tabCount ) {
     RET_VAL ret = SUCCESS;
     KINETIC_LAW *kineticLaw;
+    KINETIC_LAW *priority;
     EVENT_ASSIGNMENT *assignment;
     LINKED_LIST *assignments;
 
@@ -1842,7 +1843,7 @@ static RET_VAL _PrintEventForSBML( EVENT *event, FILE *file, UINT32 tabCount ) {
       }    
       _PrintTab( file, tabCount + 1 );
       fprintf( file, "</delay>%s", NEW_LINE );
-    }
+    } 
     assignments = GetEventAssignments( event );
     ResetCurrentElement( assignments );
     _PrintTab( file, tabCount + 1 );
