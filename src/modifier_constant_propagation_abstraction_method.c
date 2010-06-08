@@ -224,6 +224,11 @@ static RET_VAL _ApplyModifierConstantPropagationMethod( ABSTRACTION_METHOD *meth
 	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
 	    return ret;
 	  }
+	  kineticLaw = GetPriorityInEvent( event );
+	  if( IS_FAILED( ( ret = _DoConstantPropagation( method, kineticLaw, species, symKineticLaw ) ) ) ) {
+	    END_FUNCTION("_ApplyModifierConstantPropagationMethod", ret );
+	    return ret;
+	  }
 	  list2 = GetEventAssignments( event );
 	  ResetCurrentElement( list2 );
 	  while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list2 ) ) != NULL ) {

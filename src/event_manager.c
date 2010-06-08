@@ -80,6 +80,7 @@ RET_VAL CloseEventManager(  ) {
         if (eventDef->id) FreeString( &( eventDef->id ) );
 	FreeKineticLaw( &(eventDef->trigger) );
 	FreeKineticLaw( &(eventDef->delay) );
+	FreeKineticLaw( &(eventDef->priority) );
         FreeEventAssignments( &( eventDef->eventAssignments ) );
         FREE( eventDef );
     }
@@ -109,6 +110,13 @@ KINETIC_LAW *GetDelayInEvent( EVENT *eventDef ) {
             
     END_FUNCTION("GetDelayInEvent", SUCCESS );
     return (eventDef == NULL ? NULL : eventDef->delay);
+}
+
+KINETIC_LAW *GetPriorityInEvent( EVENT *eventDef ) {
+    START_FUNCTION("GetPriorityInEvent");
+            
+    END_FUNCTION("GetPriorityInEvent", SUCCESS );
+    return (eventDef == NULL ? NULL : eventDef->priority);
 }
 
 LINKED_LIST *GetEventAssignments( EVENT *eventDef ) {
@@ -321,6 +329,17 @@ RET_VAL AddDelayInEvent( EVENT *eventDef, KINETIC_LAW *delay ) {
     return ret;
 }
 
+RET_VAL AddPriorityInEvent( EVENT *eventDef, KINETIC_LAW *priority ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("AddPriorityInEvent");
+
+    eventDef->priority = priority;
+
+    END_FUNCTION("AddPriorityInEvent", SUCCESS );
+    return ret;
+}
+
 RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assignment ) {
     RET_VAL ret = SUCCESS;
     EVENT_ASSIGNMENT *eventAssignment;
@@ -415,6 +434,7 @@ static EVENT * _CreateEvent( EVENT_MANAGER *manager, char *id ) {
     }
     eventDef->trigger = NULL;
     eventDef->delay = NULL;
+    eventDef->priority = NULL;
 
     if( ( eventDef->eventAssignments = CreateLinkedList( ) ) == NULL ) {
       END_FUNCTION("_CreateEvent", FAILING );

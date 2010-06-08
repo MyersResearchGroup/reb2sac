@@ -788,6 +788,15 @@ static RET_VAL _PrintEventForXHTML( EVENT *event, FILE *file ) {
     } 
     fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
+    kineticLaw = GetPriorityInEvent( event );
+    if (kineticLaw) {
+      if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, NULL, file ) ) ) ) {
+        END_FUNCTION("_PrintRuleForXHTML", ret );
+        return ret;
+      }   
+    } 
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
+
     if (GetUseValuesFromTriggerTime( event )) {
       fprintf( file, "True" );
     } else {

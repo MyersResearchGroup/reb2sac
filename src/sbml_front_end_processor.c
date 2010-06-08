@@ -1015,12 +1015,30 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     if (Event_isSetDelay( source ) ) {
       delay = Event_getDelay( source );
       node  = (ASTNode_t *)Delay_getMath( delay );
-      if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
-      }
-      if( IS_FAILED( ( ret = AddDelayInEvent( eventDef, law ) ) ) ) {
-	END_FUNCTION("_HandleConstraintDefinition", ret );
-	return ret;
+
+      if ((ASTNode_getType( node )== AST_FUNCTION) && (strcmp(ASTNode_getName( node ),"priority")==0)) {
+	  if( ( law = _TransformKineticLaw( frontend, ASTNode_getLeftChild( node ), manager, table ) ) == NULL ) {
+	    return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+	  }
+	  if( IS_FAILED( ( ret = AddDelayInEvent( eventDef, law ) ) ) ) {
+	    END_FUNCTION("_HandleConstraintDefinition", ret );
+	    return ret;
+	  }
+	  if( ( law = _TransformKineticLaw( frontend, ASTNode_getRightChild( node ), manager, table ) ) == NULL ) {
+	    return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+	  }
+	  if( IS_FAILED( ( ret = AddPriorityInEvent( eventDef, law ) ) ) ) {
+	    END_FUNCTION("_HandleConstraintDefinition", ret );
+	    return ret;
+	  }
+      } else {
+	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+	}
+	if( IS_FAILED( ( ret = AddDelayInEvent( eventDef, law ) ) ) ) {
+	  END_FUNCTION("_HandleConstraintDefinition", ret );
+	  return ret;
+	}
       }
     }
 

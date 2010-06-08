@@ -37,6 +37,7 @@ typedef struct {
     STRING *id;
     KINETIC_LAW *trigger;
     KINETIC_LAW *delay;
+    KINETIC_LAW *priority;
     LINKED_LIST *eventAssignments;
     LINKED_LIST *nextEventTime;
     BOOL useValuesFromTriggerTime;
@@ -73,6 +74,7 @@ struct _EVENT_MANAGER {
 STRING *GetEventId( EVENT *eventDef );
 KINETIC_LAW *GetTriggerInEvent( EVENT *eventDef );
 KINETIC_LAW *GetDelayInEvent( EVENT *eventDef );
+KINETIC_LAW *GetPriorityInEvent( EVENT *eventDef );
 LINKED_LIST *GetEventAssignments( EVENT *eventDef );
 double GetNextEventTimeInEvent( EVENT *eventDef );
 BOOL GetUseValuesFromTriggerTime( EVENT *eventDef );
@@ -80,6 +82,7 @@ BOOL GetTriggerCanBeDisabled( EVENT *eventDef );
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef );
 RET_VAL AddTriggerInEvent( EVENT *eventDef, KINETIC_LAW *trigger );
 RET_VAL AddDelayInEvent( EVENT *eventDef, KINETIC_LAW *delay );
+RET_VAL AddPriorityInEvent( EVENT *eventDef, KINETIC_LAW *priority );
 RET_VAL AddEventAssignmentToEvent( EVENT *eventDef, char *var, KINETIC_LAW *assignment );
 RET_VAL RemoveEventAssignmentFromEvent( EVENT *eventDef, EVENT_ASSIGNMENT *eventAssignDef );
 EVENT_ASSIGNMENT *CreateEventAssignment( char *var, KINETIC_LAW *assignment );
