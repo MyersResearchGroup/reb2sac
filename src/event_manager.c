@@ -276,6 +276,13 @@ BOOL GetTriggerCanBeDisabled( EVENT *eventDef ) {
     return eventDef->TriggerCanBeDisabled;
 }
 
+BOOL GetTriggerInitialValue( EVENT *eventDef ) {
+    START_FUNCTION("GetTriggerInitialValue");
+            
+    END_FUNCTION("GetTriggerInitialValue", SUCCESS );
+    return eventDef->TriggerInitialValue;
+}
+
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef ) {
     START_FUNCTION("GetTriggerEnabledInEvent");
             
@@ -297,6 +304,14 @@ void SetTriggerCanBeDisabled( EVENT *eventDef, BOOL TriggerCanBeDisabled ) {
     eventDef->TriggerCanBeDisabled = TriggerCanBeDisabled;
   
     END_FUNCTION("SetTriggerCanBeDisabled", SUCCESS );
+}
+
+void SetTriggerInitialValue( EVENT *eventDef, BOOL TriggerInitialValue ) {
+    START_FUNCTION("SetTriggerInitialValue");
+  
+    eventDef->TriggerInitialValue = TriggerInitialValue;
+  
+    END_FUNCTION("SetTriggerInitialValue", SUCCESS );
 }
 
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled ) {

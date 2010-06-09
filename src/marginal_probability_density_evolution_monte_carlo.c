@@ -679,7 +679,9 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
         /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
         if (rec->evaluator->EvaluateWithCurrentAmounts(rec->evaluator, (KINETIC_LAW*) GetTriggerInEvent(
                 rec->eventArray[i]))) {
+	  if (GetTriggerInitialValue( rec->eventArray[i] )) {
             SetTriggerEnabledInEvent(rec->eventArray[i], TRUE);
+	  }
         } else {
             SetTriggerEnabledInEvent(rec->eventArray[i], FALSE);
         }

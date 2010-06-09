@@ -1002,6 +1002,11 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
       } else {
 	SetTriggerCanBeDisabled( eventDef, FALSE );
       }
+      if (annotation != NULL && strstr(annotation,"TriggerInitiallyFalse") != NULL) {
+	SetTriggerInitialValue( eventDef, FALSE );
+      } else {
+	SetTriggerInitialValue( eventDef, TRUE );
+      }
       node  = (ASTNode_t *)Trigger_getMath( trigger );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
