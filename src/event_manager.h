@@ -43,6 +43,7 @@ typedef struct {
     BOOL useValuesFromTriggerTime;
     BOOL TriggerCanBeDisabled;
     BOOL triggerEnabled;
+    BOOL TriggerInitialValue;
 } EVENT;
 
 typedef struct {
@@ -79,6 +80,7 @@ LINKED_LIST *GetEventAssignments( EVENT *eventDef );
 double GetNextEventTimeInEvent( EVENT *eventDef );
 BOOL GetUseValuesFromTriggerTime( EVENT *eventDef );
 BOOL GetTriggerCanBeDisabled( EVENT *eventDef );
+BOOL GetTriggerInitialValue( EVENT *eventDef );
 BOOL GetTriggerEnabledInEvent( EVENT *eventDef );
 RET_VAL AddTriggerInEvent( EVENT *eventDef, KINETIC_LAW *trigger );
 RET_VAL AddDelayInEvent( EVENT *eventDef, KINETIC_LAW *delay );
@@ -90,6 +92,7 @@ NEXT_VALUE_TIME *CreateNextValueTime( double nextValue, double nextTime );
 void SetNextEventTimeInEvent( EVENT *eventDef, double nextEventTime );
 void SetUseValuesFromTriggerTime( EVENT *eventDef, BOOL useValuesFromTriggerTime );
 void SetTriggerCanBeDisabled( EVENT *eventDef, BOOL disableTrigger );
+void SetTriggerInitialValue( EVENT *eventDef, BOOL triggerInitialValue );
 void SetTriggerEnabledInEvent( EVENT *eventDef, BOOL triggerEnabled );
 
 BYTE GetEventAssignmentVarType( EVENT_ASSIGNMENT *eventAssignDef );

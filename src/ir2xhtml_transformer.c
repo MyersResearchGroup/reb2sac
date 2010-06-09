@@ -811,6 +811,13 @@ static RET_VAL _PrintEventForXHTML( EVENT *event, FILE *file ) {
     }
     fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
+    if (GetTriggerInitialValue( event )) {
+      fprintf( file, "True" );
+    } else {
+      fprintf( file, "False" );
+    }
+    fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
+
     assignments = GetEventAssignments( event );
     if( IS_FAILED( ( ret = _PrintEventAssignmentInXHTML( assignments, file ) ) ) ) {
       END_FUNCTION("_PrintRuleForXHTML", ret );
