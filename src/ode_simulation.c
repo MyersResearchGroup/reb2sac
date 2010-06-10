@@ -281,7 +281,7 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
         return ErrorReport( FAILING, "_InitializeRecord", "could not allocate memory for fastCons array" );
       }
       /*
-      rec->fastStoicMatrix = gsl_matrix_alloc (rec->numberFastSpecies, rec->numberFastReactions);
+      rec->fastStoicMatrix = gsl_matrix_alloc (rec->numberFastSpecies, 2*rec->numberFastReactions);
       k = 0;
       for (i = 0; i < rec->speciesSize; i++) {
 	species = speciesArray[i];
@@ -319,13 +319,13 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
 	}
       }
 
-      gsl_matrix *V = gsl_matrix_alloc (rec->numberFastReactions,rec->numberFastReactions);
-      gsl_vector *S = gsl_vector_alloc (rec->numberFastReactions);
-      gsl_vector *work = gsl_vector_alloc (rec->numberFastReactions);
+      gsl_matrix *V = gsl_matrix_alloc (2*rec->numberFastReactions,2*rec->numberFastReactions);
+      gsl_vector *S = gsl_vector_alloc (2*rec->numberFastReactions);
+      gsl_vector *work = gsl_vector_alloc (2*rec->numberFastReactions);
 
       printf("A:\n");
       for (i = 0; i < rec->numberFastSpecies; i++) {
-	for (j = 0; j < rec->numberFastReactions; j++) {
+	for (j = 0; j < 2*rec->numberFastReactions; j++) {
 	  printf("%g ",gsl_matrix_get(rec->fastStoicMatrix,i,j));
 	}
 	printf("\n");
@@ -334,38 +334,38 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
       gsl_linalg_SV_decomp(rec->fastStoicMatrix,V,S,work);
       printf("U:\n");
       for (i = 0; i < rec->numberFastSpecies; i++) {
-	for (j = 0; j < rec->numberFastReactions; j++) {
+	for (j = 0; j < 2*rec->numberFastReactions; j++) {
 	  printf("%g ",gsl_matrix_get(rec->fastStoicMatrix,i,j));
 	}
 	printf("\n");
       }
       printf("S:\n");
-      for (i = 0; i < rec->numberFastReactions; i++) {
+      for (i = 0; i < 2*rec->numberFastReactions; i++) {
 	printf("%g ",gsl_vector_get(S,i));
       }
       printf("\n");
       printf("V:\n");
-      for (i = 0; i < rec->numberFastReactions; i++) {
-	for (j = 0; j < rec->numberFastReactions; j++) {
+      for (i = 0; i < 2*rec->numberFastReactions; i++) {
+	for (j = 0; j < 2*rec->numberFastReactions; j++) {
 	  printf("%g ",gsl_matrix_get(V,i,j));
 	}
 	printf("\n");
       }
 
-      gsl_matrix *At = gsl_matrix_alloc(rec->numberFastReactions, rec->numberFastSpecies);
+      gsl_matrix *At = gsl_matrix_alloc(2*rec->numberFastReactions, rec->numberFastSpecies);
       gsl_matrix_transpose_memcpy(At,rec->fastStoicMatrix);
       printf("At:\n");
-      for (i = 0; i < rec->numberFastReactions; i++) {
+      for (i = 0; i < 2*rec->numberFastReactions; i++) {
 	for (j = 0; j < rec->numberFastSpecies; j++) {
 	  printf("%g ",gsl_matrix_get(At,i,j));
 	}
 	printf("\n");
       }
-      int min = (rec->numberFastReactions < rec->numberFastSpecies?rec->numberFastReactions:rec->numberFastSpecies);
+      int min = (2*rec->numberFastReactions < rec->numberFastSpecies?2*rec->numberFastReactions:rec->numberFastSpecies);
       gsl_vector *tau = gsl_vector_alloc(min);
       gsl_linalg_QR_decomp(At,tau);
       printf("R:\n");
-      for (i = 0; i < rec->numberFastReactions; i++) {
+      for (i = 0; i < 2*rec->numberFastReactions; i++) {
 	for (j = 0; j < rec->numberFastSpecies; j++) {
 	  if (j < i) gsl_matrix_set(At,i,j,0.0);
 	  printf("%g ",gsl_matrix_get(At,i,j));
@@ -762,6 +762,8 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	if (GetTriggerInitialValue( rec->eventArray[i] )) {
     	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	} else {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	}
       } else {
     	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );

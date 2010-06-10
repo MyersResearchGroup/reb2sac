@@ -632,6 +632,8 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
 						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	if (GetTriggerInitialValue( rec->eventArray[i] )) {
 	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
+	} else {
+	  SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	}
       } else {
 	SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
