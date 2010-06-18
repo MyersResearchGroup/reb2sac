@@ -818,6 +818,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
     
     do {
       eventFired = FALSE;
+      prMax = -1.0;
       for (i = 0; i < rec->eventsSize; i++) {
 	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
