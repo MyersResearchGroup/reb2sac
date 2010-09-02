@@ -1244,7 +1244,10 @@ static void fireEvent( EVENT *event, MONTE_CARLO_RECORD *rec ) {
   double amount = 0.0;
   UINT j;
   BYTE varType;
-
+  /* STRING eventId; */
+  
+  /*  eventId = GetEventId( event );
+      printf("Firing event %s\n",GetCharArrayOfString( eventId ); */
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
