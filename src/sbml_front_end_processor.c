@@ -2029,7 +2029,7 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
-        case AST_FUNCTION_POWER:                    
+        case AST_FUNCTION_POWER:
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
