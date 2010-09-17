@@ -157,7 +157,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
         stoichiometry = GetStoichiometryInIREdge( edge ); 
-        if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, backwardReaction, species, stoichiometry ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, backwardReaction, species, stoichiometry, NULL ) ) ) ) {
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         } 
@@ -168,7 +168,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, REACTION *
     while( ( edge = GetNextEdge( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
         stoichiometry = GetStoichiometryInIREdge( edge ); 
-        if( IS_FAILED( ( ret = ir->AddProductEdge( ir, backwardReaction, species, stoichiometry ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddProductEdge( ir, backwardReaction, species, stoichiometry, NULL ) ) ) ) {
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         } 

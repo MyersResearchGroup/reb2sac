@@ -286,7 +286,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, DIMERIZATI
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         } 
-        if( IS_FAILED( ( ret = ir->AddReactantEdge( ir, reaction, monomer, 1 ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddReactantEdge( ir, reaction, monomer, 1, NULL ) ) ) ) {
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         }        

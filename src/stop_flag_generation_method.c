@@ -257,7 +257,7 @@ static RET_VAL _SetStopReaction( ABSTRACTION_METHOD *method, IR *ir,  SPECIES *s
         END_FUNCTION("_AddStopSpeciesInReaction", ret );
         return ret;
     }    
-    if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reaction, stopSpecies, 1 ) ) ) ) {
+    if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reaction, stopSpecies, 1, NULL ) ) ) ) {
         END_FUNCTION("_AddStopSpeciesInReaction", ret );
         return ret;
     }        

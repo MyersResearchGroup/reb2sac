@@ -254,7 +254,7 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, DIMER_TO_M
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         } 
-        if( IS_FAILED( ( ret = ir->AddReactantEdge( ir, reaction, monomer, 2 ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddReactantEdge( ir, reaction, monomer, 2, NULL ) ) ) ) {
             END_FUNCTION("_DoTransformation", ret );
             return ret;
         }        

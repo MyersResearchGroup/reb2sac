@@ -1094,7 +1094,7 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
       }
       /* Fire event */
       if (eventToFire >= 0) {
-	printf("Firing %d at %g\n",eventToFire,time);
+	//printf("Firing %d at %g\n",eventToFire,time);
 	if (!GetUseValuesFromTriggerTime( rec->eventArray[eventToFire] )) {
 	  SetEventAssignmentsNextValues( rec->eventArray[eventToFire], rec ); 
 	}
@@ -1392,6 +1392,8 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   IR_EDGE *edge = NULL;
   double stoichiometry = 0.0;
   BOOL boundary = FALSE;
+  REB2SAC_SYMBOL *speciesRef = NULL;
+  REB2SAC_SYMBOL *convFactor = NULL;
 
   j = 0;
   for( i = 0; i < rec->speciesSize; i++ ) {
@@ -1420,8 +1422,16 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       Pedges = GetProductsInReactionNode( reaction );
       ResetCurrentElement( Redges );
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
 	    amount = GetAmountInSpeciesNode( species );
@@ -1441,8 +1451,16 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1478,8 +1496,16 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       }
       ResetCurrentElement( Pedges );
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
 	    amount = GetAmountInSpeciesNode( species );
@@ -1498,8 +1524,16 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
 	  }
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1562,6 +1596,8 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
   double amount;
   const size_t n = rec->numberFastSpecies;
   BOOL boundary = FALSE;
+  REB2SAC_SYMBOL *speciesRef = NULL;
+  REB2SAC_SYMBOL *convFactor = NULL;
 
   j=0;
   for( i = 0; i < rec->reactionsSize; i++ ) {
@@ -1572,8 +1608,16 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
       Pedges = GetProductsInReactionNode( reaction );
       ResetCurrentElement( Redges );
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	//printf("1:%s/%g\n",GetCharArrayOfString(GetSpeciesNodeID(species)),stoichiometry);
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1594,8 +1638,16 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      rec->fastCons[j] = amount;
@@ -1630,8 +1682,16 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
       }
       ResetCurrentElement( Pedges );
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	//printf("2:%s/%g\n",GetCharArrayOfString(GetSpeciesNodeID(species)),stoichiometry);
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1651,8 +1711,16 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
 	  }
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      rec->fastCons[j] = amount;
@@ -1776,6 +1844,8 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     double nextEventTime;
     BOOL triggerEnabled;
     BYTE varType;
+    REB2SAC_SYMBOL *speciesRef = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
 
     /* Update values from y[] */
     for( i = 0; i < speciesSize; i++ ) {
@@ -1854,7 +1924,12 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = GetStoichiometryInIREdge( edge );
+	    speciesRef = GetSpeciesRefInIREdge( edge );
+	    if (speciesRef) {
+	      stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	    } else {
+	      stoichiometry = GetStoichiometryInIREdge( edge );
+	    }
             reaction = GetReactionInIREdge( edge );
 	    if (IsReactionFastInReactionNode( reaction )) continue;
             rate = GetReactionRate( reaction );
@@ -1865,7 +1940,12 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
         edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = GetStoichiometryInIREdge( edge );
+	    speciesRef = GetSpeciesRefInIREdge( edge );
+	    if (speciesRef) {
+	      stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	    } else {
+	      stoichiometry = GetStoichiometryInIREdge( edge );
+	    }
             reaction = GetReactionInIREdge( edge );
 	    if (IsReactionFastInReactionNode( reaction )) continue;
             rate = GetReactionRate( reaction );
@@ -1873,6 +1953,9 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                (stoichiometry * rate));
         }
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  f[i] *= GetCurrentRealValueInSymbol( convFactor );
+	}
         TRACE_2( "change of %s is %g\n", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
     return GSL_SUCCESS;

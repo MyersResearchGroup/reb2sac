@@ -582,7 +582,7 @@ static RET_VAL _DoEnzymeKineticRapidEquilibrium1Transformation( ABSTRACTION_METH
         }
                 
         if( element->product != NULL ) {
-            if( IS_FAILED( ( ret = ir->AddProductEdge( ir, complexFormationReaction, element->product, GetStoichiometryInIREdge( element->productEdge ) ) ) ) ) {
+	  if( IS_FAILED( ( ret = ir->AddProductEdge( ir, complexFormationReaction, element->product, GetStoichiometryInIREdge( element->productEdge ), NULL ) ) ) ) {
                 END_FUNCTION("_DoEnzymeKineticRapidEquilibrium1Transformation", ret );
                 return ret;
             } 

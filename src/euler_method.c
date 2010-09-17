@@ -1161,6 +1161,8 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   IR_EDGE *edge = NULL;
   double stoichiometry = 0.0;
   BOOL boundary = FALSE;
+  REB2SAC_SYMBOL *speciesRef = NULL;
+  REB2SAC_SYMBOL *convFactor = NULL;
 
   j = 0;
   for( i = 0; i < rec->speciesSize; i++ ) {
@@ -1187,8 +1189,16 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       Pedges = GetProductsInReactionNode( reaction );
       ResetCurrentElement( Redges );
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
 	    amount = GetAmountInSpeciesNode( species );
@@ -1208,8 +1218,16 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1245,8 +1263,16 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       }
       ResetCurrentElement( Pedges );
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
 	    amount = GetAmountInSpeciesNode( species );
@@ -1265,8 +1291,16 @@ int EulerfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
 	  }
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1324,6 +1358,8 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
   double amount;
   const size_t n = rec->numberFastSpecies;
   BOOL boundary = FALSE;
+  REB2SAC_SYMBOL *speciesRef = NULL;
+  REB2SAC_SYMBOL *convFactor = NULL;
 
   j=0;
   for( i = 0; i < rec->reactionsSize; i++ ) {
@@ -1334,8 +1370,16 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
       Pedges = GetProductsInReactionNode( reaction );
       ResetCurrentElement( Redges );
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
 	    amount = GetAmountInSpeciesNode( species );
@@ -1355,8 +1399,16 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      rec->fastCons[j] = amount;
@@ -1390,8 +1442,16 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
       }
       ResetCurrentElement( Pedges );
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	  if (HasBoundaryConditionInSpeciesNode( species )) {
 	    amount = GetAmountInSpeciesNode( species );
@@ -1410,8 +1470,16 @@ static RET_VAL ExecuteFastReactions( EULER_SIMULATION_RECORD *rec ) {
 	  }
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
 	    if (boundary) {
 	      rec->fastCons[j] = amount;
@@ -1526,6 +1594,8 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
     double nextEventTime;
     BOOL triggerEnabled;
     BYTE varType;
+    REB2SAC_SYMBOL *speciesRef = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
@@ -1574,26 +1644,38 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = GetStoichiometryInIREdge( edge );
-            reaction = GetReactionInIREdge( edge );
-	    if (IsReactionFastInReactionNode( reaction )) continue;
-            rate = GetReactionRate( reaction );
-            change -= (stoichiometry * rate);
-            TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               -(stoichiometry * rate));
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
+	  reaction = GetReactionInIREdge( edge );
+	  if (IsReactionFastInReactionNode( reaction )) continue;
+	  rate = GetReactionRate( reaction );
+	  change -= (stoichiometry * rate);
+	  TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+		   -(stoichiometry * rate));
         }
         edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-            stoichiometry = GetStoichiometryInIREdge( edge );
-            reaction = GetReactionInIREdge( edge );
-	    if (IsReactionFastInReactionNode( reaction )) continue;
-            rate = GetReactionRate( reaction );
-            change += (stoichiometry * rate);
-            TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-               (stoichiometry * rate));
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
+	  reaction = GetReactionInIREdge( edge );
+	  if (IsReactionFastInReactionNode( reaction )) continue;
+	  rate = GetReactionRate( reaction );
+	  change += (stoichiometry * rate);
+	  TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+		   (stoichiometry * rate));
         }
-
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  change *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
         concentration += (change * deltaTime) / size;
         if( concentration < 0.0 ) {
