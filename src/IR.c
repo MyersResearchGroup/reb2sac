@@ -63,13 +63,15 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
         
 
 
-static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry );
+static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry,
+				 REB2SAC_SYMBOL *speciesRef );
 static RET_VAL _RemoveReactantEdge( IR *ir, IR_EDGE **reactantEdge );
 
 static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, double stoichiometry );
 static RET_VAL _RemoveModifierEdge( IR *ir, IR_EDGE **modifierEdge );
         
-static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry );
+static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry,
+				REB2SAC_SYMBOL *speciesRef );
 static RET_VAL _RemoveProductEdge( IR *ir, IR_EDGE **productEdge );
 
 
@@ -310,6 +312,10 @@ DLLSCOPE SPECIES * STDCALL GetSpeciesInIREdge( IR_EDGE *edge ) {
 
 DLLSCOPE double STDCALL GetStoichiometryInIREdge( IR_EDGE *edge ) {
     return (edge == NULL) ? 0 : edge->stoichiometry;
+}
+
+DLLSCOPE REB2SAC_SYMBOL * STDCALL GetSpeciesRefInIREdge( IR_EDGE *edge ) {
+    return (edge == NULL) ? 0 : edge->speciesRef;
 }
 
 DLLSCOPE REACTION * STDCALL GetReactionInIREdge( IR_EDGE *edge ) {    
@@ -762,7 +768,8 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
 /*********************/
 
 
-static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry ) {
+static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry,
+				 REB2SAC_SYMBOL *speciesRef ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     LINKED_LIST *list = NULL;
@@ -779,7 +786,8 @@ static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, 
         }
     }
     
-    if( ( edge = CreateReactantEdge( (IR_NODE*)reaction, (IR_NODE*)reactant, stoichiometry ) ) == NULL ) {
+    if( ( edge = CreateReactantEdge( (IR_NODE*)reaction, (IR_NODE*)reactant, stoichiometry, speciesRef
+				     ) ) == NULL ) {
         END_FUNCTION("_AddReactantEdge", ret );
         return FAILING;    
     }
@@ -867,7 +875,8 @@ static RET_VAL _RemoveModifierEdge( IR *ir, IR_EDGE **edge ) {
     return ret;    
 }
         
-static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry ) {
+static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry, 
+				REB2SAC_SYMBOL *speciesRef ) {
     RET_VAL ret = SUCCESS;
     LINKED_LIST *list = NULL;
     IR_EDGE *edge = NULL;
@@ -884,7 +893,7 @@ static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, do
         }
     }
     
-    if( ( edge = CreateProductEdge( (IR_NODE*)reaction, (IR_NODE*)product, stoichiometry ) ) == NULL ) {
+    if( ( edge = CreateProductEdge( (IR_NODE*)reaction, (IR_NODE*)product, stoichiometry, speciesRef ) ) == NULL ) {
         END_FUNCTION("_AddProductEdge", FAILING );
         return FAILING;    
     }

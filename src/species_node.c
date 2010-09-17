@@ -44,6 +44,7 @@ RET_VAL InitSpeciesNode( SPECIES *species, char *name ) {
         return FAILING;
     }
     species->initialAssignment = NULL;
+    species->conversionFactor = NULL;
     species->flags = SPECIES_NODE_FLAG_NONE;
     species->Clone = _Clone;
     species->GetType = _GetType;
@@ -131,6 +132,16 @@ STRING *GetTypeInSpeciesNode( SPECIES *species ) {
     }
     END_FUNCTION("GetTypeInSpeciesNode", SUCCESS );
     return species->type;
+}
+
+REB2SAC_SYMBOL *GetConversionFactorInSpeciesNode( SPECIES *species ) {
+    START_FUNCTION("GetConversionFactorInSpeciesNode");
+    if( species == NULL ) {
+        END_FUNCTION("GetConversionFactorInSpeciesNode", FAILING );
+        return NULL;
+    }
+    END_FUNCTION("GetConversionFactorInSpeciesNode", SUCCESS );
+    return species->conversionFactor;
 }
 
 COMPARTMENT *GetCompartmentInSpeciesNode( SPECIES *species ) {
@@ -319,6 +330,23 @@ RET_VAL SetTypeInSpeciesNode( SPECIES *species, char *type ) {
 
     species->type = typeStr;
     END_FUNCTION("SetTypeInSpeciesNode", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetConversionFactorInSpeciesNode( SPECIES *species, REB2SAC_SYMBOL *conversionFactor ) {
+    RET_VAL ret = SUCCESS;
+
+    START_FUNCTION("SetConversionFactorInSpeciesNode");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetConversionFactorInSpeciesNode", "input species node is NULL" );
+    }
+    
+    if( species->conversionFactor != NULL ) {
+        FreeString( &(species->conversionFactor) );
+    }
+
+    species->conversionFactor = conversionFactor;
+    END_FUNCTION("SetConversionFactorInSpeciesNode", SUCCESS );
     return ret;
 }
 

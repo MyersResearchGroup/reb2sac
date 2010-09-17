@@ -67,7 +67,7 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
 static KINETIC_LAW *_TransformIntValueKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode_t *source, SBML_SYMTAB_MANAGER *manager, HASH_TABLE *table );
 
-static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode,  Reaction_t *reaction );
+static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode,  Reaction_t *reaction, Model_t *model );
 
 static RET_VAL _AddGlobalParamInSymtab( FRONT_END_PROCESSOR *frontend, REB2SAC_SYMTAB *symtab, SBML_SYMTAB_MANAGER *sbmlSymtabManager );
 
@@ -1229,6 +1229,9 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
     KINETIC_LAW *law = NULL;
     SBML_SYMTAB_MANAGER *manager = NULL;
     char *type = NULL;
+    char *convFactorStr = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
+    REB2SAC_SYMTAB *symtab = NULL;
 
     START_FUNCTION("_CreateSpeciesNode");
     
@@ -1329,7 +1332,27 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
             return ret;   
         }
     }
-    
+    if (Species_isSetConversionFactor( species )) {
+      convFactorStr = (char*)Species_getConversionFactor( species );
+      TRACE_1( "\tsetting conversion factor %s", convFactorStr );
+      symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
+      if( ( convFactor = symtab->Lookup( symtab, convFactorStr ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetConversionFactorInSpeciesNode(speciesNode, convFactor ) ) ) ) {
+	  END_FUNCTION("_CreateSpeciesNode", ret );
+	  return ret;   
+	}
+      }
+    } else if (Model_isSetConversionFactor( model )) {
+      convFactorStr = (char*)Model_getConversionFactor( model );
+      TRACE_1( "\tsetting conversion factor %s", convFactorStr );
+      symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
+      if( ( convFactor = symtab->Lookup( symtab, convFactorStr ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetConversionFactorInSpeciesNode(speciesNode, convFactor ) ) ) ) {
+	  END_FUNCTION("_CreateSpeciesNode", ret );
+	  return ret;   
+	}
+      }
+    }
     if( Species_getConstant( species ) ) {
         TRACE_0( "\tsetting constant true" );
         if( IS_FAILED( ( ret = SetSpeciesNodeConstant( speciesNode, TRUE ) ) ) ) {
@@ -1432,6 +1455,11 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
         END_FUNCTION("_CreateReactionNode", ret );
         return ret;   
     }    
+        
+    if( IS_FAILED( ( ret = _ResolveNodeLinks( frontend, ir, reactionNode, reaction, model ) ) ) ) {
+        END_FUNCTION("_CreateReactionNode", ret );
+        return ret;
+    }
 
     if( IS_FAILED( ( ret = _CreateKineticLaw( frontend, reactionNode, reactionLaw, model, reaction ) ) ) ) {
         END_FUNCTION("_CreateReactionNode", ret );
@@ -1466,11 +1494,6 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
             END_FUNCTION("_CreateReactionNode", ret );
             return ret;
         }
-    }
-        
-    if( IS_FAILED( ( ret = _ResolveNodeLinks( frontend, ir, reactionNode, reaction ) ) ) ) {
-        END_FUNCTION("_CreateReactionNode", ret );
-        return ret;
     }
                                      
     END_FUNCTION("_CreateReactionNode", SUCCESS );
@@ -1563,6 +1586,15 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }
+    else if( ASTNode_isReal( source ) || ASTNode_isConstant( source ) || 
+	     (ASTNode_getType( source ) == AST_NAME_AVOGADRO) ) {
+        if( ( law = _TransformRealValueKineticLaw( frontend, source, manager, table ) ) == NULL ) {
+            END_FUNCTION("_TransformKineticLaw", FAILING );
+            return NULL;
+        }                 
+        END_FUNCTION("_TransformKineticLaw", SUCCESS );
+        return law;
+    } 
     else if( ASTNode_isName( source ) && (ASTNode_getType( source ) != AST_FUNCTION_DELAY)) {
         if( ( law = _TransformSymKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
@@ -1571,14 +1603,6 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }    
-    else if( ASTNode_isReal( source ) || ASTNode_isConstant( source ) ) {
-        if( ( law = _TransformRealValueKineticLaw( frontend, source, manager, table ) ) == NULL ) {
-            END_FUNCTION("_TransformKineticLaw", FAILING );
-            return NULL;
-        }                 
-        END_FUNCTION("_TransformKineticLaw", SUCCESS );
-        return law;
-    } 
     else if( ASTNode_isInteger( source ) ) {
         if( ( law = _TransformIntValueKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
@@ -2703,6 +2727,17 @@ static KINETIC_LAW *_TransformSymKineticLaw( FRONT_END_PROCESSOR *frontend, ASTN
       //FreeString( &kineticLawString );
       return law;
     }
+    /* This is one last gasp to deal with reactant/product ids */
+    symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
+    if( ( symbol = symtab->Lookup( symtab, sym ) ) != NULL ) {
+      if( ( law = CreateSymbolKineticLaw( symbol ) ) == NULL ) {
+	END_FUNCTION("_TransformSymKineticLaw", FAILING );
+	return NULL;
+      }
+      TRACE_2( "sym %s = %f", GetCharArrayOfString( GetSymbolID( symbol ) ), realValue );
+      END_FUNCTION("_TransformSymKineticLaw", SUCCESS );
+      return law;
+    }        
     printf("cannot find symbol %s\n",sym);
     
     END_FUNCTION("_TransformSymKineticLaw", FAILING );
@@ -2732,6 +2767,8 @@ static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend
     
     if (ASTNode_isReal( source )) {
       realValue = ASTNode_getReal( source );
+    } else if (ASTNode_getType( source ) == AST_NAME_AVOGADRO) {
+      realValue = 6.02214179*pow(10,23);
     } else if (ASTNode_getType( source ) == AST_CONSTANT_PI) {
       realValue = 4.*atan(1.);
     } else if (ASTNode_getType( source ) == AST_CONSTANT_E) {
@@ -2753,7 +2790,8 @@ static KINETIC_LAW *_TransformRealValueKineticLaw( FRONT_END_PROCESSOR *frontend
 }
 
 
-static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode, Reaction_t *reaction ) {
+static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTION *reactionNode, 
+				  Reaction_t *reaction, Model_t *model ) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
     UINT num = 0;
@@ -2773,6 +2811,12 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     ASTNode_t *node;
     KINETIC_LAW *law;
     SBML_SYMTAB_MANAGER *manager = NULL;
+    Species_t *Species = NULL;
+    char* convFactor = NULL;
+    Parameter_t *param = NULL;
+    char* speciesRefId = NULL;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    REB2SAC_SYMBOL *SpeciesRef = NULL;
 
     START_FUNCTION("_ResolveNodeLinks");
         
@@ -2785,6 +2829,8 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t*)ListOf_get( reactants, i );
         species = (char*)SpeciesReference_getSpecies( speciesRef );
+	speciesRefId = NULL;
+	SpeciesRef = NULL;
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = (StoichiometryMath_t *)SpeciesReference_getStoichiometryMath( speciesRef );
 	  node = (ASTNode_t *)StoichiometryMath_getMath( sm );
@@ -2799,13 +2845,22 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  } 
 	} else {
 	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
+	  Species = Model_getSpeciesById( model, species ); 
+	  if (SpeciesReference_isSetId( speciesRef )) {
+	    speciesRefId = (char*)SpeciesReference_getId( speciesRef );
+	    if( ( SpeciesRef = symtab->AddRealValueSymbol( symtab, speciesRefId, stoichiometry, 
+					      SpeciesReference_getConstant( speciesRef ) ) ) == NULL ) {
+	      return ErrorReport( FAILING, "_ResolveNodeLinks", 
+				  "failed to put parameter time in global symtab" );
+	    }     
+	  }
 	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
         }
 	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
-        if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, reactionNode, speciesNode, stoichiometry ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, reactionNode, speciesNode, stoichiometry, SpeciesRef ) ) ) ) {
             END_FUNCTION("_ResolveNodeLinks", SUCCESS );
             return ret;
         }
@@ -2821,6 +2876,8 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     for( i = 0; i < num; i++ ) {
         speciesRef = (SpeciesReference_t *)ListOf_get( products, i );
         species = (char*)SpeciesReference_getSpecies( speciesRef );
+	speciesRefId = NULL;
+	SpeciesRef = NULL;
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = SpeciesReference_getStoichiometryMath( speciesRef );
 	  node = (ASTNode_t *)StoichiometryMath_getMath( sm );
@@ -2835,13 +2892,22 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  } 
 	} else {
 	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
+	  Species = Model_getSpeciesById( model, species ); 
+	  if (SpeciesReference_isSetId( speciesRef )) {
+	    speciesRefId = (char*)SpeciesReference_getId( speciesRef );
+	    if( ( SpeciesRef = symtab->AddRealValueSymbol( symtab, speciesRefId, stoichiometry, 
+					      SpeciesReference_getConstant( speciesRef ) ) ) == NULL ) {
+	      return ErrorReport( FAILING, "_ResolveNodeLinks", 
+				  "failed to put parameter time in global symtab" );
+	    }     
+	  }
 	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
         if( speciesNode == NULL ) {
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
         }
 	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
-        if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reactionNode, speciesNode, stoichiometry ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reactionNode, speciesNode, stoichiometry, SpeciesRef ) ) ) ) {
             END_FUNCTION("_ResolveNodeLinks", SUCCESS );
             return ret;
         }

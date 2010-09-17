@@ -1272,41 +1272,59 @@ static RET_VAL _CalculatePropensity(MPDE_MONTE_CARLO_RECORD *rec, REACTION *reac
     LINKED_LIST *edges = NULL;
     KINETIC_LAW *law = NULL;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    REB2SAC_SYMBOL *speciesRef = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
 
     edges = GetReactantEdges((IR_NODE*) reaction);
     ResetCurrentElement(edges);
     while ((edge = GetNextEdge(edges)) != NULL) {
-        stoichiometry = GetStoichiometryInIREdge(edge);
-        species = GetSpeciesInIREdge(edge);
-        amount = GetAmountInSpeciesNode(species);
-        if (amount < stoichiometry) {
-            if (IS_FAILED((ret = SetReactionRate(reaction, 0.0)))) {
-                return ret;
-            }
+      speciesRef = GetSpeciesRefInIREdge( edge );
+      if (speciesRef) {
+	stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+      } else {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+      }
+      species = GetSpeciesInIREdge(edge);
+      if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+      }
+      amount = GetAmountInSpeciesNode(species);
+      if (amount < stoichiometry) {
+	if (IS_FAILED((ret = SetReactionRate(reaction, 0.0)))) {
+	  return ret;
+	}
 #ifdef DEBUG
-            printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-                    GetReactionRate( reaction ) );
+	printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+		GetReactionRate( reaction ) );
 #endif
-            return SUCCESS;
-        }
+	return SUCCESS;
+      }
     }
 #if 0
     edges = GetModifierEdges( (IR_NODE*)reaction );
     ResetCurrentElement( edges );
     while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-        stoichiometry = GetStoichiometryInIREdge( edge );
-        species = GetSpeciesInIREdge( edge );
-        amount = GetAmountInSpeciesNode( species );
-        if( amount < stoichiometry ) {
-            if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
-                return ret;
-            }
+      speciesRef = GetSpeciesRefInIREdge( edge );
+      if (speciesRef) {
+	stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+      } else {
+	stoichiometry = GetStoichiometryInIREdge( edge );
+      }
+      species = GetSpeciesInIREdge( edge );
+      if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+      }
+      amount = GetAmountInSpeciesNode( species );
+      if( amount < stoichiometry ) {
+	if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
+	  return ret;
+	}
 #ifdef DEBUG
-            printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
-                    GetReactionRate( reaction ) );
+	printf( "(%s, %f)" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+		GetReactionRate( reaction ) );
 #endif
-            return SUCCESS;
-        }
+	return SUCCESS;
+      }
     }
 #endif
 
@@ -1790,6 +1808,8 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   IR_EDGE *edge = NULL;
   double stoichiometry = 0.0;
   BOOL boundary = FALSE;
+  REB2SAC_SYMBOL *speciesRef = NULL;
+  REB2SAC_SYMBOL *convFactor = NULL;
 
   j = 0;
   for( i = 0; i < rec->speciesSize; i++ ) {
@@ -1814,8 +1834,16 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       Pedges = GetProductsInReactionNode( reaction );
       ResetCurrentElement( Redges );
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasBoundaryConditionInSpeciesNode( species )) {
 	  amount = GetAmountInSpeciesNode( species );
 	  boundary = TRUE;
@@ -1825,8 +1853,16 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (boundary) {
 	    if (HasBoundaryConditionInSpeciesNode( species )) {
 	      gsl_vector_set (f, j, amount + GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
@@ -1845,8 +1881,16 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
       }
       ResetCurrentElement( Pedges );
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasBoundaryConditionInSpeciesNode( species )) {
 	  amount = GetAmountInSpeciesNode( species );
 	  boundary = TRUE;
@@ -1855,8 +1899,16 @@ int MPDEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
 	  boundary = FALSE;
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (boundary) {
 	    if (HasBoundaryConditionInSpeciesNode( species )) {
 	      gsl_vector_set (f, j, amount + GetAmountInSpeciesNode( species ) - rec->fastCons[j]);
@@ -1899,6 +1951,8 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
   double amount;
   const size_t n = rec->numberFastSpecies;
   BOOL boundary = FALSE;
+  REB2SAC_SYMBOL *speciesRef = NULL;
+  REB2SAC_SYMBOL *convFactor = NULL;
 
   j=0;
   for( i = 0; i < rec->reactionsSize; i++ ) {
@@ -1909,8 +1963,16 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
       Pedges = GetProductsInReactionNode( reaction );
       ResetCurrentElement( Redges );
       if ( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasBoundaryConditionInSpeciesNode( species )) {
 	  amount = GetAmountInSpeciesNode( species );
 	  boundary = TRUE;
@@ -1920,8 +1982,16 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
 	}
 	ResetCurrentElement( Pedges );
 	while( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (boundary) {
 	    rec->fastCons[j] = amount;
 	    if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -1939,8 +2009,16 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
       }
       ResetCurrentElement( Pedges );
       if ( ( edge = GetNextEdge( Pedges ) ) != NULL ) {
-	stoichiometry = GetStoichiometryInIREdge( edge );
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
 	species = GetSpeciesInIREdge( edge );
+	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	  stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	}
 	if (HasBoundaryConditionInSpeciesNode( species )) {
 	  amount = GetAmountInSpeciesNode( species );
 	  boundary = TRUE;
@@ -1949,8 +2027,16 @@ static RET_VAL ExecuteFastReactions( MPDE_MONTE_CARLO_RECORD *rec ) {
 	  boundary = FALSE;
 	}
 	while( ( edge = GetNextEdge( Redges ) ) != NULL ) {
-	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
 	  species = GetSpeciesInIREdge( edge );
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
 	  if (boundary) {
 	    rec->fastCons[j] = amount;
 	    if (HasBoundaryConditionInSpeciesNode( species )) {
@@ -2036,6 +2122,8 @@ static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec) {
     double deltaTime;
     BOOL triggerEnabled;
     BYTE varType;
+    REB2SAC_SYMBOL *speciesRef = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
 
     for (i = 0; i < rec->rulesSize; i++) {
         if (GetRuleType(rec->ruleArray[i]) == RULE_TYPE_RATE_ASSIGNMENT) {
@@ -2080,29 +2168,45 @@ static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec) {
         edges = GetReactantEdges((IR_NODE*) reaction);
         ResetCurrentElement(edges);
         while ((edge = GetNextEdge(edges)) != NULL) {
-            stoichiometry = GetStoichiometryInIREdge(edge);
-            species = GetSpeciesInIREdge(edge);
-            if (HasBoundaryConditionInSpeciesNode(species))
-                continue;
-            amount = GetAmountInSpeciesNode(species) - stoichiometry;
-            TRACE_3("the amount of %s decreases from %g to %g", GetCharArrayOfString(GetSpeciesNodeName(species)),
-                    GetAmountInSpeciesNode(species), amount);
-            SetAmountInSpeciesNode(species, amount);
-            if (IS_FAILED((ret = evaluator->SetSpeciesValue(evaluator, species, amount)))) {
-                return ret;
-            }
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
+	  species = GetSpeciesInIREdge(edge);
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
+	  if (HasBoundaryConditionInSpeciesNode(species))
+	    continue;
+	  amount = GetAmountInSpeciesNode(species) - stoichiometry;
+	  TRACE_3("the amount of %s decreases from %g to %g", GetCharArrayOfString(GetSpeciesNodeName(species)),
+		  GetAmountInSpeciesNode(species), amount);
+	  SetAmountInSpeciesNode(species, amount);
+	  if (IS_FAILED((ret = evaluator->SetSpeciesValue(evaluator, species, amount)))) {
+	    return ret;
+	  }
         }
         edges = GetProductEdges((IR_NODE*) reaction);
         ResetCurrentElement(edges);
         while ((edge = GetNextEdge(edges)) != NULL) {
-            stoichiometry = GetStoichiometryInIREdge(edge);
-            species = GetSpeciesInIREdge(edge);
-            if (HasBoundaryConditionInSpeciesNode(species))
-                continue;
-            amount = GetAmountInSpeciesNode(species) + stoichiometry;
-            TRACE_3("the amount of %s increases from %g to %g", GetCharArrayOfString(GetSpeciesNodeName(species)),
-                    GetAmountInSpeciesNode(species), amount);
-            SetAmountInSpeciesNode(species, amount);
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
+	  species = GetSpeciesInIREdge(edge);
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
+	  if (HasBoundaryConditionInSpeciesNode(species))
+	    continue;
+	  amount = GetAmountInSpeciesNode(species) + stoichiometry;
+	  TRACE_3("the amount of %s increases from %g to %g", GetCharArrayOfString(GetSpeciesNodeName(species)),
+		  GetAmountInSpeciesNode(species), amount);
+	  SetAmountInSpeciesNode(species, amount);
         }
     }
 

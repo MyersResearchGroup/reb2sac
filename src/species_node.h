@@ -26,6 +26,7 @@
 #include "ir_node.h"
 #include "unit_manager.h"
 #include "compartment_manager.h"
+#include "symtab.h"
 
 BEGIN_C_NAMESPACE
 
@@ -60,6 +61,7 @@ struct  _SPECIES {
     UNIT_DEFINITION *spatialSizeUnits;
     BYTE flags;    
     STRING *type;
+    REB2SAC_SYMBOL *conversionFactor;
     struct KINETIC_LAW *initialAssignment;
 };
 
@@ -75,6 +77,7 @@ LINKED_LIST *GetReactionsAsModifierInSpeciesNode( SPECIES *species );
 LINKED_LIST *GetReactionsAsProductInSpeciesNode( SPECIES *species );
 
 STRING *GetTypeInSpeciesNode( SPECIES *species );
+REB2SAC_SYMBOL *GetConversionFactorInSpeciesNode( SPECIES *species );
 COMPARTMENT *GetCompartmentInSpeciesNode( SPECIES *species );
 UNIT_DEFINITION *GetSubstanceUnitsInSpeciesNode( SPECIES *species );
 UNIT_DEFINITION *GetSpatialSizeUnitsInSpeciesNode( SPECIES *species );
@@ -92,6 +95,7 @@ BOOL IsSpeciesNodeAlgebraic( SPECIES *species );
 BOOL IsSpeciesNodeFast( SPECIES *species );
 
 RET_VAL SetTypeInSpeciesNode( SPECIES *species, char *type );
+RET_VAL SetConversionFactorInSpeciesNode( SPECIES *species, REB2SAC_SYMBOL *conversionFactor );
 RET_VAL SetCompartmentInSpeciesNode( SPECIES *species, COMPARTMENT *compartment );
 RET_VAL SetSubstanceUnitsInSpeciesNode( SPECIES *species, UNIT_DEFINITION *substanceUnits );
 RET_VAL SetSpatialSizeUnitsInSpeciesNode( SPECIES *species, UNIT_DEFINITION *spatialSizeUnits );

@@ -24,6 +24,7 @@
 #include "common.h"
 #include "linked_list.h"
 #include "util.h"
+#include "symtab.h"
 
 BEGIN_C_NAMESPACE
 
@@ -79,13 +80,16 @@ CADDR_T GetTempFromIRNode( IR_NODE *node );
 typedef struct {
     IR_NODE *species;
     double stoichiometry;
-    IR_NODE *reaction;    
+    IR_NODE *reaction; 
+    REB2SAC_SYMBOL *speciesRef;
 } IR_EDGE;
 
 
-DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
+DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry, 
+					       REB2SAC_SYMBOL *speciesRef );
 DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
-DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
+DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry, 
+					      REB2SAC_SYMBOL *speciesRef );
 DLLSCOPE RET_VAL STDCALL FreeReactantEdge( IR_EDGE **edge );
 DLLSCOPE RET_VAL STDCALL FreeModifierEdge( IR_EDGE **edge );
 DLLSCOPE RET_VAL STDCALL FreeProductEdge( IR_EDGE **edge );

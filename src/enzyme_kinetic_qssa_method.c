@@ -571,7 +571,7 @@ static RET_VAL _DoEnzymeKineticQSSA1Transformation( ABSTRACTION_METHOD *method, 
         }
                 
         if( element->product != NULL ) {
-            if( IS_FAILED( ( ret = ir->AddProductEdge( ir, complexFormationReaction, element->product, GetStoichiometryInIREdge( element->productEdge ) ) ) ) ) {
+	  if( IS_FAILED( ( ret = ir->AddProductEdge( ir, complexFormationReaction, element->product, GetStoichiometryInIREdge( element->productEdge ), NULL ) ) ) ) {
                 END_FUNCTION("_DoEnzymeKineticQSSA1Transformation", ret );
                 return ret;
             } 
