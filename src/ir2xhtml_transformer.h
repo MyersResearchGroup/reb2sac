@@ -138,6 +138,7 @@
 #define REB2SAC_XHTML_MATHML_START_POWER_FORMAT "<msup>"
 #define REB2SAC_XHTML_MATHML_END_POWER_FORMAT "</msup>"
 #define REB2SAC_XHTML_MATHML_SUP_INT_FORMAT "<sup>%d</sup>"
+#define REB2SAC_XHTML_MATHML_SUP_REAL_FORMAT "<sup>%g</sup>"
 
 #define REB2SAC_XHTML_MATHML_ROOT_FORMAT "<mo>1&frasl;</mo>"
 
@@ -152,7 +153,31 @@
 #define REB2SAC_XHTML_MATHML_R_CEILING_FORMAT "<mo>&rceil;</mo>"
 
 #define REB2SAC_XHTML_MODEL_ID_FORMAT \
-"<table border=\"2\"><tr><th>Model ID</th><th>Model Name</th></tr><tr><td>%s</td><td>%s</td></tr></table>" NEW_LINE
+"<table border=\"2\"><tr><th>Model ID</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_NAME_FORMAT \
+"<tr><th>Model Name</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_SUBSTANCE_UNITS_FORMAT \
+"<tr><th>Model Substance Units</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_TIME_UNITS_FORMAT \
+"<tr><th>Model Time Units</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_VOLUME_UNITS_FORMAT \
+"<tr><th>Model Volume Units</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_AREA_UNITS_FORMAT \
+"<tr><th>Model Area Units</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_LENGTH_UNITS_FORMAT \
+"<tr><th>Model Length Units</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_MODEL_EXTENT_UNITS_FORMAT \
+"<tr><th>Model Extent Units</th><td>%s</td></tr>"
+
+#define REB2SAC_XHTML_END_MODEL_FORMAT \
+"</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_CONSTANTS_FORMAT \
 "<table border=\"2\"><tr><th>Parameter ID</th><th>Initial Value</th><th>Units</th><th>Constant</th></tr>" NEW_LINE
@@ -226,28 +251,34 @@
 "</td><td>%s</td></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_FORMAT \
-"<table border=\"2\"><tr><th>Compartment ID</th><th>Type</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Outside</th><th>Constant</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Compartment ID</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Constant</th></tr>" NEW_LINE
+/*"<table border=\"2\"><tr><th>Compartment ID</th><th>Type</th><th>Dimensions</th><th>Initial Size</th><th>Units</th><th>Outside</th><th>Constant</th></tr>" NEW_LINE*/
  
 #define REB2SAC_XHTML_END_COMPARTMENT_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%s</td><td><center>%d</center></td><td><center>"
+"<tr><td>%s</td><td><center>%g</center></td><td><center>"
+/*"<tr><td>%s</td><td>%s</td><td><center>%d</center></td><td><center>"*/
 
 #define REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT \
-"</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
+"</center></td><td>%s</td><td>%s</td></tr>" NEW_LINE
+/*"</center></td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE*/
 
 #define REB2SAC_XHTML_START_SPECIES_FORMAT \
-"<table border=\"2\"><tr><th>Species ID</th><th>Type</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th><th>HasOnlySubstanceUnits</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Species ID</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Conversion Factor</th><th>Boundary</th><th>Constant</th><th>HasOnlySubstanceUnits</th></tr>" NEW_LINE
+/*"<table border=\"2\"><tr><th>Species ID</th><th>Type</th><th>Compartment</th><th>Initial Value</th><th>Units</th><th>Boundary</th><th>Constant</th><th>HasOnlySubstanceUnits</th></tr>" NEW_LINE*/
  
 #define REB2SAC_XHTML_END_SPECIES_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%s</td><td>%s</td><td><center>"
+"<tr><td>%s</td><td>%s</td><td><center>"
+/*"<tr><td>%s</td><td>%s</td><td>%s</td><td><center>"*/
 
 #define REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT \
-"</center></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
+"</center></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE
+/*"</center></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE*/
 
 #define REB2SAC_XHTML_START_EVENT_FORMAT \
 "<table border=\"2\"><tr><th>Event ID</th><th>Trigger</th><th>Delay</th><th>Priority</th><th>Use Values From Trigger Time</th><th>Trigger Can Be Disabled</th><th>Trigger Initial Value</th><th>Assignments</th></tr>" NEW_LINE
@@ -290,6 +321,9 @@
 
 #define REB2SAC_XHTML_SPECIES_FORMAT2 "%g %s"
 #define REB2SAC_XHTML_MORE_SPECIES_FORMAT2 ", %g %s"
+
+#define REB2SAC_XHTML_SPECIES_FORMAT3 "%s %s"
+#define REB2SAC_XHTML_MORE_SPECIES_FORMAT3 ", %s %s"
 
 #define __IR2XHTML_TAB "    "
 

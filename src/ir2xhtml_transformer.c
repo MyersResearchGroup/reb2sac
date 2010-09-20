@@ -390,6 +390,7 @@ static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     double stoichiometry = 0.0;
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
+    REB2SAC_SYMBOL *speciesRef = NULL;
     
     START_FUNCTION("_PrintListOfSpeciesInXHTML");
     
@@ -400,24 +401,36 @@ static RET_VAL _PrintListOfSpeciesInXHTML( LINKED_LIST *list, FILE *file ) {
     } 
     
     species = GetSpeciesInIREdge( edge );
-    stoichiometry = GetStoichiometryInIREdge( edge );
-    if( stoichiometry == 1.0 ) {    
+    if ( ( speciesRef = GetSpeciesRefInIREdge( edge ) ) != NULL ) {
+      fprintf( file, REB2SAC_XHTML_SPECIES_FORMAT3, 
+	       GetCharArrayOfString( GetSymbolID( speciesRef ) ),
+	       GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
+    } else {
+      stoichiometry = GetStoichiometryInIREdge( edge );
+      if( stoichiometry == 1.0 ) {    
         fprintf( file, REB2SAC_XHTML_SPECIES_FORMAT, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
-    }
-    else {
+      }
+      else {
         fprintf( file, REB2SAC_XHTML_SPECIES_FORMAT2, 
             stoichiometry, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
+      }
     }
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         species = GetSpeciesInIREdge( edge );
-        stoichiometry = GetStoichiometryInIREdge( edge );
-        if( stoichiometry == 1.0 ) {
+	if ( ( speciesRef = GetSpeciesRefInIREdge( edge ) ) != NULL ) {
+            fprintf( file, REB2SAC_XHTML_MORE_SPECIES_FORMAT3, 
+		     GetCharArrayOfString( GetSymbolID( speciesRef ) ),
+		     GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	  if( stoichiometry == 1.0 ) {
             fprintf( file, REB2SAC_XHTML_MORE_SPECIES_FORMAT, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
-        }
-        else {
+	  }
+	  else {
             fprintf( file, REB2SAC_XHTML_MORE_SPECIES_FORMAT2, 
-                stoichiometry, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
-        }
+		     stoichiometry, GetCharArrayOfString( GetSpeciesNodeName( species ) ) );
+	  }
+	}
     }
     
     END_FUNCTION("_PrintListOfSpeciesInXHTML", SUCCESS );
@@ -496,7 +509,7 @@ static RET_VAL _PrintUnitForXHTML( UNIT_DEFINITION *unitDef, FILE *file ) {
     int num;
     int i;
     int scale;
-    int exp;
+    double exp;
     double mult;
     
     START_FUNCTION("_PrintUnitForXHTML");
@@ -529,7 +542,7 @@ static RET_VAL _PrintUnitForXHTML( UNIT_DEFINITION *unitDef, FILE *file ) {
       fprintf( file, "%s ", GetCharArrayOfString( GetKindInUnit( unit ) ) );
       if (exp != 1) {
 	fprintf( file, REB2SAC_XHTML_MATHML_R_PAREN_FORMAT );
-	fprintf( file, REB2SAC_XHTML_MATHML_SUP_INT_FORMAT, exp );
+	fprintf( file, REB2SAC_XHTML_MATHML_SUP_REAL_FORMAT, exp );
       }
     }
 
@@ -888,8 +901,12 @@ static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file )
       units = empty;
     }
     fprintf( file, REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT,
-	     GetCharArrayOfString( GetCompartmentID( compartment ) ), type,
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ), 
 	     GetSpatialDimensionsInCompartment( compartment ) );
+    /*
+    fprintf( file, REB2SAC_XHTML_START_COMPARTMENT_ENTRY_FORMAT,
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ), type,
+	     GetSpatialDimensionsInCompartment( compartment ) );*/
     if (GetInitialAssignmentInCompartment( compartment ) != NULL) {
       law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment );
       if( IS_FAILED( ( ret = _PrintMathInXHTML( law, NULL, file ) ) ) ) {
@@ -900,7 +917,9 @@ static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file )
       fprintf( file, "%g",GetSizeInCompartment( compartment ) );
     }
     fprintf( file, REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT,
-	     empty, outside, IsCompartmentConstant( compartment ) ? "True" : "False");
+	     empty, IsCompartmentConstant( compartment ) ? "True" : "False");
+    /*fprintf( file, REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT,
+      empty, outside, IsCompartmentConstant( compartment ) ? "True" : "False");*/
 
     fprintf( file, NEW_LINE );
             
@@ -944,6 +963,7 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
     COMPARTMENT *compartment = NULL;
     char *units;
     char *type;
+    char *convFactor;
     char empty[5];
     char none[5];
     KINETIC_LAW *law;
@@ -958,6 +978,11 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
     } else {
       units = none;
     }
+    if (GetConversionFactorInSpeciesNode ( species ) != NULL) {
+      convFactor = GetCharArrayOfString( GetSymbolID( GetConversionFactorInSpeciesNode( species )));
+    } else {
+      convFactor = none;
+    }
     strcpy(empty,"");
     if (GetTypeInSpeciesNode ( species ) != NULL) {
       type = GetCharArrayOfString( GetTypeInSpeciesNode( species ) );
@@ -965,8 +990,13 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
       type = empty;
     }
     fprintf( file, REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT,
+	     GetCharArrayOfString( GetSpeciesNodeID( species ) ), 
+	     GetCharArrayOfString( GetCompartmentID( compartment ) ) );
+    /*
+    fprintf( file, REB2SAC_XHTML_START_SPECIES_ENTRY_FORMAT,
 	     GetCharArrayOfString( GetSpeciesNodeID( species ) ), type,
 	     GetCharArrayOfString( GetCompartmentID( compartment ) ) );
+    */
     if (GetInitialAssignmentInSpeciesNode( species ) != NULL) {
       law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species );
       if( IS_FAILED( ( ret = _PrintMathInXHTML( law, NULL, file ) ) ) ) {
@@ -983,11 +1013,17 @@ static RET_VAL _PrintSpeciesForXHTML( SPECIES *species, FILE *file ) {
       }
     }
     fprintf( file, REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT,
+	     units, convFactor,
+	     HasBoundaryConditionInSpeciesNode( species ) ? "True" : "False",
+	     IsSpeciesNodeConstant( species ) ? "True" : "False",
+	     HasOnlySubstanceUnitsInSpeciesNode( species ) ? "True" : "False");
+    /*
+    fprintf( file, REB2SAC_XHTML_END_SPECIES_ENTRY_FORMAT,
 	     units, 
 	     HasBoundaryConditionInSpeciesNode( species ) ? "True" : "False",
 	     IsSpeciesNodeConstant( species ) ? "True" : "False",
 	     HasOnlySubstanceUnitsInSpeciesNode( species ) ? "True" : "False");
-
+    */
     fprintf( file, NEW_LINE );
             
     END_FUNCTION("_PrintSpeciesForXHTML", SUCCESS );
