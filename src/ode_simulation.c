@@ -736,6 +736,7 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
 	  param = GetRealValueInSymbol( symbol );
+	  if (isnan(param)) param = 0;
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
@@ -743,6 +744,8 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
 	    param = GetRealValueFromKineticLaw(law);
 	  } else if (law->valueType == KINETIC_LAW_VALUE_TYPE_INT) {
 	    param = (double)GetIntValueFromKineticLaw(law);
+	  } else {
+	    param = 0;
 	  }
 	  if( GetRealValueInSymbol( symbol ) != param ) {
 	    SetRealValueInSymbol( symbol, param );
@@ -1191,7 +1194,7 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
     j = GetEventAssignmentIndex( eventAssignment );
     //printf("varType = %d j = %d\n",varType,j);
     concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
-    //printf("conc = %g\n",amount);
+    //printf("conc = %g\n",concentration);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
 	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
 	  SetAmountInSpeciesNode( rec->speciesArray[j], concentration );
@@ -1358,13 +1361,13 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
   s = gsl_multiroot_fsolver_alloc (T, n);
   gsl_multiroot_fsolver_set (s, &f, x);
      
-  //ODE_print_state (iter, s, n);
+  // ODE_print_state (iter, s, n);
      
   do {
       iter++;
       status = gsl_multiroot_fsolver_iterate (s);
       
-      //ODE_print_state (iter, s, n);
+      // ODE_print_state (iter, s, n);
       
       if (status)   /* check if solver is stuck */
 	break;
@@ -1372,7 +1375,7 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
       status = gsl_multiroot_test_residual (s->f, 1e-7);
   } while (status == GSL_CONTINUE && iter < 1000);
      
-  //printf ("status = %s\n", gsl_strerror (status));
+  // printf ("status = %s\n", gsl_strerror (status));
      
   gsl_multiroot_fsolver_free (s);
   gsl_vector_free (x);
