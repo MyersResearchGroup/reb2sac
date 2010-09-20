@@ -35,8 +35,20 @@ static LINKED_LIST * _GetListOfProductEdges( IR *ir );
     
 static RET_VAL _SetModelId( IR *ir, char *modelId );    
 static RET_VAL _SetModelName( IR *ir, char *modelName );    
+static RET_VAL _SetModelSubstanceUnits( IR *ir, char *modelSubstanceUnits );    
+static RET_VAL _SetModelTimeUnits( IR *ir, char *modelTimeUnits );    
+static RET_VAL _SetModelVolumeUnits( IR *ir, char *modelVolumeUnits );    
+static RET_VAL _SetModelAreaUnits( IR *ir, char *modelAreaUnits );    
+static RET_VAL _SetModelLengthUnits( IR *ir, char *modelLengthUnits );    
+static RET_VAL _SetModelExtentUnits( IR *ir, char *modelExtentUnits );    
 static STRING *_GetModelId( IR *ir );
 static STRING *_GetModelName( IR *ir );
+static STRING *_GetModelSubstanceUnits( IR *ir );
+static STRING *_GetModelTimeUnits( IR *ir );
+static STRING *_GetModelVolumeUnits( IR *ir );
+static STRING *_GetModelAreaUnits( IR *ir );
+static STRING *_GetModelLengthUnits( IR *ir );
+static STRING *_GetModelExtentUnits( IR *ir );
 
 static SPECIES *_CreateSpecies( IR *ir, char *name );    
 static REACTION *_CreateReaction( IR *ir, char *name );
@@ -165,6 +177,12 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
 
     ir->modelId = NULL;
     ir->modelName = NULL;
+    ir->modelSubstanceUnits = NULL;
+    ir->modelTimeUnits = NULL;
+    ir->modelVolumeUnits = NULL;
+    ir->modelAreaUnits = NULL;
+    ir->modelLengthUnits = NULL;
+    ir->modelExtentUnits = NULL;
 
     if( ( ir->speciesList = CreateLinkedList() ) == NULL ) {                
         return ErrorReport( FAILING, "InitIR", "could not allocate internal data for IR" );
@@ -200,8 +218,20 @@ RET_VAL InitIR(  COMPILER_RECORD_T *record ) {
     
     ir->SetModelId = _SetModelId;
     ir->SetModelName = _SetModelName;
+    ir->SetModelSubstanceUnits = _SetModelSubstanceUnits;
+    ir->SetModelTimeUnits = _SetModelTimeUnits;
+    ir->SetModelVolumeUnits = _SetModelVolumeUnits;
+    ir->SetModelAreaUnits = _SetModelAreaUnits;
+    ir->SetModelLengthUnits = _SetModelLengthUnits;
+    ir->SetModelExtentUnits = _SetModelExtentUnits;
     ir->GetModelId = _GetModelId;
     ir->GetModelName = _GetModelName;
+    ir->GetModelSubstanceUnits = _GetModelSubstanceUnits;
+    ir->GetModelTimeUnits = _GetModelTimeUnits;
+    ir->GetModelVolumeUnits = _GetModelVolumeUnits;
+    ir->GetModelAreaUnits = _GetModelAreaUnits;
+    ir->GetModelLengthUnits = _GetModelLengthUnits;
+    ir->GetModelExtentUnits = _GetModelExtentUnits;
 
     ir->CreateSpecies = _CreateSpecies;
     ir->CreateReaction = _CreateReaction;
@@ -378,12 +408,78 @@ static RET_VAL _SetModelName( IR *ir, char *modelName ) {
   return SUCCESS;
 }
 
+static RET_VAL _SetModelSubstanceUnits( IR *ir, char *modelSubstanceUnits ) {
+  if ( ( ir->modelSubstanceUnits = CreateString( modelSubstanceUnits ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static RET_VAL _SetModelTimeUnits( IR *ir, char *modelTimeUnits ) {
+  if ( ( ir->modelTimeUnits = CreateString( modelTimeUnits ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static RET_VAL _SetModelVolumeUnits( IR *ir, char *modelVolumeUnits ) {
+  if ( ( ir->modelVolumeUnits = CreateString( modelVolumeUnits ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static RET_VAL _SetModelAreaUnits( IR *ir, char *modelAreaUnits ) {
+  if ( ( ir->modelAreaUnits = CreateString( modelAreaUnits ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static RET_VAL _SetModelLengthUnits( IR *ir, char *modelLengthUnits ) {
+  if ( ( ir->modelLengthUnits = CreateString( modelLengthUnits ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
+static RET_VAL _SetModelExtentUnits( IR *ir, char *modelExtentUnits ) {
+  if ( ( ir->modelExtentUnits = CreateString( modelExtentUnits ) ) == NULL ) {
+    return FAILING;
+  }
+  return SUCCESS;
+}
+
 static STRING *_GetModelId( IR *ir ) {
   return ir->modelId;
 }
 
 static STRING *_GetModelName( IR *ir ) {
   return ir->modelName;
+}
+
+static STRING *_GetModelSubstanceUnits( IR *ir ) {
+  return ir->modelSubstanceUnits;
+}
+
+static STRING *_GetModelTimeUnits( IR *ir ) {
+  return ir->modelTimeUnits;
+}
+
+static STRING *_GetModelVolumeUnits( IR *ir ) {
+  return ir->modelVolumeUnits;
+}
+
+static STRING *_GetModelAreaUnits( IR *ir ) {
+  return ir->modelAreaUnits;
+}
+
+static STRING *_GetModelLengthUnits( IR *ir ) {
+  return ir->modelLengthUnits;
+}
+
+static STRING *_GetModelExtentUnits( IR *ir ) {
+  return ir->modelExtentUnits;
 }
         
 static SPECIES *_CreateSpecies( IR *ir, char *name ) {

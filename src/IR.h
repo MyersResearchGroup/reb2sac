@@ -46,6 +46,12 @@ typedef struct _IR IR;
 struct _IR {            
     STRING *modelId;
     STRING *modelName;
+    STRING *modelSubstanceUnits;
+    STRING *modelTimeUnits;
+    STRING *modelVolumeUnits;
+    STRING *modelAreaUnits;
+    STRING *modelLengthUnits;
+    STRING *modelExtentUnits;
     LINKED_LIST *speciesList;
     LINKED_LIST *reactionList;
     LINKED_LIST *reactantEdges;
@@ -71,9 +77,21 @@ struct _IR {
     LINKED_LIST * (*GetListOfProductEdges)( IR *ir );
 
     RET_VAL (*SetModelId)( IR *ir, char *modelId );
-    RET_VAL (*SetModelName)( IR *ir, char *modelId );
     STRING* (*GetModelId)( IR *ir );
+    RET_VAL (*SetModelName)( IR *ir, char *modelName );
     STRING* (*GetModelName)( IR *ir );
+    RET_VAL (*SetModelSubstanceUnits)( IR *ir, char *modelSubstanceUnits );
+    STRING* (*GetModelSubstanceUnits)( IR *ir );
+    RET_VAL (*SetModelTimeUnits)( IR *ir, char *modelTimeUnits );
+    STRING* (*GetModelTimeUnits)( IR *ir );
+    RET_VAL (*SetModelVolumeUnits)( IR *ir, char *modelVolumeUnits );
+    STRING* (*GetModelVolumeUnits)( IR *ir );
+    RET_VAL (*SetModelAreaUnits)( IR *ir, char *modelAreaUnits );
+    STRING* (*GetModelAreaUnits)( IR *ir );
+    RET_VAL (*SetModelLengthUnits)( IR *ir, char *modelLengthUnits );
+    STRING* (*GetModelLengthUnits)( IR *ir );
+    RET_VAL (*SetModelExtentUnits)( IR *ir, char *modelExtentUnits );
+    STRING* (*GetModelExtentUnits)( IR *ir );
     
     SPECIES* (*CreateSpecies)( IR *ir, char *name );    
     REACTION* (*CreateReaction)( IR *ir, char *name );
