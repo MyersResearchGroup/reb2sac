@@ -88,8 +88,35 @@ static RET_VAL _HandleIR( BACK_END_PROCESSOR *backend, IR *ir, FILE *file ) {
     fprintf( file, REB2SAC_XHTML_START_FORMAT_ON_LINE );
     fprintf( file, NEW_LINE );
     fprintf( file, NEW_LINE );
-    fprintf( file, REB2SAC_XHTML_MODEL_ID_FORMAT, GetCharArrayOfString( ir->GetModelId( ir ) ),
-	     GetCharArrayOfString( ir->GetModelName( ir ) ));
+    fprintf( file, REB2SAC_XHTML_MODEL_ID_FORMAT, GetCharArrayOfString( ir->GetModelId( ir ) ));
+    if (ir->GetModelName( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_NAME_FORMAT, GetCharArrayOfString( ir->GetModelName( ir ) ));
+    }
+    if (ir->GetModelSubstanceUnits( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_SUBSTANCE_UNITS_FORMAT, 
+	       GetCharArrayOfString( ir->GetModelSubstanceUnits( ir ) ));
+    }
+    if (ir->GetModelTimeUnits( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_TIME_UNITS_FORMAT, 
+	       GetCharArrayOfString( ir->GetModelTimeUnits( ir ) ));
+    }
+    if (ir->GetModelVolumeUnits( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_VOLUME_UNITS_FORMAT, 
+	       GetCharArrayOfString( ir->GetModelVolumeUnits( ir ) ));
+    }
+    if (ir->GetModelAreaUnits( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_AREA_UNITS_FORMAT, 
+	       GetCharArrayOfString( ir->GetModelAreaUnits( ir ) ));
+    }
+    if (ir->GetModelLengthUnits( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_LENGTH_UNITS_FORMAT, 
+	       GetCharArrayOfString( ir->GetModelLengthUnits( ir ) ));
+    }
+    if (ir->GetModelExtentUnits( ir ) != NULL) {
+      fprintf( file, REB2SAC_XHTML_MODEL_EXTENT_UNITS_FORMAT, 
+	       GetCharArrayOfString( ir->GetModelExtentUnits( ir ) ));
+    }
+    fprintf( file, REB2SAC_XHTML_END_MODEL_FORMAT );
     fprintf( file, NEW_LINE );
     fprintf( file, REB2SAC_XHTML_LINE_BREAK );
     fprintf( file, REB2SAC_XHTML_LINE_BREAK );
