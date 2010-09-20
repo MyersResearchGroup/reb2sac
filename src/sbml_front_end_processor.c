@@ -196,6 +196,12 @@ static RET_VAL _GenerateIR( FRONT_END_PROCESSOR *frontend, IR *ir ) {
 
     ir->SetModelId( ir, Model_getId( model ) );
     ir->SetModelName( ir, Model_getName( model ) );
+    ir->SetModelSubstanceUnits( ir, Model_getSubstanceUnits( model ) );
+    ir->SetModelTimeUnits( ir, Model_getTimeUnits( model ) );
+    ir->SetModelVolumeUnits( ir, Model_getVolumeUnits( model ) );
+    ir->SetModelAreaUnits( ir, Model_getAreaUnits( model ) );
+    ir->SetModelLengthUnits( ir, Model_getLengthUnits( model ) );
+    ir->SetModelExtentUnits( ir, Model_getExtentUnits( model ) );
         
     if( IS_FAILED( ( ret = _HandleUnitDefinitions( frontend, model ) ) ) ) {
         END_FUNCTION("_GenerateIR", ret );
@@ -537,7 +543,7 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
     RET_VAL ret = SUCCESS;
     int i = 0;
     int num = 0;
-    int exponent = 0;
+    double exponent = 0;
     int scale = 0;
     double multiplier = 0.0;
     char *id = NULL;
@@ -565,11 +571,11 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
         unit = UnitDefinition_getUnit( source, i );
         kindID = Unit_getKind( unit );
         kind = (char *)UnitKind_toString( kindID );
-        exponent = Unit_getExponent( unit );
+        exponent = Unit_getExponentAsDouble( unit );
         scale = Unit_getScale( unit );
-        //multiplier = Unit_getMultiplier( unit );
-	multiplier = 1.0;
-        //printf( "adding unit %s (exponent=%i, scale=%i, multiplier=%f) in %s\n", kind, exponent, scale, multiplier, id );           
+        multiplier = Unit_getMultiplier( unit );
+	//multiplier = 1.0;
+        //printf( "adding unit %s (exponent=%g, scale=%d, multiplier=%g) in %s\n", kind, exponent, scale, multiplier, id );           
         TRACE_5( "adding unit %s (exponent=%i, scale=%i, multiplier=%f) in %s", kind, exponent, scale, multiplier, id );           
         if( IS_FAILED( ( ret = AddUnitInUnitDefinition( unitDef, kind, exponent, scale, multiplier ) ) ) ) {
             END_FUNCTION("_HandleUnitDefinition", ret );
@@ -1107,7 +1113,7 @@ static RET_VAL _HandleCompartments( FRONT_END_PROCESSOR *frontend, Model_t *mode
 static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model, Compartment_t *source ) {
     RET_VAL ret = SUCCESS;
     char *id = NULL;    
-    int spatialDimensions = 3;
+    double spatialDimensions = 3.0;
     double size = 0.0;
     char *units = NULL;
     UNIT_DEFINITION *unitDef = NULL;
@@ -1130,7 +1136,7 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
         return ErrorReport( FAILING, "_HandleCompartment", "could not allocate compartment %s", id );
     }
     
-    spatialDimensions = Compartment_getSpatialDimensions( source );
+    spatialDimensions = Compartment_getSpatialDimensionsAsDouble( source );
     if( IS_FAILED( ( ret = SetSpatialDimensionsInCompartment( compartment, spatialDimensions ) ) ) ) {
         END_FUNCTION("_HandleCompartment", ret );
         return ret;
@@ -1455,6 +1461,21 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
         END_FUNCTION("_CreateReactionNode", ret );
         return ret;   
     }    
+
+    if( Reaction_getFast( reaction ) ) {
+        TRACE_0("\tsetting reversible true");
+        if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, TRUE ) ) ) ) {
+            END_FUNCTION("_CreateReactionNode", ret );
+            return ret;
+        }
+    }
+    else {
+        TRACE_0("\tsetting reversible false");
+        if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, FALSE ) ) ) ) {
+            END_FUNCTION("_CreateReactionNode", ret );
+            return ret;
+        }
+    }
         
     if( IS_FAILED( ( ret = _ResolveNodeLinks( frontend, ir, reactionNode, reaction, model ) ) ) ) {
         END_FUNCTION("_CreateReactionNode", ret );
@@ -1476,21 +1497,6 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
     else {
         TRACE_0("\tsetting reversible false");
         if( IS_FAILED( ( ret = SetReactionReversibleInReactionNode( reactionNode, FALSE ) ) ) ) {
-            END_FUNCTION("_CreateReactionNode", ret );
-            return ret;
-        }
-    }
-
-    if( Reaction_getFast( reaction ) ) {
-        TRACE_0("\tsetting reversible true");
-        if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, TRUE ) ) ) ) {
-            END_FUNCTION("_CreateReactionNode", ret );
-            return ret;
-        }
-    }
-    else {
-        TRACE_0("\tsetting reversible false");
-        if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, FALSE ) ) ) ) {
             END_FUNCTION("_CreateReactionNode", ret );
             return ret;
         }
