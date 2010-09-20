@@ -31,7 +31,7 @@ BEGIN_C_NAMESPACE
 
 typedef struct {
     STRING *kind;
-    int exponent;
+    double exponent;
     int scale;
     double multiplier;
 } UNIT;
@@ -59,11 +59,11 @@ struct _UNIT_MANAGER {
 
 STRING *GetUnitDefinitionID( UNIT_DEFINITION *unitDef );
 LINKED_LIST *GetUnitsInUnitDefinition( UNIT_DEFINITION *unitDef );
-RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier );
+RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, double exponent, int scale, double multiplier );
 BOOL IsBuiltInUnitDefinition( UNIT_DEFINITION *unitDef );
 
 STRING *GetKindInUnit( UNIT *unit );
-int GetExponentInUnit( UNIT *unit );
+double GetExponentInUnit( UNIT *unit );
 int GetScaleInUnit( UNIT *unit );
 double GetMultiplierInUnit( UNIT *unit );
 
