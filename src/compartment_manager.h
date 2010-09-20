@@ -36,7 +36,7 @@ struct KINETIC_LAW;
 
 struct _COMPARTMENT {
     STRING *id;
-    int spatialDimensions;
+    double spatialDimensions;
     double size;
     double currentSize;
     UNIT_DEFINITION *unit;
@@ -69,8 +69,8 @@ RET_VAL CloseCompartmentManager( );
 
 STRING *GetCompartmentID( COMPARTMENT *compartment );
 
-int GetSpatialDimensionsInCompartment( COMPARTMENT *compartment );
-RET_VAL SetSpatialDimensionsInCompartment( COMPARTMENT *compartment, int spatialDimensions );
+double GetSpatialDimensionsInCompartment( COMPARTMENT *compartment );
+RET_VAL SetSpatialDimensionsInCompartment( COMPARTMENT *compartment, double spatialDimensions );
 
 double GetSizeInCompartment( COMPARTMENT *compartment );
 RET_VAL SetSizeInCompartment( COMPARTMENT *compartment, double size );

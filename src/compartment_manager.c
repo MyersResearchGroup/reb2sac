@@ -95,7 +95,7 @@ STRING *GetCompartmentID( COMPARTMENT *compartment ) {
 }
 
 
-int GetSpatialDimensionsInCompartment( COMPARTMENT *compartment ) {
+double GetSpatialDimensionsInCompartment( COMPARTMENT *compartment ) {
     START_FUNCTION("GetSpatialDimensionsInCompartment");
     
     if( compartment == NULL ) {
@@ -108,7 +108,7 @@ int GetSpatialDimensionsInCompartment( COMPARTMENT *compartment ) {
 }
 
 
-RET_VAL SetSpatialDimensionsInCompartment( COMPARTMENT *compartment, int spatialDimensions ) {
+RET_VAL SetSpatialDimensionsInCompartment( COMPARTMENT *compartment, double spatialDimensions ) {
     START_FUNCTION("GetCompartmentID");
     
     if( compartment == NULL ) {
