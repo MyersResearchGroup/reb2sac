@@ -171,11 +171,11 @@ double GetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double
 
     ResetCurrentElement( eventAssignDef->nextValueTime );
     while ( ( nextValueTimePtr = (NEXT_VALUE_TIME*)GetNextFromLinkedList( eventAssignDef->nextValueTime ) ) != NULL ){
-      if (nextValueTimePtr->nextTime == nextTime) {
+      //if (nextValueTimePtr->nextTime <= nextTime) {
 	nextValue = nextValueTimePtr->nextValue;
 	RemoveElementFromLinkedList( (CADDR_T)nextValueTimePtr, eventAssignDef->nextValueTime );
 	break;
-      } 
+	//} 
     }
 
     END_FUNCTION("GetEventAssignmentNextValueTime", SUCCESS );
