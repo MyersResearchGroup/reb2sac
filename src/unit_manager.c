@@ -47,6 +47,7 @@ UNIT_MANAGER *GetUnitManagerInstance( COMPILER_RECORD_T *record ) {
 	_CreateUnitDefinition(&manager,"length",TRUE);
 	_CreateUnitDefinition(&manager,"time",TRUE);
 	_CreateUnitDefinition(&manager,"ampere",TRUE);
+	_CreateUnitDefinition(&manager,"avogadro",TRUE);
 	_CreateUnitDefinition(&manager,"becquerel",TRUE);
 	_CreateUnitDefinition(&manager,"candela",TRUE);
 	_CreateUnitDefinition(&manager,"celsius",TRUE);
@@ -149,7 +150,7 @@ LINKED_LIST *GetUnitsInUnitDefinition( UNIT_DEFINITION *unitDef ) {
 }
 
 
-RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, int exponent, int scale, double multiplier ) {
+RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, double exponent, int scale, double multiplier ) {
     RET_VAL ret = SUCCESS;
     UNIT *unit = NULL;    
     
@@ -251,7 +252,7 @@ STRING *GetKindInUnit( UNIT *unit ) {
     return unit->kind;
 }
 
-int GetExponentInUnit( UNIT *unit ) {
+double GetExponentInUnit( UNIT *unit ) {
     START_FUNCTION("GetExponentInUnit");
     
     if( unit == NULL ) {
