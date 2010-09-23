@@ -355,6 +355,7 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	break;
       }
     case KINETIC_LAW_OP_XOR:
+      /*
       *result = 0;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -365,8 +366,23 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	}
 	*result = (!(*result) && childValue)||((*result) && !childValue);
       }
+      */
+      *result = DBL_MAX;
       break;
     case KINETIC_LAW_OP_OR:
+      *result = DBL_MAX;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if (childValue < *result)
+	  *result = childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_AND:
       *result = 0;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -375,19 +391,8 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	  END_FUNCTION("_VisitPWToEvaluate", ret );
 	  return ret;
 	}
-	*result = *result || childValue;
-      }
-      break;
-    case KINETIC_LAW_OP_AND:
-      *result = 1;
-      for ( i = 0; i < num; i++ ) {
-	child = (KINETIC_LAW*)GetElementByIndex( i,children );
-	visitor->_internal2 = (CADDR_T)(&childValue);
-	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
-	  END_FUNCTION("_VisitPWToEvaluate", ret );
-	  return ret;
-	}
-	*result = *result && childValue;
+	if (childValue > *result) 
+	  *result = childValue;
       }
       break;
     default:
@@ -829,6 +834,7 @@ static RET_VAL _VisitOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, KINETI
 	  *result = pow(rightValue,(1./leftValue));
         break;        
 
+	/*
         case KINETIC_LAW_OP_XOR:
 	  if (leftValue < rightValue) {
             *result = leftValue;
@@ -844,6 +850,15 @@ static RET_VAL _VisitOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, KINETI
             *result = rightValue;
 	  }
         break;
+
+        case KINETIC_LAW_OP_OR:
+	  if (leftValue < rightValue) {
+            *result = leftValue;
+	  } else {
+            *result = rightValue;
+	  }
+        break;
+	*/
 
         case KINETIC_LAW_OP_EQ:
 	  *result = DBL_MAX;
@@ -914,14 +929,6 @@ static RET_VAL _VisitOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, KINETI
 		*result = (rightValue - leftValue);
 	      }
 	    } 
-	  }
-        break;
-
-        case KINETIC_LAW_OP_OR:
-	  if (leftValue < rightValue) {
-            *result = leftValue;
-	  } else {
-            *result = rightValue;
 	  }
         break;
 
