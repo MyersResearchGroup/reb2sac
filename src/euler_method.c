@@ -812,13 +812,13 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
     BOOL eventFired = FALSE;
     double firstEventTime = -1.0;
     int eventToFire = -1;
-    double prMax = -1.0;
+    double prMax;
     double priority = 0.0;
     double randChoice = 0.0;
-    
+
     do {
       eventFired = FALSE;
-      prMax = -1.0;
+      eventToFire = -1;
       for (i = 0; i < rec->eventsSize; i++) {
 	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
@@ -841,14 +841,13 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	      priority = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								     (KINETIC_LAW*)GetPriorityInEvent( rec->eventArray[i] ) );
 	    }
-	    if (priority > prMax) {
+	    if ((eventToFire==(-1)) || (priority > prMax)) {
 	      eventToFire = i;
 	      prMax = priority;
 	    } else if (priority == prMax) {
 	      randChoice=GetNextUniformRandomNumber(0,1);	   
 	      if (randChoice > 0.5) {
 		eventToFire = i;
-		prMax = priority;
 	      }
 	    }
 	  } else {
@@ -878,6 +877,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
 	    }
+	    if (deltaTime == 0) eventFired = TRUE;
 	    if (deltaTime >= 0) {
 	      /* Set time for event to fire and get assignment values, if necessary */
 	      SetNextEventTimeInEvent( rec->eventArray[i], time + deltaTime );
@@ -903,9 +903,9 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	  } 
 	}
-    }
+      }
       /* Fire event */
-    if (eventToFire >= 0) {
+      if (eventToFire >= 0) {
 	if (!GetUseValuesFromTriggerTime( rec->eventArray[eventToFire] )) {
 	  SetEventAssignmentsNextValues( rec->eventArray[eventToFire], rec ); 
 	}
@@ -913,6 +913,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	SetNextEventTimeInEvent( rec->eventArray[eventToFire], -1.0 );
 	eventFired = TRUE;
 	eventToFire = -1;
+	firstEventTime = -1;
 
 	/* When an event fires, update algebraic rules and fast reactions */
 	ExecuteAssignments( rec );
