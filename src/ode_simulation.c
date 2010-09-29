@@ -184,12 +184,10 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
       }
     }
     rec->reactionArray = reactions;
-    /*
     if( rec->numberFastReactions > 1 ) {
         return ErrorReport( FAILING, "_InitializeRecord",
                             "Simulator supports only a single fast reaction" );
     }
-    */
 
     if( ( ruleManager = ir->GetRuleManager( ir ) ) == NULL ) {
         return ErrorReport( FAILING, "_InitializeRecord", "could not get the rule manager" );
