@@ -164,10 +164,10 @@ static RET_VAL _DoTransformation( ABSTRACTION_METHOD *method, IR *ir, MAX_CON_RE
         return ret;
     }
     
-    if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, newReaction, species, maxAmount, NULL ) ) ) ) {
+    if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, newReaction, species, maxAmount, NULL, TRUE ) ) ) ) {
         return ret;
     } 
-    if( IS_FAILED( ( ret = ir->AddProductEdge( ir, newReaction, species, minAmount, NULL ) ) ) ) {
+    if( IS_FAILED( ( ret = ir->AddProductEdge( ir, newReaction, species, minAmount, NULL, TRUE ) ) ) ) {
         return ret;
     } 
     

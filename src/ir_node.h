@@ -82,14 +82,15 @@ typedef struct {
     double stoichiometry;
     IR_NODE *reaction; 
     REB2SAC_SYMBOL *speciesRef;
+    BOOL constant;
 } IR_EDGE;
 
 
 DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry, 
-					       REB2SAC_SYMBOL *speciesRef );
+					       REB2SAC_SYMBOL *speciesRef, BOOL constant );
 DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry  );
 DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry, 
-					      REB2SAC_SYMBOL *speciesRef );
+					      REB2SAC_SYMBOL *speciesRef, BOOL constant );
 DLLSCOPE RET_VAL STDCALL FreeReactantEdge( IR_EDGE **edge );
 DLLSCOPE RET_VAL STDCALL FreeModifierEdge( IR_EDGE **edge );
 DLLSCOPE RET_VAL STDCALL FreeProductEdge( IR_EDGE **edge );

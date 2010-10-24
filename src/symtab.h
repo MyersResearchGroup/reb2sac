@@ -32,6 +32,7 @@ struct _REB2SAC_SYMTAB;
 typedef struct _REB2SAC_SYMTAB REB2SAC_SYMTAB;
 
 #define REB2SAC_SYMBOL_TYPE_REAL ((BYTE)0)
+#define REB2SAC_SYMBOL_TYPE_SPECIES_REF ((BYTE)1)
 
 struct KINETIC_LAW;
 
@@ -69,6 +70,7 @@ struct _REB2SAC_SYMTAB {
     REB2SAC_SYMTAB *parent;
     HASH_TABLE *table;
     REB2SAC_SYMBOL *(*AddRealValueSymbol)( REB2SAC_SYMTAB *symtab, char *proposedID, double value, BOOL isConstant );
+    REB2SAC_SYMBOL *(*AddSpeciesRefSymbol)( REB2SAC_SYMTAB *symtab, char *proposedID, double value, BOOL isConstant );
     REB2SAC_SYMBOL *(*AddSymbol)( REB2SAC_SYMTAB *symtab, char *proposedID, REB2SAC_SYMBOL *symbol );
     REB2SAC_SYMBOL *(*Lookup)( REB2SAC_SYMTAB *symtab, char *id );
     REB2SAC_SYMBOL *(*LookupRecursively)( REB2SAC_SYMTAB *symtab, char *id );

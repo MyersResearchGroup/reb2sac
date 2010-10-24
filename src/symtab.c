@@ -21,6 +21,7 @@
 #include "kinetic_law.h"
 
 static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, double value, BOOL isConstant );
+static REB2SAC_SYMBOL *_AddSpeciesRefSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, double value, BOOL isConstant );
 static REB2SAC_SYMBOL *_AddSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, REB2SAC_SYMBOL *symbol );
 static REB2SAC_SYMBOL *_Lookup( REB2SAC_SYMTAB *symtab, char *id );
 static REB2SAC_SYMBOL *_LookupRecursively( REB2SAC_SYMTAB *symtab, char *id );
@@ -133,7 +134,8 @@ BOOL IsRealValueSymbol( REB2SAC_SYMBOL *sym ) {
     }
         
     END_FUNCTION("IsSymbolConstant", SUCCESS );
-    return ( sym->type == REB2SAC_SYMBOL_TYPE_REAL ? TRUE : FALSE );
+    //return ( sym->type == REB2SAC_SYMBOL_TYPE_REAL ? TRUE : FALSE );
+    return TRUE;
 }
 
 RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
@@ -145,7 +147,7 @@ RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
         return FAILING;
     }
     
-    sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
+    //sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
     sym->value.realValue = value;
     sym->currentRealValue = value;
     
@@ -207,7 +209,7 @@ RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
         return FAILING;
     }
     
-    sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
+    //sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
     sym->currentRealValue = value;
     
     END_FUNCTION("SetRealValueInSymbol", SUCCESS );
@@ -296,6 +298,7 @@ REB2SAC_SYMTAB *CreateSymtab( REB2SAC_SYMTAB *parent ) {
 
     symtab->parent = parent;
     symtab->AddRealValueSymbol = _AddRealValueSymbol;
+    symtab->AddSpeciesRefSymbol = _AddSpeciesRefSymbol;
     symtab->AddSymbol = _AddSymbol;
     symtab->Lookup = _Lookup;
     symtab->LookupRecursively = _LookupRecursively;
@@ -325,6 +328,7 @@ REB2SAC_SYMTAB *CloneSymtab( REB2SAC_SYMTAB *symtab ) {
     
     clone->parent = symtab->parent;
     clone->AddRealValueSymbol = symtab->AddRealValueSymbol;
+    clone->AddSpeciesRefSymbol = symtab->AddSpeciesRefSymbol;
     clone->AddSymbol = symtab->AddSymbol;
     clone->Lookup = symtab->Lookup;
     clone->LookupRecursively = symtab->LookupRecursively;
@@ -441,6 +445,50 @@ static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *propos
     }
 
     symbol->id = id;
+    symbol->type = REB2SAC_SYMBOL_TYPE_REAL;
+    symbol->initialAssignment = NULL;
+    symbol->units = NULL;
+    if( IS_FAILED( SetRealValueInSymbol( symbol, value ) ) ) {
+        END_FUNCTION("_AddRealValueSymbol", FAILING );    
+        return NULL;
+    }
+    
+    symbol->isConstant = isConstant;
+    //if ((strcmp(proposedID,"t")==0) || (strcmp(proposedID,"time")==0) || isConstant) { 
+    symbol->algebraic = FALSE;
+    //} else {
+    //  symbol->algebraic = TRUE;
+    //}
+
+    table = symtab->table;
+    if( IS_FAILED( PutInHashTable( GetCharArrayOfString( id ), GetStringLength( id ), (CADDR_T)symbol, table ) ) ) {
+        END_FUNCTION("_AddRealValueSymbol", FAILING );    
+        return NULL;
+    }
+        
+    END_FUNCTION("_AddRealValueSymbol", SUCCESS );    
+    return symbol;
+}
+
+static REB2SAC_SYMBOL *_AddSpeciesRefSymbol( REB2SAC_SYMTAB *symtab, char *proposedID, double value, BOOL isConstant ) {
+    STRING *id = NULL;
+    REB2SAC_SYMBOL *symbol = NULL;
+    HASH_TABLE *table = NULL;
+    
+    START_FUNCTION("_AddRealValueSymbol");
+    
+    if( ( id = _CreateID( symtab, proposedID ) ) == NULL ) {
+        END_FUNCTION("_AddRealValueSymbol", FAILING );    
+        return NULL;
+    }
+    
+    if( ( symbol = (REB2SAC_SYMBOL*)MALLOC( sizeof(REB2SAC_SYMBOL) ) ) == NULL ) {
+        END_FUNCTION("_AddRealValueSymbol", FAILING );    
+        return NULL;
+    }
+
+    symbol->id = id;
+    symbol->type = REB2SAC_SYMBOL_TYPE_SPECIES_REF;
     symbol->initialAssignment = NULL;
     symbol->units = NULL;
     if( IS_FAILED( SetRealValueInSymbol( symbol, value ) ) ) {

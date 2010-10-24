@@ -369,7 +369,7 @@ edge
 
 
 DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry,
-					       REB2SAC_SYMBOL *speciesRef ) {
+					       REB2SAC_SYMBOL *speciesRef, BOOL constant ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     
@@ -384,6 +384,7 @@ DLLSCOPE IR_EDGE * STDCALL CreateReactantEdge( IR_NODE *reaction, IR_NODE *speci
     edge->stoichiometry = stoichiometry;
     edge->reaction = reaction;
     edge->speciesRef = speciesRef;
+    edge->constant = constant;
     
     if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)edge, reaction->reactants ) ) ) ) {
         FREE( edge );
@@ -431,7 +432,7 @@ DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *speci
 }
 
 DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *species, double stoichiometry,
-					      REB2SAC_SYMBOL *speciesRef ) {
+					      REB2SAC_SYMBOL *speciesRef, BOOL constant ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     
@@ -446,6 +447,7 @@ DLLSCOPE IR_EDGE * STDCALL CreateProductEdge( IR_NODE *reaction, IR_NODE *specie
     edge->stoichiometry = stoichiometry;
     edge->reaction = reaction;
     edge->speciesRef = speciesRef;
+    edge->constant = constant;
 
     if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)edge, reaction->products ) ) ) ) {
         FREE( edge );
