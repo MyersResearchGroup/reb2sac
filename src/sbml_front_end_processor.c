@@ -2849,6 +2849,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
     char* speciesRefId = NULL;
     REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
     REB2SAC_SYMBOL *SpeciesRef = NULL;
+    BOOL constant;
 
     START_FUNCTION("_ResolveNodeLinks");
         
@@ -2863,6 +2864,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
         species = (char*)SpeciesReference_getSpecies( speciesRef );
 	speciesRefId = NULL;
 	SpeciesRef = NULL;
+	constant = FALSE;
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = (StoichiometryMath_t *)SpeciesReference_getStoichiometryMath( speciesRef );
 	  node = (ASTNode_t *)StoichiometryMath_getMath( sm );
@@ -2877,11 +2879,11 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  } 
 	} else {
 	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
+	  constant = SpeciesReference_getConstant( speciesRef );
 	  Species = Model_getSpeciesById( model, species ); 
 	  if (SpeciesReference_isSetId( speciesRef )) {
 	    speciesRefId = (char*)SpeciesReference_getId( speciesRef );
-	    if( ( SpeciesRef = symtab->AddRealValueSymbol( symtab, speciesRefId, stoichiometry, 
-					      SpeciesReference_getConstant( speciesRef ) ) ) == NULL ) {
+	    if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) {
 	      return ErrorReport( FAILING, "_ResolveNodeLinks", 
 				  "failed to put parameter time in global symtab" );
 	    }     
@@ -2892,7 +2894,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
         }
 	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
-        if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, reactionNode, speciesNode, stoichiometry, SpeciesRef ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddReactantEdge(  ir, reactionNode, speciesNode, stoichiometry, SpeciesRef, constant ) ) ) ) {
             END_FUNCTION("_ResolveNodeLinks", SUCCESS );
             return ret;
         }
@@ -2910,6 +2912,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
         species = (char*)SpeciesReference_getSpecies( speciesRef );
 	speciesRefId = NULL;
 	SpeciesRef = NULL;
+	constant = FALSE;
 	if (SpeciesReference_isSetStoichiometryMath( speciesRef ) ) {
 	  StoichiometryMath_t *sm = SpeciesReference_getStoichiometryMath( speciesRef );
 	  node = (ASTNode_t *)StoichiometryMath_getMath( sm );
@@ -2924,11 +2927,11 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  } 
 	} else {
 	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
+	  constant = SpeciesReference_getConstant( speciesRef );
 	  Species = Model_getSpeciesById( model, species ); 
 	  if (SpeciesReference_isSetId( speciesRef )) {
 	    speciesRefId = (char*)SpeciesReference_getId( speciesRef );
-	    if( ( SpeciesRef = symtab->AddRealValueSymbol( symtab, speciesRefId, stoichiometry, 
-					      SpeciesReference_getConstant( speciesRef ) ) ) == NULL ) {
+	    if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) {
 	      return ErrorReport( FAILING, "_ResolveNodeLinks", 
 				  "failed to put parameter time in global symtab" );
 	    }     
@@ -2939,7 +2942,7 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
             return ErrorReport( FAILING, "_ResolveNodeLinks", "species node for %s is not created", species );
         }
 	SetAlgebraicInSpeciesNode( speciesNode, FALSE );
-        if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reactionNode, speciesNode, stoichiometry, SpeciesRef ) ) ) ) {
+        if( IS_FAILED( ( ret = ir->AddProductEdge( ir, reactionNode, speciesNode, stoichiometry, SpeciesRef, constant ) ) ) ) {
             END_FUNCTION("_ResolveNodeLinks", SUCCESS );
             return ret;
         }

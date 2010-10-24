@@ -50,6 +50,7 @@ struct _CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER {
     BOOL useConcentrations;
     int timeLimitCount;
     int totalCount;
+    FILE *termTimeFile;
 };
 
 DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateConstraintSimulationRunTerminationDecider( 

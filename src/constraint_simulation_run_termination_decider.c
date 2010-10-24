@@ -22,7 +22,7 @@
 static BOOL _IsTerminationConditionMet( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider, REACTION *reaction, double time );
 static RET_VAL _Destroy( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider );
 static RET_VAL _Report( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider, FILE *file );
-static BOOL _EvaluateConstraints( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider );
+static BOOL _EvaluateConstraints( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider, double time );
 
 DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateConstraintSimulationRunTerminationDecider( 
         BACK_END_PROCESSOR *backend, CONSTRAINT **constraintArray, int constraintsSize, 
@@ -55,6 +55,10 @@ DLLSCOPE SIMULATION_RUN_TERMINATION_DECIDER * STDCALL CreateConstraintSimulation
     decider->useConcentrations = useConcentrations;
     decider->timeLimitCount = 0;
     decider->totalCount = 0;
+    if( ( decider->termTimeFile = fopen( "term-time.txt", "w" ) ) == NULL ) {
+        return ErrorReport( FAILING, "CreateConstraintSimulationRunTerminationDecider", 
+			    "could not create a termination time file" );
+    }
     
     END_FUNCTION("CreateConstraintSimulationRunTerminationDecider", SUCCESS );
     return (SIMULATION_RUN_TERMINATION_DECIDER*)decider;
@@ -65,7 +69,7 @@ static BOOL _IsTerminationConditionMet( CONSTRAINT_SIMULATION_RUN_TERMINATION_DE
     if( time >= decider->timeLimit ) {
         (decider->timeLimitCount)++;
     }
-    else if( !_EvaluateConstraints( decider ) ) {
+    else if( !_EvaluateConstraints( decider, time ) ) {
         return FALSE;        
     }
             
@@ -96,14 +100,16 @@ static RET_VAL _Report( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider, 
 
 static RET_VAL _Destroy( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider ) {
     RET_VAL ret = SUCCESS;
-    
+
+    fclose(decider->termTimeFile);
+
     FREE(decider->countArray);
     
     return ret;
 }
  
 
-static BOOL _EvaluateConstraints( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider ) {
+static BOOL _EvaluateConstraints( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER *decider, double time ) {
     BOOL condition = FALSE;
     int i = 0;
 
@@ -111,11 +117,15 @@ static BOOL _EvaluateConstraints( CONSTRAINT_SIMULATION_RUN_TERMINATION_DECIDER 
       if (decider->useConcentrations) {
 	if (!decider->evaluator->EvaluateWithCurrentConcentrations( decider->evaluator, (KINETIC_LAW*)GetMathInConstraint( decider->constraintArray[i] ) ) ) {
 	  decider->countArray[i]++;
+	  fprintf(decider->termTimeFile,
+		  "%s %g\n", GetCharArrayOfString( GetConstraintId( decider->constraintArray[i] ) ), time );
 	  condition = TRUE;
 	} 
       } else {
 	if (!decider->evaluator->EvaluateWithCurrentAmounts( decider->evaluator, (KINETIC_LAW*)GetMathInConstraint( decider->constraintArray[i] ) ) ) {
 	  decider->countArray[i]++;
+	  fprintf(decider->termTimeFile,
+		  "%s %g\n", GetCharArrayOfString( GetConstraintId( decider->constraintArray[i] ) ), time );
 	  condition = TRUE;
 	} 
       }

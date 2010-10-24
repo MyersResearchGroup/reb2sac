@@ -76,14 +76,14 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
 
 
 static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry,
-				 REB2SAC_SYMBOL *speciesRef );
+				 REB2SAC_SYMBOL *speciesRef, BOOL constant );
 static RET_VAL _RemoveReactantEdge( IR *ir, IR_EDGE **reactantEdge );
 
 static RET_VAL _AddModifierEdge( IR *ir, REACTION *reaction, SPECIES *modifier, double stoichiometry );
 static RET_VAL _RemoveModifierEdge( IR *ir, IR_EDGE **modifierEdge );
         
 static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry,
-				REB2SAC_SYMBOL *speciesRef );
+				REB2SAC_SYMBOL *speciesRef, BOOL constant );
 static RET_VAL _RemoveProductEdge( IR *ir, IR_EDGE **productEdge );
 
 
@@ -346,6 +346,10 @@ DLLSCOPE double STDCALL GetStoichiometryInIREdge( IR_EDGE *edge ) {
 
 DLLSCOPE REB2SAC_SYMBOL * STDCALL GetSpeciesRefInIREdge( IR_EDGE *edge ) {
     return (edge == NULL) ? 0 : edge->speciesRef;
+}
+
+DLLSCOPE BOOL STDCALL IsConstantInIREdge( IR_EDGE *edge ) {
+    return (edge == NULL) ? 0 : edge->constant;
 }
 
 DLLSCOPE REACTION * STDCALL GetReactionInIREdge( IR_EDGE *edge ) {    
@@ -865,7 +869,7 @@ static RET_VAL _RemoveReactantInReaction( IR *ir, REACTION *reaction, SPECIES *r
 
 
 static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, double stoichiometry,
-				 REB2SAC_SYMBOL *speciesRef ) {
+				 REB2SAC_SYMBOL *speciesRef, BOOL constant ) {
     RET_VAL ret = SUCCESS;
     IR_EDGE *edge = NULL;
     LINKED_LIST *list = NULL;
@@ -877,12 +881,13 @@ static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, 
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         if( GetSpeciesInIREdge( edge ) == reactant ) {
             edge->stoichiometry = stoichiometry;
+	    edge->constant = constant;
             END_FUNCTION("_AddReactantEdge", SUCCESS );
             return ret;    
         }
     }
     
-    if( ( edge = CreateReactantEdge( (IR_NODE*)reaction, (IR_NODE*)reactant, stoichiometry, speciesRef
+    if( ( edge = CreateReactantEdge( (IR_NODE*)reaction, (IR_NODE*)reactant, stoichiometry, speciesRef, constant
 				     ) ) == NULL ) {
         END_FUNCTION("_AddReactantEdge", ret );
         return FAILING;    
@@ -972,7 +977,7 @@ static RET_VAL _RemoveModifierEdge( IR *ir, IR_EDGE **edge ) {
 }
         
 static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, double stoichiometry, 
-				REB2SAC_SYMBOL *speciesRef ) {
+				REB2SAC_SYMBOL *speciesRef, BOOL constant ) {
     RET_VAL ret = SUCCESS;
     LINKED_LIST *list = NULL;
     IR_EDGE *edge = NULL;
@@ -984,12 +989,13 @@ static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, do
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         if( GetSpeciesInIREdge( edge ) == product ) {
             edge->stoichiometry = stoichiometry;
+	    edge->constant = constant;
             END_FUNCTION("_AddProductEdge", SUCCESS );
             return ret;    
         }
     }
     
-    if( ( edge = CreateProductEdge( (IR_NODE*)reaction, (IR_NODE*)product, stoichiometry, speciesRef ) ) == NULL ) {
+    if( ( edge = CreateProductEdge( (IR_NODE*)reaction, (IR_NODE*)product, stoichiometry, speciesRef, constant ) ) == NULL ) {
         END_FUNCTION("_AddProductEdge", FAILING );
         return FAILING;    
     }
@@ -1449,7 +1455,7 @@ static RET_VAL _GenerateSBML( IR *ir, FILE *file, char *filename ) {
     START_FUNCTION("_GenerateSBML");
     
     fprintf( file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>%s"
-                   "<sbml xmlns=\"http://www.sbml.org/sbml/level2\" level=\"2\" version=\"3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">%s", 
+                   "<sbml xmlns=\"http://www.sbml.org/sbml/level3/version1/core\" level=\"3\" version=\"1\">%s", 
                    NEW_LINE, NEW_LINE );
     _PrintTab( file, 1 );
     fprintf( file, "<model>%s", NEW_LINE );
@@ -1459,37 +1465,37 @@ static RET_VAL _GenerateSBML( IR *ir, FILE *file, char *filename ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
 
     if( IS_FAILED( ( ret = _PrintListOfCompartmentsForSBML( ir, file, 2 ) ) ) ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
         
     if( IS_FAILED( ( ret = _PrintListOfSpeciesForSBML( ir, file, 2 ) ) ) ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
     
     if( IS_FAILED( ( ret = _PrintListOfParametersForSBML( ir, file, 2 ) ) ) ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
 
     if( IS_FAILED( ( ret = _PrintListOfRulesForSBML( ir, file, 2 ) ) ) ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
 
     if( IS_FAILED( ( ret = _PrintListOfConstraintsForSBML( ir, file, 2 ) ) ) ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
     
     if( IS_FAILED( ( ret = _PrintListOfReactionsForSBML( ir, file, 2 ) ) ) ) {
         END_FUNCTION("_GenerateSBML", ret );
@@ -1500,7 +1506,7 @@ static RET_VAL _GenerateSBML( IR *ir, FILE *file, char *filename ) {
         END_FUNCTION("_GenerateSBML", ret );
         return ret;    
     } 
-    fprintf( file, NEW_LINE );
+    //fprintf( file, NEW_LINE );
     
     _PrintTab( file, 1 );
     fprintf( file, "</model>%s", NEW_LINE );
@@ -1607,7 +1613,7 @@ static RET_VAL _PrintUnitDefinitionForSBML( UNIT_DEFINITION *unitDef, FILE *file
 
 static RET_VAL _PrintUnitForSBML( UNIT *unit, FILE *file, UINT32 tabCount ) {
     RET_VAL ret = SUCCESS;
-    int exponent = 0;
+    double exponent = 0;
     int scale = 0;
     double multiplier = 0.0;
     double offset = 0.0;
@@ -1618,19 +1624,13 @@ static RET_VAL _PrintUnitForSBML( UNIT *unit, FILE *file, UINT32 tabCount ) {
     fprintf( file, "<unit kind=\"%s\"", GetCharArrayOfString( GetKindInUnit( unit ) ) );
     
     exponent = GetExponentInUnit( unit );
-    if( exponent != 1 ) {
-        fprintf( file, " exponent=\"%i\"", exponent );
-    }
+    fprintf( file, " exponent=\"%g\"", exponent );
     
     scale = GetScaleInUnit( unit );
-    if( scale != 0 ) {
-        fprintf( file, " scale=\"%i\"", scale );
-    }
+    fprintf( file, " scale=\"%i\"", scale );
     
     multiplier = GetMultiplierInUnit( unit );
-    if( multiplier != 1.0 ) {
-        fprintf( file, " multiplier=\"%g\"", multiplier );
-    }
+    fprintf( file, " multiplier=\"%g\"", multiplier );
 
     fprintf( file, "/>%s", NEW_LINE );
             
@@ -1677,7 +1677,7 @@ static RET_VAL _PrintListOfCompartmentsForSBML( IR *ir, FILE *file, UINT32 tabCo
 
 static RET_VAL _PrintCompartmentsForSBML( COMPARTMENT *compartment, FILE *file, UINT32 tabCount ) {
     RET_VAL ret = SUCCESS;
-    int spatialDimensions = 0;
+    double spatialDimensions = 0;
     double size = 0.0;
     UNIT_DEFINITION *unit = NULL;
     STRING *outside = NULL;
@@ -1689,28 +1689,21 @@ static RET_VAL _PrintCompartmentsForSBML( COMPARTMENT *compartment, FILE *file, 
     fprintf( file, "<compartment id=\"%s\"", GetCharArrayOfString( GetCompartmentID( compartment ) ) );
     
     spatialDimensions = GetSpatialDimensionsInCompartment( compartment );
-    if( spatialDimensions != 3 ) {
-        fprintf( file, " spatialDimensions=\"%i\"", spatialDimensions );
-    }
+    fprintf( file, " spatialDimensions=\"%g\"", spatialDimensions );
     
     size = GetSizeInCompartment( compartment );
-    if( size >= 0.0 ) {
-        fprintf( file, " size=\"%g\"", size );
-    }
-            
+    fprintf( file, " size=\"%g\"", size );
+                
     unit = GetUnitInCompartment( compartment );
     if( unit != NULL ) {
         fprintf( file, " units=\"%s\"", GetCharArrayOfString( GetUnitDefinitionID( unit ) ) );
     }
     
-    outside = GetOutsideInCompartment( compartment );
-    if( outside != NULL ) {
-        fprintf( file, " outside=\"%s\"", GetCharArrayOfString( outside ) );
-    }
-    
     constant = IsCompartmentConstant( compartment );
-    if( !constant ) {
-        fprintf( file, " outside=\"false\"" );
+    if( constant ) {
+        fprintf( file, " constant=\"true\"" );
+    } else {
+        fprintf( file, " constant=\"false\"" );
     }
     fprintf( file, "/>%s", NEW_LINE );                
     
@@ -1758,6 +1751,7 @@ static RET_VAL _PrintSpeciesForSBML( SPECIES *species, FILE *file, UINT32 tabCou
     UNIT_DEFINITION *unitDef = NULL;
     BOOL flag = FALSE;
     char buf[64];
+    REB2SAC_SYMBOL *convFactor = NULL;
     
     START_FUNCTION("_PrintSpeciesForSBML");
     
@@ -1771,41 +1765,49 @@ static RET_VAL _PrintSpeciesForSBML( SPECIES *species, FILE *file, UINT32 tabCou
     
     if( IsInitialQuantityInAmountInSpeciesNode( species ) ) {
         initialQuantity = GetInitialAmountInSpeciesNode( species );
-        if( initialQuantity >= 0.0 ) {
-            fprintf( file, " initialAmount=\"%g\"", initialQuantity );
-        }
+	fprintf( file, " initialAmount=\"%g\"", initialQuantity );
     }
     else {
         initialQuantity = GetInitialConcentrationInSpeciesNode( species );
-        if( initialQuantity >= 0.0 ) {
-            fprintf( file, " initialConcentration=\"%g\"", initialQuantity );
-        }
+	fprintf( file, " initialConcentration=\"%g\"", initialQuantity );
     }
 
     unitDef = GetSubstanceUnitsInSpeciesNode( species );
     if( unitDef != NULL ) {
         fprintf( file, " substanceUnits=\"%s\"", GetCharArrayOfString( GetUnitDefinitionID( unitDef ) ) );
     } 
-        
+    
+    /*    
     unitDef = GetSpatialSizeUnitsInSpeciesNode( species );
     if( unitDef != NULL ) {
         fprintf( file, " spatialSizeUnits=\"%s\"", GetCharArrayOfString( GetUnitDefinitionID( unitDef ) ) );
     } 
-    
+    */
+
     flag = HasOnlySubstanceUnitsInSpeciesNode( species );
     if( flag ) {
         fprintf( file, " hasOnlySubstanceUnits=\"true\"" );
+    } else {
+        fprintf( file, " hasOnlySubstanceUnits=\"false\"" );
     }
     
     flag = HasBoundaryConditionInSpeciesNode( species );
     if( flag ) {
         fprintf( file, " boundaryCondition=\"true\"" );
+    } else {
+        fprintf( file, " boundaryCondition=\"false\"" );
     }
     
     flag = IsSpeciesNodeConstant( species );
     if( flag ) {
         fprintf( file, " constant=\"true\"" );
+    } else {
+        fprintf( file, " constant=\"false\"" );
     }
+    if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+      fprintf( file, " conversionFactor=\"%s\"", GetCharArrayOfString( GetSymbolID( convFactor ) ) );
+    }
+
         
     fprintf( file, "/>%s", NEW_LINE );                
             
@@ -1839,6 +1841,7 @@ static RET_VAL _PrintListOfParametersForSBML( IR *ir, FILE *file, UINT32 tabCoun
     while( ( sym = (REB2SAC_SYMBOL*)GetNextFromLinkedList( list ) ) != NULL ) {
       if ( strcmp(GetCharArrayOfString ( GetSymbolID( sym ) ),"t")==0) continue;
       if ( strcmp(GetCharArrayOfString ( GetSymbolID( sym ) ),"time")==0) continue;
+      if ( !IsRealValueSymbol( sym ) ) continue;
       if( IS_FAILED( ( ret = _PrintParameterForSBML( sym, file, tabCount + 1 ) ) ) ) {
 	END_FUNCTION("_PrintListOfParametersForSBML", ret );    
 	return ret;
@@ -1874,7 +1877,8 @@ static RET_VAL _PrintParameterForSBML( REB2SAC_SYMBOL *sym, FILE *file, UINT32 t
     value = GetRealValueInSymbol( sym );
     
     _PrintTab( file, tabCount );
-    fprintf( file, "<parameter id=\"%s\" value=\"%g\"/>" NEW_LINE, id, value );
+    fprintf( file, "<parameter id=\"%s\" value=\"%g\" constant=\"%s\"/>%s", id, value,
+	     IsSymbolConstant( sym ) ? "true" : "false", NEW_LINE);
             
     END_FUNCTION("_PrintParameterForSBML", SUCCESS );    
     return ret;
@@ -1924,13 +1928,17 @@ static RET_VAL _PrintEventForSBML( EVENT *event, FILE *file, UINT32 tabCount ) {
     START_FUNCTION("_PrintEventForSBML");
 
     _PrintTab( file, tabCount );
-    fprintf( file, "<event id=\"%s\">%s",
+    fprintf( file, "<event id=\"%s\" useValuesFromTriggerTime=\"%s\">%s",
 	     GetCharArrayOfString( GetEventId( event ) ),
+	     GetUseValuesFromTriggerTime( event ) ? "true" : "false",
 	     NEW_LINE );
     kineticLaw = GetTriggerInEvent( event );
     if (kineticLaw) {
       _PrintTab( file, tabCount + 1 );
-      fprintf( file, "<trigger>%s", NEW_LINE );
+      fprintf( file, "<trigger initialValue=\"%s\" persistent=\"%s\">%s", 
+	       GetTriggerInitialValue( event ) ? "true" : "false",
+	       GetTriggerCanBeDisabled( event ) ? "false" : "true",
+	       NEW_LINE );
       if( IS_FAILED( ( ret = _PrintMathForSBML( kineticLaw, file, tabCount + 2 ) ) ) ) {
         END_FUNCTION("_PrintRuleForXHTML", ret );
         return ret;
@@ -1948,6 +1956,17 @@ static RET_VAL _PrintEventForSBML( EVENT *event, FILE *file, UINT32 tabCount ) {
       }    
       _PrintTab( file, tabCount + 1 );
       fprintf( file, "</delay>%s", NEW_LINE );
+    } 
+    kineticLaw = GetPriorityInEvent( event );
+    if (kineticLaw) {
+      _PrintTab( file, tabCount + 1 );
+      fprintf( file, "<priority>%s", NEW_LINE );
+      if( IS_FAILED( ( ret = _PrintMathForSBML( kineticLaw, file, tabCount + 2 ) ) ) ) {
+        END_FUNCTION("_PrintRuleForXHTML", ret );
+        return ret;
+      }    
+      _PrintTab( file, tabCount + 1 );
+      fprintf( file, "</priority>%s", NEW_LINE );
     } 
     assignments = GetEventAssignments( event );
     ResetCurrentElement( assignments );
@@ -2150,18 +2169,17 @@ static RET_VAL _PrintReactionForSBML( REACTION *reaction, FILE *file, UINT32 tab
     SPECIES *species = NULL;
     IR_EDGE *edge = NULL;
     KINETIC_LAW *kineticLaw = NULL;
+    REB2SAC_SYMBOL *speciesRef = NULL;
     
     START_FUNCTION("_PrintReactionForSBML");
     
     _PrintTab( file, tabCount );
-    fprintf( file, "<reaction id=\"%s\"", GetCharArrayOfString( GetReactionNodeID( reaction ) ) );
-    
-    if( IsReactionReversibleInReactionNode( reaction ) ) {
-        fprintf( file, " name=\"%s\">%s", GetCharArrayOfString( GetReactionNodeName( reaction ) ), NEW_LINE );
-    }
-    else {
-        fprintf( file, " name=\"%s\" reversible=\"false\">%s", GetCharArrayOfString( GetReactionNodeName( reaction ) ), NEW_LINE );
-    }
+    fprintf( file, "<reaction id=\"%s\" name=\"%s\" reversible=\"%s\" fast=\"%s\">%s", 
+	     GetCharArrayOfString( GetReactionNodeID( reaction ) ),
+	     GetCharArrayOfString( GetReactionNodeName( reaction ) ), 
+	     IsReactionReversibleInReactionNode( reaction ) ? "true" : "false",
+	     IsReactionFastInReactionNode( reaction ) ? "true" : "false", 
+	     NEW_LINE);
     
     list = GetReactantEdges( (IR_NODE*)reaction );
     if( GetLinkedListSize( list ) != 0 ) {
@@ -2171,8 +2189,20 @@ static RET_VAL _PrintReactionForSBML( REACTION *reaction, FILE *file, UINT32 tab
         ResetCurrentElement( list );
         while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
-            _PrintTab( file, tabCount + 2 );            
-            fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%g\"/>" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), edge->stoichiometry  );    
+	    speciesRef = GetSpeciesRefInIREdge( edge );
+            _PrintTab( file, tabCount + 2 );
+	    if (speciesRef) {
+	      fprintf( file, "<speciesReference id=\"%s\" species=\"%s\" stoichiometry=\"%g\" constant=\"%s\"/>" NEW_LINE,
+		       GetCharArrayOfString( GetSymbolID( speciesRef ) ),
+		       GetCharArrayOfString( GetSpeciesNodeID( species ) ), 
+		       edge->stoichiometry,
+		       IsConstantInIREdge( edge ) ? "true" : "false" );    
+	    } else {
+	      fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%g\" constant=\"%s\"/>" NEW_LINE, 
+		       GetCharArrayOfString( GetSpeciesNodeID( species ) ), 
+		       edge->stoichiometry,
+		       IsConstantInIREdge( edge ) ? "true" : "false" );    
+	    } 
         }
         _PrintTab( file, tabCount + 1 );
         fprintf( file, "</listOfReactants>%s",  NEW_LINE );
@@ -2186,8 +2216,20 @@ static RET_VAL _PrintReactionForSBML( REACTION *reaction, FILE *file, UINT32 tab
         ResetCurrentElement( list );
         while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
             species = GetSpeciesInIREdge( edge );
+	    speciesRef = GetSpeciesRefInIREdge( edge );
             _PrintTab( file, tabCount + 2 );            
-            fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%g\"/>" NEW_LINE, GetCharArrayOfString( GetSpeciesNodeID( species ) ), edge->stoichiometry  );    
+	    if (speciesRef) {
+	      fprintf( file, "<speciesReference id=\"%s\" species=\"%s\" stoichiometry=\"%g\" constant=\"%s\"/>" NEW_LINE,
+		       GetCharArrayOfString( GetSymbolID( speciesRef ) ),
+		       GetCharArrayOfString( GetSpeciesNodeID( species ) ), 
+		       edge->stoichiometry,
+		       IsConstantInIREdge( edge ) ? "true" : "false" );    
+	    } else {
+	      fprintf( file, "<speciesReference species=\"%s\" stoichiometry=\"%g\" constant=\"%s\"/>" NEW_LINE, 
+		       GetCharArrayOfString( GetSpeciesNodeID( species ) ), 
+		       edge->stoichiometry,
+		       IsConstantInIREdge( edge ) ? "true" : "false" );    
+	    } 
         }
         _PrintTab( file, tabCount + 1 );
         fprintf( file, "</listOfProducts>%s",  NEW_LINE );
