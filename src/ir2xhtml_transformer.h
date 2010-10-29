@@ -95,7 +95,7 @@
 #define REB2SAC_XHTML_MATHML_OP_UNIFORM_FORMAT "<mo>uniform</mo>"
 #define REB2SAC_XHTML_MATHML_OP_NORMAL_FORMAT "<mo>normal</mo>"
 #define REB2SAC_XHTML_MATHML_OP_GAMMA_FORMAT "<mo>gamma</mo>"
-#define REB2SAC_XHTML_MATHML_OP_EXPRAND_FORMAT "<mo>exprand</mo>"
+#define REB2SAC_XHTML_MATHML_OP_EXPRAND_FORMAT "<mo>exponential</mo>"
 #define REB2SAC_XHTML_MATHML_OP_POISSON_FORMAT "<mo>poisson</mo>"
 #define REB2SAC_XHTML_MATHML_OP_BINOMIAL_FORMAT "<mo>binomial</mo>"
 #define REB2SAC_XHTML_MATHML_OP_LOGNORMAL_FORMAT "<mo>lognormal</mo>"
