@@ -91,7 +91,7 @@ double GetNextUnitNormalRandomNumber( ) {
 }
 
 double GetNextExponentialRandomNumber( double lambda ) {
-  return gsl_ran_exponential(r, lambda);
+  return gsl_ran_exponential(r, 1/lambda);
 }
 
 double GetNextGammaRandomNumber( double a, double b ) {

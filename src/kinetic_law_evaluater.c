@@ -30,6 +30,7 @@ static RET_VAL _RemoveSpeciesValue( KINETIC_LAW_EVALUATER *evaluater, SPECIES *s
 static RET_VAL _SetDefaultSpeciesValue( KINETIC_LAW_EVALUATER *evaluater, double value ); 
 static double _Evaluate( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentAmounts( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
+static double _EvaluateWithCurrentAmountsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentConcentrations( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentConcentrationsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 
@@ -72,6 +73,7 @@ KINETIC_LAW_EVALUATER *CreateKineticLawEvaluater() {
     evaluater->SetDefaultSpeciesValue = _SetDefaultSpeciesValue;
     evaluater->Evaluate =_Evaluate;
     evaluater->EvaluateWithCurrentAmounts = _EvaluateWithCurrentAmounts;
+    evaluater->EvaluateWithCurrentAmountsDeter = _EvaluateWithCurrentAmountsDeter;
     evaluater->EvaluateWithCurrentConcentrations = _EvaluateWithCurrentConcentrations;    
     evaluater->EvaluateWithCurrentConcentrationsDeter = _EvaluateWithCurrentConcentrationsDeter;    
     
@@ -214,6 +216,42 @@ static double _EvaluateWithCurrentAmounts( KINETIC_LAW_EVALUATER *evaluater, KIN
         visitor.VisitPW = _VisitPWToEvaluate;
         visitor.VisitOp = _VisitOpToEvaluate;
         visitor.VisitUnaryOp = _VisitUnaryOpToEvaluate;
+        visitor.VisitInt = _VisitIntToEvaluate;
+        visitor.VisitReal = _VisitRealToEvaluate;
+        visitor.VisitSpecies = _VisitSpeciesToEvaluateWithCurrentAmounts;
+        visitor.VisitCompartment = _VisitCompartmentToEvaluateWithCurrentSize;
+        visitor.VisitSymbol = _VisitSymbolToEvaluate;
+	visitor.VisitFunctionSymbol = _VisitFunctionSymbolToEvaluate;
+    }
+    
+    visitor._internal1 = (CADDR_T)evaluater;
+    visitor._internal2 = (CADDR_T)(&result);
+    
+    if( IS_FAILED( kineticLaw->Accept( kineticLaw, &visitor ) ) ) {
+        END_FUNCTION("_Evaluate", FAILING );
+        return -1.0;
+    } 
+        
+    END_FUNCTION("_Evaluate", SUCCESS );        
+    return result;
+}     
+
+
+static double _EvaluateWithCurrentAmountsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw ) {
+    static KINETIC_LAW_VISITOR visitor;
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    
+    START_FUNCTION("_Evaluate");
+    
+    KINETIC_LAW *massActionRatio = NULL;
+    
+    START_FUNCTION("_Evaluate");
+    
+    if( visitor.VisitOp == NULL ) {
+        visitor.VisitPW = _VisitPWToEvaluate;
+        visitor.VisitOp = _VisitOpToEvaluateDeter;
+        visitor.VisitUnaryOp = _VisitUnaryOpToEvaluateDeter;
         visitor.VisitInt = _VisitIntToEvaluate;
         visitor.VisitReal = _VisitRealToEvaluate;
         visitor.VisitSpecies = _VisitSpeciesToEvaluateWithCurrentAmounts;

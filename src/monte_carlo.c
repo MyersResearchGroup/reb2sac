@@ -628,7 +628,7 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
     for (i = 0; i < rec->eventsSize; i++) {
       /* SetTriggerEnabledInEvent( rec->eventArray[i], FALSE ); */
       /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
-      if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      if (rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 						      (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	if (GetTriggerInitialValue( rec->eventArray[i] )) {
 	  SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
@@ -748,6 +748,7 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
     if( rec->time >= timeLimit ) {
         rec->time = timeLimit;
     }
+    nextEventTime = fireEvents( rec, rec->time );
     if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
             return ret;
     }
@@ -938,7 +939,7 @@ static RET_VAL _CalculatePropensity( MONTE_CARLO_RECORD *rec, REACTION *reaction
 
     evaluator = rec->evaluator;
     law = GetKineticLawInReactionNode( reaction );
-    propensity = evaluator->EvaluateWithCurrentAmounts( evaluator, law );
+    propensity = evaluator->EvaluateWithCurrentAmountsDeter( evaluator, law );
     if( propensity <= 0.0 ) {
         if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
             return ret;
@@ -1122,7 +1123,7 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	if (nextEventTime != -1.0) {
 	  /* Disable event, if necessary */
 	  if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
-	    if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	    if (!rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) { 
 	      nextEventTime = -1.0;
 	      SetNextEventTimeInEvent( rec->eventArray[i], -1.0 );
@@ -1163,7 +1164,7 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	}
 	if (!triggerEnabled) {
 	  /* Check if event has been triggered */
-	  if (rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	  if (rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 							  (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], TRUE );
 	    /* Calculate delay until the event fires */
@@ -1195,7 +1196,7 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	  }
 	} else {
 	  /* Set trigger enabled to false, if it has become disabled */
-	  if (!rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	  if (!rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 							   (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	    SetTriggerEnabledInEvent( rec->eventArray[i], FALSE );
 	  } 
@@ -1298,7 +1299,7 @@ static void ExecuteAssignments( MONTE_CARLO_RECORD *rec ) {
 
   for (i = 0; i < rec->rulesSize; i++) {
     if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ASSIGNMENT ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      amount = rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
       varType = GetRuleVarType( rec->ruleArray[i] );
       j = GetRuleIndex( rec->ruleArray[i] );
@@ -1352,7 +1353,7 @@ int algebraicRules(const gsl_vector * x, void *params, gsl_vector * f) {
   j = 0;
   for (i = 0; i < rec->rulesSize; i++) {
     if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ALGEBRAIC ) {
-      amount = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+      amount = rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 							   (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
       gsl_vector_set (f, j, amount);
       j++;
@@ -1769,7 +1770,7 @@ static RET_VAL _UpdateSpeciesValues( MONTE_CARLO_RECORD *rec ) {
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
-	change = rec->evaluator->EvaluateWithCurrentAmounts( rec->evaluator,
+	change = rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
 							     (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	varType = GetRuleVarType( rec->ruleArray[i] );
 	j = GetRuleIndex( rec->ruleArray[i] );

@@ -44,6 +44,7 @@ struct _KINETIC_LAW_EVALUATER {
     RET_VAL (*SetDefaultSpeciesValue)( KINETIC_LAW_EVALUATER *evaluater, double value ); 
     double (*Evaluate)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentAmounts)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
+    double (*EvaluateWithCurrentAmountsDeter)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentConcentrations)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentConcentrationsDeter)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 };

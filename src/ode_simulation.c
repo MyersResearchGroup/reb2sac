@@ -903,6 +903,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
       if (time > 0.0) printf("Time = %g\n",time);
       fflush(stdout);
     }
+    nextEventTime = fireEvents( rec, time );
     if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
         return ret;
     }
@@ -1011,6 +1012,7 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
       for (i = 0; i < rec->eventsSize; i++) {
 	nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
 	triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
+	//printf("time = %g i = %d nextEventTime = %g\n",time,i,nextEventTime);
 	if (nextEventTime != -1.0) {
 	  /* Disable event, if necessary */
 	  if ((triggerEnabled) && (GetTriggerCanBeDisabled( rec->eventArray[i] ))) {
@@ -1027,7 +1029,7 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
 	      priority = 0;
 	    }
 	    else {
-	      priority = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+	      priority = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
 								     (KINETIC_LAW*)GetPriorityInEvent( rec->eventArray[i] ) );
 	    }
 	    if ((eventToFire==(-1)) || (priority > prMax)) {
@@ -1063,7 +1065,7 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
 	      deltaTime = 0;
 	    }
 	    else {
-	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
 								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
 	    }
 	    if (deltaTime == 0) eventFired = TRUE;
@@ -1130,9 +1132,11 @@ static BOOL canTriggerEvent( ODE_SIMULATION_RECORD *rec, double time ) {
       triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
       if (nextEventTime != -1.0) {
 	if  (time >= nextEventTime) {
+	  /*
 	  if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
 	    SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
 	  }
+	  */
 	  return TRUE;
 	}
       }
@@ -1187,12 +1191,11 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    //printf("Firing event %s at time %g\n",GetCharArrayOfString(eventAssignment->var),rec->time);
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
-    //printf("varType = %d j = %d\n",varType,j);
     concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
-    //printf("conc = %g\n",concentration);
+    //printf("Firing event %s at time %g varType = %d j = %d conc = %g\n",
+    //	   GetCharArrayOfString(eventAssignment->var),rec->time,varType,j,concentration);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
 	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
 	  SetAmountInSpeciesNode( rec->speciesArray[j], concentration );

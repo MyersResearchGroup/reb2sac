@@ -660,11 +660,11 @@ static RET_VAL _RunSimulation( EULER_SIMULATION_RECORD *rec ) {
         if( IS_FAILED( ( ret = _Update( rec ) ) ) ) {
             return ret;
         }
+	rec->time += rec->timeStep;
 	nextEventTime = fireEvents( rec, rec->time );
 	if (nextEventTime==-2.0) {
 	  return FAILING;
 	}
-	rec->time += rec->timeStep;
 	if ((nextEventTime > 0) && (nextEventTime < rec->time)) {
 	  rec->time = nextEventTime;
 	}
@@ -736,7 +736,7 @@ static RET_VAL _CalculateReactionRate( EULER_SIMULATION_RECORD *rec, REACTION *r
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
 
     law = GetKineticLawInReactionNode( reaction );
-    rate = evaluator->EvaluateWithCurrentConcentrations( evaluator, law );
+    rate = evaluator->EvaluateWithCurrentConcentrationsDeter( evaluator, law );
     if( !( rate < DBL_MAX ) ) {
         rate = 0.0;
     }
@@ -838,7 +838,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	      priority = 0;
 	    }
 	    else {
-	      priority = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+	      priority = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
 								     (KINETIC_LAW*)GetPriorityInEvent( rec->eventArray[i] ) );
 	    }
 	    if ((eventToFire==(-1)) || (priority > prMax)) {
@@ -874,7 +874,7 @@ static double fireEvents( EULER_SIMULATION_RECORD *rec, double time ) {
 	      deltaTime = 0;
 	    }
 	    else {
-	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+	      deltaTime = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
 								      (KINETIC_LAW*)GetDelayInEvent( rec->eventArray[i] ) );
 	    }
 	    if (deltaTime == 0) eventFired = TRUE;
@@ -955,7 +955,7 @@ static void SetEventAssignmentsNextValuesTime( EVENT *event, EULER_SIMULATION_RE
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
-    amount = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator, eventAssignment->assignment );
+    amount = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
     SetEventAssignmentNextValueTime( eventAssignment, amount, time );
   }
 }
@@ -1600,7 +1600,7 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
 
     for (i = 0; i < rec->rulesSize; i++) {
       if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
-	change = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator,
+	change = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 								    (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
 	varType = GetRuleVarType( rec->ruleArray[i] );
 	j = GetRuleIndex( rec->ruleArray[i] );
