@@ -1031,7 +1031,7 @@ static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINET
 	  *result = childValue;
         break;
         case KINETIC_LAW_UNARY_OP_LAPLACE:
-	  *result = childValue;
+	  *result = 0;
         break;
         case KINETIC_LAW_UNARY_OP_CAUCHY:
 	  *result = childValue;

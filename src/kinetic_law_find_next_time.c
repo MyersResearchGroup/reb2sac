@@ -1114,7 +1114,7 @@ static RET_VAL _VisitUnaryOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, K
 	  *result = childValue;
         break;
         case KINETIC_LAW_UNARY_OP_LAPLACE:
-	  *result = childValue;
+	  *result = 0;
         break;
         case KINETIC_LAW_UNARY_OP_CAUCHY:
 	  *result = childValue;
