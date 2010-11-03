@@ -176,6 +176,33 @@ RET_VAL SetCurrentSizeInCompartment( COMPARTMENT *compartment, double size ) {
 }
 
 
+double GetCurrentRateInCompartment( COMPARTMENT *compartment ) {
+    START_FUNCTION("GetRateInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("GetRateInCompartment", FAILING );
+        return -1.0;
+    }
+    
+    END_FUNCTION("GetRateInCompartment", SUCCESS );
+    return compartment->currentRate;
+}
+
+
+RET_VAL SetCurrentRateInCompartment( COMPARTMENT *compartment, double rate ) {
+    START_FUNCTION("SetRateInCompartment");
+    
+    if( compartment == NULL ) {
+        END_FUNCTION("SetRateInCompartment", FAILING );
+        return FAILING;
+    }
+    
+    compartment->currentRate = rate;
+    END_FUNCTION("SetRateInCompartment", SUCCESS );
+    return SUCCESS;
+}
+
+
 
 UNIT_DEFINITION *GetUnitInCompartment( COMPARTMENT *compartment ) {
     START_FUNCTION("GetUnitInCompartment");

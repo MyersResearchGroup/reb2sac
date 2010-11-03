@@ -1859,6 +1859,9 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	    return GSL_FAILURE;
 	  }
 	}
+	if( IS_FAILED( ( ret = SetRateInSpeciesNode( species, f[i] ) ) ) ) {
+	  return GSL_FAILURE;
+	}
 	f[i] = 0.0;
     }
     for( i = 0; i < compartmentsSize; i++ ) {
@@ -1868,6 +1871,9 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
             return GSL_FAILURE;
 	  }
 	}
+	if( IS_FAILED( ( ret = SetCurrentRateInCompartment( compartment, f[speciesSize + i] ) ) ) ) {
+	  return GSL_FAILURE;
+	}
 	f[speciesSize + i] = 0.0;
     }
     for( i = 0; i < symbolsSize; i++ ) {
@@ -1876,6 +1882,9 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	  if( IS_FAILED( ( ret = SetCurrentRealValueInSymbol( symbol, y[speciesSize + compartmentsSize + i] ) ) ) ) {
             return GSL_FAILURE;
 	  }
+	}
+	if( IS_FAILED( ( ret = SetCurrentRateInSymbol( symbol, f[speciesSize + compartmentsSize + i] ) ) ) ) {
+	  return GSL_FAILURE;
 	}
 	f[speciesSize + compartmentsSize + i] = 0.0;
 	if ((strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"time")==0) ||

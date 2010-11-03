@@ -292,6 +292,16 @@ double GetAmountInSpeciesNode( SPECIES *species ) {
     return species->quantity.amount;
 }
 
+double GetRateInSpeciesNode( SPECIES *species ) {
+    START_FUNCTION("GetRateInSpeciesNode");
+    if( species == NULL ) {
+        END_FUNCTION("GetRateInSpeciesNode", FAILING );
+        return 0L;
+    }
+    END_FUNCTION("GetRateInSpeciesNode", SUCCESS );
+    return species->rate;
+}
+
 double GetConcentrationInSpeciesNode( SPECIES *species ) {
     double size = 1.0;
 
@@ -427,6 +437,18 @@ RET_VAL SetAmountInSpeciesNode( SPECIES *species, double amount ) {
     }
     species->quantity.amount = amount;
     END_FUNCTION("SetAmountInSpeciesNode", SUCCESS );
+    return ret;
+}
+
+RET_VAL SetRateInSpeciesNode( SPECIES *species, double rate ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetRateInSpeciesNode");
+    if( species == NULL ) {
+        return ErrorReport( FAILING, "SetRateInSpeciesNode", "input species node is NULL" );
+    }
+    species->rate = rate;
+    END_FUNCTION("SetRateInSpeciesNode", SUCCESS );
     return ret;
 }
 

@@ -2134,17 +2134,20 @@ static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec) {
             varType = GetRuleVarType(rec->ruleArray[i]);
             j = GetRuleIndex(rec->ruleArray[i]);
             if (varType == SPECIES_RULE) {
-                amount = GetAmountInSpeciesNode(rec->speciesArray[j]);
-                amount += (change * rec->t);
-                SetRuleCurValue(rec->ruleArray[i], amount);
+	      SetRateInSpeciesNode( rec->speciesArray[j], change );
+	      amount = GetAmountInSpeciesNode(rec->speciesArray[j]);
+	      amount += (change * rec->t);
+	      SetRuleCurValue(rec->ruleArray[i], amount);
             } else if (varType == COMPARTMENT_RULE) {
-                amount = GetCurrentSizeInCompartment(rec->compartmentArray[j]);
-                amount += (change * rec->t);
-                SetRuleCurValue(rec->ruleArray[i], amount);
+	      SetCurrentRateInCompartment( rec->compartmentArray[j], change );
+	      amount = GetCurrentSizeInCompartment(rec->compartmentArray[j]);
+	      amount += (change * rec->t);
+	      SetRuleCurValue(rec->ruleArray[i], amount);
             } else {
-                amount = GetCurrentRealValueInSymbol(rec->symbolArray[j]);
-                amount += (change * rec->t);
-                SetRuleCurValue(rec->ruleArray[i], amount);
+	      SetCurrentRateInSymbol( rec->symbolArray[j], change );
+	      amount = GetCurrentRealValueInSymbol(rec->symbolArray[j]);
+	      amount += (change * rec->t);
+	      SetRuleCurValue(rec->ruleArray[i], amount);
             }
         }
     }

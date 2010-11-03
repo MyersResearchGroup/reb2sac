@@ -1605,14 +1605,17 @@ static RET_VAL _UpdateSpeciesValues( EULER_SIMULATION_RECORD *rec ) {
 	varType = GetRuleVarType( rec->ruleArray[i] );
 	j = GetRuleIndex( rec->ruleArray[i] );
 	if ( varType == SPECIES_RULE ) {
+	  SetRateInSpeciesNode( rec->speciesArray[j], change );
 	  concentration = GetConcentrationInSpeciesNode( rec->speciesArray[j] );
 	  concentration += (change * deltaTime);
 	  SetRuleCurValue( rec->ruleArray[i], concentration );
 	} else if ( varType == COMPARTMENT_RULE ) {
+	  SetCurrentRateInCompartment( rec->compartmentArray[j], change );
 	  concentration = GetCurrentSizeInCompartment( rec->compartmentArray[j] );
 	  concentration += (change * deltaTime);
 	  SetRuleCurValue( rec->ruleArray[i], concentration );
 	} else {
+	  SetCurrentRateInSymbol( rec->symbolArray[j], change );
 	  concentration = GetCurrentRealValueInSymbol( rec->symbolArray[j] );
 	  concentration += (change * deltaTime);
 	  SetRuleCurValue( rec->ruleArray[i], concentration );

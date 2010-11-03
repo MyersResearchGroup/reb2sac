@@ -799,6 +799,17 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  result = GetNextBernoulliRandomNumber(childValue);
         break;
+        case KINETIC_LAW_UNARY_OP_RATE:
+	  if (IsSymbolKineticLaw( child )) {
+	    result = GetCurrentRateInSymbol( GetSymbolFromKineticLaw( child ) );
+	  } else if (IsSpeciesKineticLaw( child )) {
+	    result = GetRateInSpeciesNode( GetSpeciesFromKineticLaw( child ) );
+	  } else if (IsCompartmentKineticLaw( child )) {
+	    result = GetCurrentRateInCompartment( GetCompartmentFromKineticLaw( child ) );
+	  } else {
+            END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
+	  }
+	break;
         case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
 	  result = ~((int)rint(childValue));
 	break;
@@ -1430,6 +1441,9 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
 	  return ret;
         break;
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
+	  return ret;
+        break;
+        case KINETIC_LAW_UNARY_OP_RATE:
 	  return ret;
         break;
         case KINETIC_LAW_UNARY_OP_BITWISE_NOT:

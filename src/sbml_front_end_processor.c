@@ -1181,6 +1181,10 @@ static RET_VAL _HandleCompartment( FRONT_END_PROCESSOR *frontend, Model_t *model
             return ret;
         }
     }    
+    if( IS_FAILED( ( ret = SetCurrentRateInCompartment( compartment, 0.0 ) ) ) ) {
+      END_FUNCTION("_HandleCompartment", ret );
+      return ret;
+    }
         
     if( (units = (char*)Compartment_getUnits( source )) != NULL ) {
         unitManager = GetUnitManagerInstance( frontend->record );
@@ -1328,6 +1332,10 @@ static RET_VAL _CreateSpeciesNode(  FRONT_END_PROCESSOR *frontend, IR *ir, Model
                 return ret;   
             }
         }
+    }
+    if( IS_FAILED( ( ret = SetRateInSpeciesNode( speciesNode, 0.0 ) ) ) ) {
+      END_FUNCTION("_CreateSpeciesNode", ret );
+      return ret;   
     }
     
     if( ( unitManager = GetUnitManagerInstance( frontend->record ) ) == NULL ) {
@@ -1959,6 +1967,18 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	      return NULL;
 	    }
 	    if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_GAMMA, children[0], children[1] ) ) == NULL ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    FREE( children );
+	    END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	    return law;
+	  } else if (strcmp(funcId,"rate")==0) {
+	    if( num != 1 ) {
+	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	      return NULL;
+	    }
+	    if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_RATE, children[0] ) ) == NULL ) {
 	      END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	      return NULL;
 	    }

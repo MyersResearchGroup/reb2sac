@@ -738,6 +738,17 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  *result = GetNextBernoulliRandomNumber(childValue);
         break;
+        case KINETIC_LAW_UNARY_OP_RATE:
+	  if (IsSymbolKineticLaw( child )) {
+	    *result = GetCurrentRateInSymbol( GetSymbolFromKineticLaw( child ) );
+	  } else if (IsSpeciesKineticLaw( child )) {
+	    *result = GetRateInSpeciesNode( GetSpeciesFromKineticLaw( child ) );
+	  } else if (IsCompartmentKineticLaw( child )) {
+	    *result = GetCurrentRateInCompartment( GetCompartmentFromKineticLaw( child ) );
+	  } else {
+            END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
+	  }
+        break;
         case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
 	  *result = ~((int)rint(childValue));
 	break;
@@ -1041,6 +1052,17 @@ static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINET
         break;
         case KINETIC_LAW_UNARY_OP_BERNOULLI:
 	  *result = childValue;
+        break;
+        case KINETIC_LAW_UNARY_OP_RATE:
+	  if (IsSymbolKineticLaw( child )) {
+	    *result = GetCurrentRateInSymbol( GetSymbolFromKineticLaw( child ) );
+	  } else if (IsSpeciesKineticLaw( child )) {
+	    *result = GetRateInSpeciesNode( GetSpeciesFromKineticLaw( child ) );
+	  } else if (IsCompartmentKineticLaw( child )) {
+	    *result = GetCurrentRateInCompartment( GetCompartmentFromKineticLaw( child ) );
+	  } else {
+            END_FUNCTION("_VisitUnaryOpToEvaluate", E_WRONGDATA );
+	  }
         break;
         case KINETIC_LAW_UNARY_OP_BITWISE_NOT:
 	  *result = ~((int)rint(childValue));
