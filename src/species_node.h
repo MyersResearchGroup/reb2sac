@@ -57,6 +57,7 @@ struct  _SPECIES {
         double amount;
         double concentration;
     } quantity;
+    double rate;
     UNIT_DEFINITION *substanceUnits;
     UNIT_DEFINITION *spatialSizeUnits;
     BYTE flags;    
@@ -85,6 +86,7 @@ double GetInitialAmountInSpeciesNode( SPECIES *species );
 double GetInitialConcentrationInSpeciesNode( SPECIES *species );
 double GetAmountInSpeciesNode( SPECIES *species );
 double GetConcentrationInSpeciesNode( SPECIES *species );
+double GetRateInSpeciesNode( SPECIES *species );
 struct KINETIC_LAW *GetInitialAssignmentInSpeciesNode( SPECIES *species );
 
 BOOL IsInitialQuantityInAmountInSpeciesNode( SPECIES *species );
@@ -102,6 +104,7 @@ RET_VAL SetSpatialSizeUnitsInSpeciesNode( SPECIES *species, UNIT_DEFINITION *spa
 RET_VAL SetInitialAmountInSpeciesNode( SPECIES *species, double initialAmount );
 RET_VAL SetInitialConcentrationInSpeciesNode( SPECIES *species, double initialConcentration);
 RET_VAL SetAmountInSpeciesNode( SPECIES *species, double amount );
+RET_VAL SetRateInSpeciesNode( SPECIES *species, double rate );
 RET_VAL SetConcentrationInSpeciesNode( SPECIES *species, double concentration);
 RET_VAL SetSpeciesNodeConstant( SPECIES *species, BOOL flag );
 RET_VAL SetOnlySubstanceUnitsInSpeciesNode( SPECIES *species, BOOL flag );

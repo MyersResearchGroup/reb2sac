@@ -50,7 +50,7 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
     }
         
     END_FUNCTION("GetRealValueInSymbol", SUCCESS );
-    return sym->value.realValue;
+    return sym->value;
 }
 
 UNIT_DEFINITION *GetUnitsInSymbol( REB2SAC_SYMBOL *sym ) {
@@ -75,6 +75,18 @@ double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
         
     END_FUNCTION("GetRealValueInSymbol", SUCCESS );
     return sym->currentRealValue;
+}
+
+double GetCurrentRateInSymbol( REB2SAC_SYMBOL *sym ) {
+    START_FUNCTION("GetRealValueInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("GetRealValueInSymbol", FAILING );
+        return 0.0/0.0;
+    }
+        
+    END_FUNCTION("GetRealValueInSymbol", SUCCESS );
+    return sym->currentRate;
 }
 
 struct KINETIC_LAW *GetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym ) {
@@ -148,7 +160,7 @@ RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     }
     
     //sym->type = REB2SAC_SYMBOL_TYPE_REAL;    
-    sym->value.realValue = value;
+    sym->value = value;
     sym->currentRealValue = value;
     
     END_FUNCTION("SetRealValueInSymbol", SUCCESS );
@@ -213,6 +225,20 @@ RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value ) {
     sym->currentRealValue = value;
     
     END_FUNCTION("SetRealValueInSymbol", SUCCESS );
+    return SUCCESS;
+}
+
+RET_VAL SetCurrentRateInSymbol( REB2SAC_SYMBOL *sym, double rate ) {
+    
+    START_FUNCTION("SetRateInSymbol");
+
+    if( sym == NULL ) {
+        END_FUNCTION("SetRateInSymbol", FAILING );
+        return FAILING;
+    }
+    sym->currentRate = rate;
+    
+    END_FUNCTION("SetRateInSymbol", SUCCESS );
     return SUCCESS;
 }
 
@@ -449,6 +475,10 @@ static REB2SAC_SYMBOL *_AddRealValueSymbol( REB2SAC_SYMTAB *symtab, char *propos
     symbol->initialAssignment = NULL;
     symbol->units = NULL;
     if( IS_FAILED( SetRealValueInSymbol( symbol, value ) ) ) {
+        END_FUNCTION("_AddRealValueSymbol", FAILING );    
+        return NULL;
+    }
+    if( IS_FAILED( SetCurrentRateInSymbol( symbol, 0.0 ) ) ) {
         END_FUNCTION("_AddRealValueSymbol", FAILING );    
         return NULL;
     }

@@ -38,10 +38,9 @@ struct KINETIC_LAW;
 
 typedef struct {
     STRING *id;
-    union {
-        double realValue;        
-    } value;
+    double value;        
     double currentRealValue;
+    double currentRate;
     BYTE type;
     BOOL isConstant;
     BOOL print;
@@ -56,6 +55,8 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
 double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym, double value );
+double GetCurrentRateInSymbol( REB2SAC_SYMBOL *sym );
+RET_VAL SetCurrentRateInSymbol( REB2SAC_SYMBOL *sym, double rate );
 UNIT_DEFINITION *GetUnitsInSymbol( REB2SAC_SYMBOL *sym );
 RET_VAL SetUnitsInSymbol( REB2SAC_SYMBOL *sym, UNIT_DEFINITION *units );
 struct KINETIC_LAW *GetInitialAssignmentInSymbol( REB2SAC_SYMBOL *sym );
