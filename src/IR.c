@@ -1864,6 +1864,7 @@ static RET_VAL _PrintParameterForSBML( REB2SAC_SYMBOL *sym, FILE *file, UINT32 t
 #if 0    
     TRACE_1("printing paramter %s", GetCharArrayOfString( GetSymbolID( sym ) ) );
 #endif     
+    /*
     if( !IsSymbolConstant( sym ) ) {
         END_FUNCTION("_PrintParameterForSBML", SUCCESS );    
         return ret;
@@ -1872,6 +1873,7 @@ static RET_VAL _PrintParameterForSBML( REB2SAC_SYMBOL *sym, FILE *file, UINT32 t
         END_FUNCTION("_PrintParameterForSBML", SUCCESS );    
         return ret;
     }
+    */
     
     id = GetCharArrayOfString( GetSymbolID( sym ) );
     value = GetRealValueInSymbol( sym );
