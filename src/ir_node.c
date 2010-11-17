@@ -414,7 +414,8 @@ DLLSCOPE IR_EDGE * STDCALL CreateModifierEdge( IR_NODE *reaction, IR_NODE *speci
     
     edge->species = species;
     edge->stoichiometry = stoichiometry;
-    edge->reaction = reaction;;
+    edge->reaction = reaction;
+    edge->speciesRef = NULL;
     
     if( IS_FAILED( ( ret = AddElementInLinkedList( (CADDR_T)edge, reaction->modifiers ) ) ) ) {
         FREE( edge );
