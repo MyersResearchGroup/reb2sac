@@ -818,9 +818,9 @@ static RET_VAL _PrintEventForXHTML( EVENT *event, FILE *file ) {
     fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
     if (GetTriggerCanBeDisabled( event )) {
-      fprintf( file, "True" );
-    } else {
       fprintf( file, "False" );
+    } else {
+      fprintf( file, "True" );
     }
     fprintf( file, REB2SAC_XHTML_SEPARATOR_FORMAT );
 
