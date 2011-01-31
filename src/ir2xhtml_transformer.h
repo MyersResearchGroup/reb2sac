@@ -282,7 +282,7 @@
 /*"</center></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" NEW_LINE*/
 
 #define REB2SAC_XHTML_START_EVENT_FORMAT \
-"<table border=\"2\"><tr><th>Event ID</th><th>Trigger</th><th>Delay</th><th>Priority</th><th>Use Values From Trigger Time</th><th>Trigger Can Be Disabled</th><th>Trigger Initial Value</th><th>Assignments</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Event ID</th><th>Trigger</th><th>Delay</th><th>Priority</th><th>Use Values From Trigger Time</th><th>Persistent</th><th>Initial Value</th><th>Assignments</th></tr>" NEW_LINE
  
 #define REB2SAC_XHTML_END_EVENT_FORMAT \
 "</table>" NEW_LINE
