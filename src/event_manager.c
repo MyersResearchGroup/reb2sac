@@ -169,15 +169,19 @@ double GetEventAssignmentNextValueTime( EVENT_ASSIGNMENT *eventAssignDef, double
 
     START_FUNCTION("GetEventAssignmentNextValueTime");
 
+    //printf("Start\n");
     ResetCurrentElement( eventAssignDef->nextValueTime );
     while ( ( nextValueTimePtr = (NEXT_VALUE_TIME*)GetNextFromLinkedList( eventAssignDef->nextValueTime ) ) != NULL ){
-      //if (nextValueTimePtr->nextTime <= nextTime) {
-	nextValue = nextValueTimePtr->nextValue;
+      //printf("nextTime = %g Ptr->nextTime = %g Ptr->nextValue = %g\n",
+      //     nextTime,nextValueTimePtr->nextTime,nextValueTimePtr->nextValue);
+      if (nextValueTimePtr->nextTime <= nextTime) {
+      	nextValue = nextValueTimePtr->nextValue;
 	RemoveElementFromLinkedList( (CADDR_T)nextValueTimePtr, eventAssignDef->nextValueTime );
-	break;
-	//} 
+	if (nextValueTimePtr->nextTime == nextTime)
+	  break;
+      } 
     }
-
+    //printf("Returning %g\n",nextValue);
     END_FUNCTION("GetEventAssignmentNextValueTime", SUCCESS );
     return nextValue;
 }
