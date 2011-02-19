@@ -1248,7 +1248,6 @@ static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETI
     case KINETIC_LAW_UNARY_OP_ARCSEC:
     case KINETIC_LAW_UNARY_OP_ARCSECH:
     case KINETIC_LAW_UNARY_OP_LN:
-    case KINETIC_LAW_UNARY_OP_LOG:
     case KINETIC_LAW_UNARY_OP_FACTORIAL:
     case KINETIC_LAW_UNARY_OP_ABS:
     case KINETIC_LAW_UNARY_OP_FLOOR:
@@ -1324,8 +1323,6 @@ static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETI
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_ARCSEC_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_ARCSECH ) { 
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_ARCSECH_FORMAT );
-	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_LOG ) { 
-	      fprintf( file, REB2SAC_XHTML_MATHML_OP_LOG_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_LN ) { 
 	      fprintf( file, REB2SAC_XHTML_MATHML_OP_LN_FORMAT );
 	    } else if ( unaryOpType == KINETIC_LAW_UNARY_OP_NOT ) { 
@@ -1448,9 +1445,12 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
         case KINETIC_LAW_OP_BITWISE_XOR:
         case KINETIC_LAW_OP_BIT:
         case KINETIC_LAW_OP_DELAY:
+        case KINETIC_LAW_OP_LOG:            
 	  _PrintTab( file, *tabCount );
 	  if (opType == KINETIC_LAW_OP_MOD) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_MOD_FORMAT );
+	  } else if (opType == KINETIC_LAW_OP_LOG) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_LOG_FORMAT );
 	  } else if (opType == KINETIC_LAW_OP_UNIFORM) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_UNIFORM_FORMAT );
 	  } else if (opType == KINETIC_LAW_OP_GAMMA) {
@@ -2115,6 +2115,7 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     
     parentOpType = GetOpTypeFromKineticLaw( parent );
     if( ( parentOpType == KINETIC_LAW_OP_POW ) ||
+	( parentOpType == KINETIC_LAW_OP_LOG ) ||
 	( parentOpType == KINETIC_LAW_OP_ROOT ) ||
 	( parentOpType == KINETIC_LAW_OP_EQ ) ||
 	( parentOpType == KINETIC_LAW_OP_NEQ ) ||
@@ -2175,6 +2176,7 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     
     parentOpType = GetOpTypeFromKineticLaw( parent );
     if( ( parentOpType == KINETIC_LAW_OP_POW ) ||
+	( parentOpType == KINETIC_LAW_OP_LOG ) ||
 	( parentOpType == KINETIC_LAW_OP_ROOT ) ||
 	( parentOpType == KINETIC_LAW_OP_EQ ) ||
 	( parentOpType == KINETIC_LAW_OP_NEQ ) ||
@@ -2201,6 +2203,7 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
     if( IsOpKineticLaw( child ) ) {        
         childOpType = GetOpTypeFromKineticLaw( child );
         if( ( childOpType == KINETIC_LAW_OP_POW ) ||
+	    ( childOpType == KINETIC_LAW_OP_LOG ) ||
 	    ( childOpType == KINETIC_LAW_OP_ROOT ) ||
 	    ( childOpType == KINETIC_LAW_OP_EQ ) ||
 	    ( childOpType == KINETIC_LAW_OP_NEQ ) ||
