@@ -2562,11 +2562,11 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_FUNCTION_LOG:
-	  if( num != 1 ) {
+	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
-	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_LOG, children[0] ) ) == NULL ) {
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_LOG, children[0], children[1] ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
