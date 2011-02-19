@@ -2430,6 +2430,9 @@ static RET_VAL _PrintOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
         case KINETIC_LAW_OP_POW:
             fprintf( file, "<power/>%s", NEW_LINE );
         break;
+        case KINETIC_LAW_OP_LOG:
+            fprintf( file, "<log/>%s", NEW_LINE );
+        break;
         case KINETIC_LAW_OP_DELAY:
             fprintf( file, "<delay/>%s", NEW_LINE );
         break;
@@ -2547,9 +2550,6 @@ static RET_VAL _PrintUnaryOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *fi
         break;
         case KINETIC_LAW_UNARY_OP_LN:
             fprintf( file, "<ln/>%s", NEW_LINE );
-        break;
-        case KINETIC_LAW_UNARY_OP_LOG:
-            fprintf( file, "<log/>%s", NEW_LINE );
         break;
         case KINETIC_LAW_UNARY_OP_FACTORIAL:
             fprintf( file, "<factorial/>%s", NEW_LINE );
