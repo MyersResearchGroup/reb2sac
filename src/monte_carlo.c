@@ -89,7 +89,7 @@ DLLSCOPE RET_VAL STDCALL DoMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *
 	  }
 	  timeout++;
 	} while ( (ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) );
-	if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)) {
+	if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize + 1)) {
 	  return ErrorReport( ret, "DoMonteCarloAnalysis", "Cycle detected in initial and rule assignments" );
 	}
         if( IS_FAILED( ( ret = _RunSimulation( &rec ) ) ) ) {
@@ -1110,7 +1110,7 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
     BOOL eventFired = FALSE;
     double firstEventTime = -1.0;
     int eventToFire = -1;
-    double prMax;
+    double prMax,prMax2;
     double priority = 0.0;
     double randChoice = 0.0;
 
@@ -1142,10 +1142,12 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	    if ((eventToFire==(-1)) || (priority > prMax)) {
 	      eventToFire = i;
 	      prMax = priority;
+	      prMax2=GetNextUniformRandomNumber(0,1);	   
 	    } else if (priority == prMax) {
 	      randChoice=GetNextUniformRandomNumber(0,1);	   
-	      if (randChoice > 0.5) {
+	      if (randChoice > prMax2) {
 		eventToFire = i;
+		prMax2 = randChoice;
 	      }
 	    }
 	  } else {
@@ -1207,6 +1209,7 @@ static double fireEvents( MONTE_CARLO_RECORD *rec, double time ) {
 	if (!GetUseValuesFromTriggerTime( rec->eventArray[eventToFire] )) {
 	  SetEventAssignmentsNextValues( rec->eventArray[eventToFire], rec ); 
 	}
+	rec->time = time;
 	fireEvent( rec->eventArray[eventToFire], rec );
 	SetNextEventTimeInEvent( rec->eventArray[eventToFire], -1.0 );
 	eventFired = TRUE;
