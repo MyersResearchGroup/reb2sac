@@ -531,6 +531,10 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
         case KINETIC_LAW_OP_POW:
             result = pow( leftValue, rightValue );
         break;        
+        
+        case KINETIC_LAW_OP_LOG:
+	  result = log( rightValue ) / log( leftValue);
+        break;
 
         case KINETIC_LAW_OP_DELAY:
 	  result = leftValue;
@@ -729,16 +733,18 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
 	  result = ((1./2.)*log((childValue+1.)/(childValue-1.)) );
         break;
         case KINETIC_LAW_UNARY_OP_ARCCSC:
-	  result = atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
+	  result = asin( 1. / childValue ); //atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
         break;
         case KINETIC_LAW_UNARY_OP_ARCCSCH:
-	  result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
+	  result = log(1./childValue + SQRT(1./SQR(childValue)+1)); 
+	  //result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
         break;
         case KINETIC_LAW_UNARY_OP_ARCSEC:
-	  result = atan( SQRT(( childValue-1.)*( childValue+1.)) );
+	  result = acos( 1. / childValue ); //atan( SQRT(( childValue-1.)*( childValue+1.)) );
         break;
         case KINETIC_LAW_UNARY_OP_ARCSECH:
-	  result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
+	  result = log(1./childValue + SQRT(1./childValue + 1) * SQRT(1./childValue -1));
+	  //result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
         break;
         case KINETIC_LAW_UNARY_OP_ARCCOS:
 	  result = acos(childValue);
@@ -774,9 +780,6 @@ static RET_VAL _VisitUnaryOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KIN
         break;
         case KINETIC_LAW_UNARY_OP_LN:
 	  result = log(childValue);
-        break;
-        case KINETIC_LAW_UNARY_OP_LOG:
-	  result = log10(childValue);
         break;
         case KINETIC_LAW_UNARY_OP_EXPRAND:
 	  result = GetNextExponentialRandomNumber(childValue);
@@ -1185,6 +1188,10 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
             result = pow( leftValue, rightValue );
         break;        
         
+        case KINETIC_LAW_OP_LOG:
+	  result = log( rightValue ) / log( leftValue);
+        break;
+        
         case KINETIC_LAW_OP_DELAY:
 	  result = leftValue;
         break;        
@@ -1373,16 +1380,18 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
 	  result = ((1./2.)*log((childValue+1.)/(childValue-1.)) );
         break;
         case KINETIC_LAW_UNARY_OP_ARCCSC:
-	  result = atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
+	  result = asin( 1. / childValue ); //atan( 1. / SQRT( (childValue-1.)*(childValue+1.) )); 
         break;
         case KINETIC_LAW_UNARY_OP_ARCCSCH:
-	  result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
+	  result = log(1./childValue + SQRT(1./SQR(childValue)+1)); 
+	  //result = log((1.+SQRT((1+SQR(childValue)))) /childValue);
         break;
         case KINETIC_LAW_UNARY_OP_ARCSEC:
-	  result = atan( SQRT(( childValue-1.)*( childValue+1.)) );
+	  result = acos( 1. / childValue ); //atan( SQRT(( childValue-1.)*( childValue+1.)) );
         break;
         case KINETIC_LAW_UNARY_OP_ARCSECH:
-	  result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
+	  result = log(1./childValue + SQRT(1./childValue + 1) * SQRT(1./childValue -1));
+	  //result = log((1.+pow((1-SQR(childValue)),0.5))/childValue);
         break;
         case KINETIC_LAW_UNARY_OP_ARCCOS:
 	  result = acos(childValue);
@@ -1418,9 +1427,6 @@ static RET_VAL _VisitUnaryOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, 
         break;
         case KINETIC_LAW_UNARY_OP_LN:
 	  result = log(childValue);
-        break;
-        case KINETIC_LAW_UNARY_OP_LOG:
-	  result = log10(childValue);
         break;
         case KINETIC_LAW_UNARY_OP_EXPRAND:
 	  return ret;
