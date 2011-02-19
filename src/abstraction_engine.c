@@ -224,10 +224,11 @@ static RET_VAL _PutPrintFlagInNodes( ABSTRACTION_ENGINE *abstractionEngine, IR *
 	  }
 	}
 
-	curPtr=nextPtr+2;
+	curPtr=nextPtr+1;
+	while ((*curPtr)==' ') curPtr++;
 	nextPtr = strchr(curPtr,',');
       }
-
+      
       list = compartmentManager->CreateListOfCompartments( compartmentManager );
       ResetCurrentElement( list );
       while( ( compartment = (COMPARTMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
