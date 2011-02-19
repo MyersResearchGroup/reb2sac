@@ -123,20 +123,20 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     int symSize = printer->symSize;
     REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
     
-    fprintf( out, ",(%g", time );
+    fprintf( out, ",(%.12g", time );
     for( i = 0; i < compSize; i++ ) {
       if (PrintCompartment( compartmentArray[i] )) {
-        fprintf( out, ",%g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
+        fprintf( out, ",%.12g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
       }
     }                 
     for( i = 0; i < size; i++ ) {
       if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
-	fprintf( out, ", %g", GetAmountInSpeciesNode( speciesArray[i] ) );
+	fprintf( out, ", %.12g", GetAmountInSpeciesNode( speciesArray[i] ) );
       }
     }                 
     for( i = 0; i < symSize; i++ ) {
       if (PrintSymbol( symbolArray[i] )) {
-        fprintf( out, ",%g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
+        fprintf( out, ",%.12g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
       }
     }                 
     fprintf( out, ")" );
@@ -156,20 +156,20 @@ static RET_VAL _PrintConcentrationValues( SIMULATION_PRINTER *printer, double ti
     int symSize = printer->symSize;
     REB2SAC_SYMBOL **symbolArray = printer->symbolArray;
     
-    fprintf( out, ",(%g", time );
+    fprintf( out, ",(%.12g", time );
     for( i = 0; i < compSize; i++ ) {
       if (PrintCompartment( compartmentArray[i] )) {
-        fprintf( out, ",%g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
+        fprintf( out, ",%.12g", GetCurrentSizeInCompartment( compartmentArray[i] ) );
       }
     }                 
     for( i = 0; i < size; i++ ) {
       if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
-	fprintf( out, ", %g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
+	fprintf( out, ", %.12g", GetConcentrationInSpeciesNode( speciesArray[i] ) );
       }
     }                 
     for( i = 0; i < symSize; i++ ) {
       if (PrintSymbol( symbolArray[i] )) {
-        fprintf( out, ",%g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
+        fprintf( out, ",%.12g", GetCurrentRealValueInSymbol( symbolArray[i] ) );
       }
     }                 
     fprintf( out, ")" );
