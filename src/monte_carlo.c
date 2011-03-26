@@ -431,7 +431,7 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
     if( ( rec->printer = CreateSimulationPrinter( backend, compartmentArray, rec->compartmentsSize,
 						  speciesArray, rec->speciesSize,
 						  symbolArray, rec->symbolsSize ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
+      return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
     }
 
     if( ( constraintManager = ir->GetConstraintManager( ir ) ) == NULL ) {
@@ -455,7 +455,7 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
     if( ( rec->decider =
         CreateSimulationRunTerminationDecider( backend, speciesArray, rec->speciesSize, reactions, rec->reactionsSize,
 					       rec->constraintArray, rec->constraintsSize, rec->evaluator, FALSE, rec->timeLimit ) ) == NULL ) {
-        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation printer" );
+        return ErrorReport( FAILING, "_InitializeRecord", "could not create simulation decider" );
     }
 
     if( ( eventManager = ir->GetEventManager( ir ) ) == NULL ) {
