@@ -701,6 +701,7 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	if( IS_REAL_EQUAL( rec->totalPropensities, 0.0 ) ) {
 	  TRACE_1( "the total propensity is 0 at iteration %i", i );
 	  rec->t = maxTime - rec->time; //timeLimit - rec->time;
+	  if (rec->t > timeLimit) rec->t = timeLimit; 
 	  rec->time = maxTime; //timeLimit;
 	  reaction = NULL;
 	  rec->nextReaction = NULL;
@@ -718,6 +719,7 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	  if ( maxTime < rec->time ) {
 	    rec->time -= rec->t;
 	    rec->t = maxTime - rec->time;
+	    if (rec->t > timeLimit) rec->t = timeLimit; 
 	    rec->time = maxTime;
 	    reaction = NULL;
 	    rec->nextReaction = NULL;
