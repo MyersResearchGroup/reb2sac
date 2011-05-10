@@ -685,6 +685,7 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	  maxTime = maxTime + timeStep;
 	}
 	nextEventTime = fireEvents( rec, rec->time );
+	if (decider->IsTerminationConditionMet( decider, reaction, rec->time )) break;
 	if (nextEventTime==-2.0) {
 	  return FAILING;
 	}

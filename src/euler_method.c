@@ -661,6 +661,7 @@ static RET_VAL _RunSimulation( EULER_SIMULATION_RECORD *rec ) {
             return ret;
         }
 	rec->time += rec->timeStep;
+	if (decider->IsTerminationConditionMet( decider, NULL, rec->time )) break;
 	nextEventTime = fireEvents( rec, rec->time );
 	if (nextEventTime==-2.0) {
 	  return FAILING;
