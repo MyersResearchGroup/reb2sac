@@ -835,6 +835,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, NULL, time )) ) {
       nextEventTime = fireEvents( rec, time );
+      if (decider->IsTerminationConditionMet( decider, NULL, time )) break;
       if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
 	return ret;
       }
