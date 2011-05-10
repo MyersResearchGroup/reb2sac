@@ -900,6 +900,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     }
                 }
                 nextEventTime = fireEvents(rec, rec->time);
+		if (decider->IsTerminationConditionMet( decider, reaction, rec->time )) break;
                 if (nextEventTime == -2.0) {
                     return FAILING;
                 }
