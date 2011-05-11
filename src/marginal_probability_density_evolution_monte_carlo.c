@@ -3,6 +3,7 @@
 #include "gsl/gsl_vector.h"
 #include "gsl/gsl_multiroots.h"
 #include "marginal_probability_density_evolution_monte_carlo.h"
+#include "conservation_analysis.c"
 
 static BOOL _IsModelConditionSatisfied(IR *ir);
 
@@ -28,6 +29,7 @@ static RET_VAL _UpdateAllReactionRateUpdateTimes(MPDE_MONTE_CARLO_RECORD *rec, d
 
 static int _ComparePropensity(REACTION *a, REACTION *b);
 static BOOL _IsTerminationConditionMet(MPDE_MONTE_CARLO_RECORD *rec);
+static gsl_matrix* _GetStoichiometricMatrix(MPDE_MONTE_CARLO_RECORD *rec);
 
 static double fireEvents(MPDE_MONTE_CARLO_RECORD *rec, double time);
 static void fireEvent(EVENT *event, MPDE_MONTE_CARLO_RECORD *rec);
@@ -746,6 +748,24 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     int eventCounter = 0;
     int maxEvents = ceil(rec->timeStep);
     double minPrintInterval = rec->minPrintInterval;
+    gsl_matrix *stoich_matrix = NULL;
+    gsl_matrix *trans_matrix = NULL;
+    gsl_matrix *L_matrix = NULL;
+    gsl_matrix *Lo_matrix = NULL;
+    gsl_matrix *G_matrix = NULL;
+
+    if (useMP == 0) {
+        stoich_matrix = _GetStoichiometricMatrix(rec);
+        printf("\nStoich = \n");
+	disp_mat(stoich_matrix);
+        trans_matrix = gsl_matrix_alloc(rec->reactionsSize,size);
+        gsl_matrix_transpose_memcpy(trans_matrix,stoich_matrix);
+        L_matrix = conservation(trans_matrix);
+        Lo_matrix = linkzero(L_matrix);
+        G_matrix = gamma_matrix(Lo_matrix);
+        printf("\nG = \n");
+	disp_mat(G_matrix);
+    }
 
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
@@ -2326,5 +2346,70 @@ static int _ComparePropensity(REACTION *a, REACTION *b) {
         return 0;
     }
     return (d1 < d2) ? -1 : 1;
+}
+
+static gsl_matrix* _GetStoichiometricMatrix(MPDE_MONTE_CARLO_RECORD *rec) {
+    double stoichiometry = 0;
+    UINT32 i = 0;
+    UINT32 j = 0;
+    UINT32 reactionsSize = rec->reactionsSize;
+    UINT32 speciesSize = rec->speciesSize;
+    REACTION *reaction = NULL;
+    REACTION **reactionArray = rec->reactionArray;
+    SPECIES *species = NULL;
+    SPECIES **speciesArray = rec->speciesArray;
+    REB2SAC_SYMBOL *speciesRef = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
+    IR_EDGE *edge = NULL;
+    LINKED_LIST *edges = NULL;
+    gsl_matrix *matrix = gsl_matrix_alloc(speciesSize,reactionsSize);
+
+    for (i = 0; i < reactionsSize; i++) {
+        reaction = reactionArray[i];
+        edges = GetReactantEdges((IR_NODE*) reaction);
+        ResetCurrentElement(edges);
+        while ((edge = GetNextEdge(edges)) != NULL) {
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
+	  species = GetSpeciesInIREdge(edge);
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
+	  if (HasBoundaryConditionInSpeciesNode(species))
+	    continue;
+          for (j = 0; j < speciesSize; j++) {
+            if(species == speciesArray[j]) {
+              gsl_matrix_set(matrix,j,i,-stoichiometry);
+            }
+          }
+        }
+        edges = GetProductEdges((IR_NODE*) reaction);
+        ResetCurrentElement(edges);
+        while ((edge = GetNextEdge(edges)) != NULL) {
+	  speciesRef = GetSpeciesRefInIREdge( edge );
+	  if (speciesRef) {
+	    stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	  } else {
+	    stoichiometry = GetStoichiometryInIREdge( edge );
+	  }
+	  species = GetSpeciesInIREdge(edge);
+	  if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	    stoichiometry *= GetCurrentRealValueInSymbol( convFactor );
+	  }
+	  if (HasBoundaryConditionInSpeciesNode(species))
+	    continue;
+          for (j = 0; j < speciesSize; j++) {
+            if(species == speciesArray[j]) {
+              gsl_matrix_set(matrix,j,i,stoichiometry);
+            }
+          }
+        }
+    }
+
+    return matrix;
 }
 
