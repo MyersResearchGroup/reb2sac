@@ -9,6 +9,7 @@
 #include <math.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_matrix.h>
+#include "simulation_method.h"
 
 //using namespace std;
 
@@ -18,10 +19,10 @@ gsl_vector *deprows(gsl_matrix *A);
 gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A);
 gsl_matrix *gsl_matrix_pinv(gsl_matrix *A);
 gsl_matrix *NR(gsl_matrix *A);
-gsl_matrix *linkzero(gsl_matrix *L);
+gsl_matrix *linkzero(gsl_matrix *L, SPECIES **speciesOrder);
 gsl_matrix *gamma_matrix(gsl_matrix *L);
 void disp_mat(gsl_matrix *A);
-gsl_matrix* conservation(gsl_matrix *S);
+gsl_matrix* conservation(gsl_matrix *S, SPECIES **speciesOrder);
 
 //MAIN FUNCTION
 /*
@@ -160,7 +161,7 @@ int main()
 
 //**********************************************************************************************************
 //***************************************CONSERVATION FUNCTION*********************************************
-gsl_matrix* conservation(gsl_matrix *S)
+gsl_matrix* conservation(gsl_matrix *S, SPECIES **speciesOrder)
 {
 
 	// 1- Extract the linearly dependent rows of the stoichiometric matrix.
@@ -621,7 +622,7 @@ gsl_matrix *NR(gsl_matrix *A)
 // INPUT: Link matrix.
 // OUTPUT: Link-zero matrix.
 
-gsl_matrix *linkzero(gsl_matrix *L)
+gsl_matrix *linkzero(gsl_matrix *L, SPECIES **speciesOrder)
 {
 	int M = L->size1;//rows
 	int N = L->size2;//columns

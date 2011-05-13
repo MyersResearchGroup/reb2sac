@@ -735,6 +735,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     UINT32 numberSteps = rec->numberSteps;
     SPECIES *species = NULL;
     SPECIES **speciesArray = rec->speciesArray;
+    SPECIES **speciesOrder = NULL;
     double end;
     double newValue;
     int useMP = rec->useMP;
@@ -749,22 +750,23 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     int maxEvents = ceil(rec->timeStep);
     double minPrintInterval = rec->minPrintInterval;
     gsl_matrix *stoich_matrix = NULL;
-    gsl_matrix *trans_matrix = NULL;
     gsl_matrix *L_matrix = NULL;
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
 
     if (useMP == 0) {
+        speciesOrder = malloc(sizeof(SPECIES*)*size);
+        for (i = 0; i < size; i ++ ) {
+          speciesOrder[i] = speciesArray[i];
+        }
         stoich_matrix = _GetStoichiometricMatrix(rec);
-        printf("\nStoich = \n");
-	disp_mat(stoich_matrix);
-        trans_matrix = gsl_matrix_alloc(rec->reactionsSize,size);
-        gsl_matrix_transpose_memcpy(trans_matrix,stoich_matrix);
-        L_matrix = conservation(trans_matrix);
-        Lo_matrix = linkzero(L_matrix);
+        //printf("\nStoich = \n");
+	//disp_mat(stoich_matrix);
+        L_matrix = conservation(stoich_matrix, speciesOrder);
+        Lo_matrix = linkzero(L_matrix, speciesOrder);
         G_matrix = gamma_matrix(Lo_matrix);
-        printf("\nG = \n");
-	disp_mat(G_matrix);
+        //printf("\nG = \n");
+	//disp_mat(G_matrix);
     }
 
     meanPrinter = rec->meanPrinter;
@@ -2365,6 +2367,12 @@ static gsl_matrix* _GetStoichiometricMatrix(MPDE_MONTE_CARLO_RECORD *rec) {
     gsl_matrix *matrix = gsl_matrix_alloc(speciesSize,reactionsSize);
 
     for (i = 0; i < reactionsSize; i++) {
+        for (j = 0; j < speciesSize; j++) {
+          gsl_matrix_set(matrix,j,i,0);
+        }
+    }
+
+    for (i = 0; i < reactionsSize; i++) {
         reaction = reactionArray[i];
         edges = GetReactantEdges((IR_NODE*) reaction);
         ResetCurrentElement(edges);
@@ -2383,7 +2391,7 @@ static gsl_matrix* _GetStoichiometricMatrix(MPDE_MONTE_CARLO_RECORD *rec) {
 	    continue;
           for (j = 0; j < speciesSize; j++) {
             if(species == speciesArray[j]) {
-              gsl_matrix_set(matrix,j,i,-stoichiometry);
+              gsl_matrix_set(matrix,j,i,gsl_matrix_get(matrix,j,i)-stoichiometry);
             }
           }
         }
@@ -2404,7 +2412,7 @@ static gsl_matrix* _GetStoichiometricMatrix(MPDE_MONTE_CARLO_RECORD *rec) {
 	    continue;
           for (j = 0; j < speciesSize; j++) {
             if(species == speciesArray[j]) {
-              gsl_matrix_set(matrix,j,i,stoichiometry);
+              gsl_matrix_set(matrix,j,i,gsl_matrix_get(matrix,j,i)+stoichiometry);
             }
           }
         }
