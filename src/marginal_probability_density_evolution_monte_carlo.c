@@ -882,6 +882,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
         }
 	*/
+	rec->decider->timeLimit = end;
         decider = rec->decider;
         for (k = 1; k <= rec->runs; k++) {
             eventCounter = 0;
