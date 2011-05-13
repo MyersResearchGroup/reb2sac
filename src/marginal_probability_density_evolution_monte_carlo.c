@@ -875,11 +875,13 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 end = timeLimit;
             }
         }
+	/*
         if ((rec->decider = CreateSimulationRunTerminationDecider(backend, speciesArray, rec->speciesSize,
                 rec->reactionArray, rec->reactionsSize, rec->constraintArray, rec->constraintsSize, rec->evaluator,
                 FALSE, end)) == NULL) {
             return ErrorReport(FAILING, "_RunSimulation", "could not create simulation decider");
         }
+	*/
         decider = rec->decider;
         for (k = 1; k <= rec->runs; k++) {
             eventCounter = 0;
