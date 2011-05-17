@@ -163,6 +163,7 @@ int main()
 //***************************************CONSERVATION FUNCTION*********************************************
 gsl_matrix* conservation(gsl_matrix *S, SPECIES **speciesOrder)
 {
+    printf("Got here0");
 
 	// 1- Extract the linearly dependent rows of the stoichiometric matrix.
 	gsl_vector *Index = deprows(S);
