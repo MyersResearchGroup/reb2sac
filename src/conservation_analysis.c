@@ -166,20 +166,25 @@ gsl_matrix* conservation(gsl_matrix *S, SPECIES **speciesOrder)
 
 	// 1- Extract the linearly dependent rows of the stoichiometric matrix.
 	gsl_vector *Index = deprows(S);
+	printf("Got here1");
 
 	// 2- Reorganize the stoichiometric matrix as N = [NR NO]^T, where NR is the subset of N containing
 	// the linearly independent rows, while NO contains the dependent rows.
 	gsl_matrix *S1 = reorder(Index,S,speciesOrder);
+	printf("Got here2");
 
 	//Compute the independent species matrix
 	gsl_matrix *Nr = NR(S1);
+	printf("Got here3");
 
 	//Compute the pseudoinverse of the independent species matrix
 	gsl_matrix *Pinv = gsl_matrix_pinv(Nr);//MxN matrix
+	printf("Got here4");
 
 	//Find the link matrix
 	gsl_matrix * L = gsl_matrix_alloc(S1->size1,Pinv->size2);
 	gsl_linalg_matmult(S1,Pinv,L);
+	printf("Got here5");
 
 	gsl_matrix_free(Pinv);
 	gsl_matrix_free(Nr);
