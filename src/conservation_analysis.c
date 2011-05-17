@@ -331,6 +331,7 @@ gsl_vector *deprows(gsl_matrix *A)
 		    printf("Before\n");
 			int d = gsl_vector_get(k,i);
 			int s = gsl_vector_get(k,i-1);
+			printf("After\n");
 			if(d>s)
 			{
 				gsl_vector_set(index,i,i);
@@ -341,7 +342,6 @@ gsl_vector *deprows(gsl_matrix *A)
 				// those that are of interest to us.
 				gsl_vector_set(index,i,-1.0);
 			}
-			printf("After\n");
 		}
 		else
 		{
