@@ -16,10 +16,10 @@
 //FUNCTION PREAMBLE
 int gsl_matrix_rank(gsl_matrix *A);
 gsl_vector *deprows(gsl_matrix *A);
-gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A);
+gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A, SPECIES **speciesOrder);
 gsl_matrix *gsl_matrix_pinv(gsl_matrix *A);
 gsl_matrix *NR(gsl_matrix *A);
-gsl_matrix *linkzero(gsl_matrix *L, SPECIES **speciesOrder);
+gsl_matrix *linkzero(gsl_matrix *L);
 gsl_matrix *gamma_matrix(gsl_matrix *L);
 void disp_mat(gsl_matrix *A);
 gsl_matrix* conservation(gsl_matrix *S, SPECIES **speciesOrder);
@@ -169,7 +169,7 @@ gsl_matrix* conservation(gsl_matrix *S, SPECIES **speciesOrder)
 
 	// 2- Reorganize the stoichiometric matrix as N = [NR NO]^T, where NR is the subset of N containing
 	// the linearly independent rows, while NO contains the dependent rows.
-	gsl_matrix *S1 = reorder(Index,S);
+	gsl_matrix *S1 = reorder(Index,S,speciesOrder);
 
 	//Compute the independent species matrix
 	gsl_matrix *Nr = NR(S1);
@@ -381,7 +381,7 @@ gsl_vector *deprows(gsl_matrix *A)
 //
 // OUTPUT: Reordered stoichiometric matrix.
 
-gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1)
+gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 {
 	int L = I->size;
 	int M = A1->size1;
@@ -622,7 +622,7 @@ gsl_matrix *NR(gsl_matrix *A)
 // INPUT: Link matrix.
 // OUTPUT: Link-zero matrix.
 
-gsl_matrix *linkzero(gsl_matrix *L, SPECIES **speciesOrder)
+gsl_matrix *linkzero(gsl_matrix *L)
 {
 	int M = L->size1;//rows
 	int N = L->size2;//columns

@@ -760,13 +760,13 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
           speciesOrder[i] = speciesArray[i];
         }
         stoich_matrix = _GetStoichiometricMatrix(rec);
-        //printf("\nStoich = \n");
-	//disp_mat(stoich_matrix);
+        printf("\nStoich = \n");
+	disp_mat(stoich_matrix);
         L_matrix = conservation(stoich_matrix, speciesOrder);
-        Lo_matrix = linkzero(L_matrix, speciesOrder);
+        Lo_matrix = linkzero(L_matrix);
         G_matrix = gamma_matrix(Lo_matrix);
-        //printf("\nG = \n");
-	//disp_mat(G_matrix);
+        printf("\nG = \n");
+	disp_mat(G_matrix);
     }
 
     meanPrinter = rec->meanPrinter;
