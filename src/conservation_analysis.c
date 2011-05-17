@@ -320,14 +320,14 @@ gsl_vector *deprows(gsl_matrix *A)
 		for(j=0;j<i+1 ; j++)
 		{
 			//copy the first i rows of A to the tmp matrix to iterate through it and find the dep rows.
-		    printf("Before\n");
 			gsl_matrix_get_row (v, A, j);
 			gsl_matrix_set_row (tmp, j, v);
-			printf("After\n");
 		}
 		r = gsl_matrix_rank(tmp);
 
+		printf("Before\n");
 		gsl_vector_set(k, i, i+1-r); //row-rank
+		printf("After\n");
 		if(r<i+1)
 		{
 			int d = gsl_vector_get(k,i);
