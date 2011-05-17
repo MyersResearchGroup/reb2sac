@@ -325,11 +325,10 @@ gsl_vector *deprows(gsl_matrix *A)
 		}
 		r = gsl_matrix_rank(tmp);
 
-		printf("Before\n");
 		gsl_vector_set(k, i, i+1-r); //row-rank
-		printf("After\n");
 		if(r<i+1)
 		{
+		    printf("Before\n");
 			int d = gsl_vector_get(k,i);
 			int s = gsl_vector_get(k,i-1);
 			if(d>s)
@@ -342,6 +341,7 @@ gsl_vector *deprows(gsl_matrix *A)
 				// those that are of interest to us.
 				gsl_vector_set(index,i,-1.0);
 			}
+			printf("After\n");
 		}
 		else
 		{
