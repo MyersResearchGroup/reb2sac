@@ -328,7 +328,7 @@ gsl_vector *deprows(gsl_matrix *A)
 		gsl_vector_set(k, i, i+1-r); //row-rank
 		if(r<i+1)
 		{
-		    printf("%d \n", r);
+		    printf("r=%d i=%d \n", r, i);
 			int d = gsl_vector_get(k,i);
 			int s = gsl_vector_get(k,i-1);
 			printf("After\n");
