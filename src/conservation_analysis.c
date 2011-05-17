@@ -398,6 +398,9 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 		for(j=k-i;j<M-1;j++)
 		{
 			gsl_matrix_swap_rows(A, j, j+1);
+			SPECIES *species = speciesOrder[j];
+			speciesOrder[j] = speciesOrder[j+1];
+			speciesOrder[j+1] = species;
 		}
 	}
 
