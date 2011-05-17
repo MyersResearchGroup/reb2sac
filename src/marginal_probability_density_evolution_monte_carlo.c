@@ -762,11 +762,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         stoich_matrix = _GetStoichiometricMatrix(rec);
         printf("\nStoich = \n");
 	disp_mat(stoich_matrix);
-	printf("Got here First");
+	printf("Got here First\n");
 	    for (i = 0; i < size; i ++ ) {
 	        printf("%d \n", GetSpeciesNodeID(speciesOrder[i]));
 	    }
-	    printf("Got here second");
+	    printf("Got here second\n");
         L_matrix = conservation(stoich_matrix, speciesOrder);
         for (i = 0; i < size; i ++ ) {
               printf("%d \n", GetSpeciesNodeID(speciesOrder[i]));
