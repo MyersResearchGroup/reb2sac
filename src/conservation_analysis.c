@@ -384,18 +384,94 @@ gsl_vector *deprows(gsl_matrix *A)
 gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 {
 	int L = I->size;
-	int M = A1->size1;
-	int N = A1->size2;
-        int i;
-        int j;
+	int M = A1->size1; //number of rows
+	int N = A1->size2; //number of columns
 
 	gsl_matrix *A = gsl_matrix_alloc(M,N);
 	gsl_matrix_memcpy (A, A1); // Copies A1 onto A.
 
-	for(i=0;i<L;i++)
+	//=================================================================================================
+	// In this block of code we check for zero-rows in the stoichiometry matrix. If any,
+	// these rows are deleted from the stoichiometry matrix, then the matrix is reordered to have the
+	// independent rows and dependent rows organized as [NR NO].
+	// To delete the zero rows, we use a masking matrix E by which the stoichimery matrix is multiplied
+	// by to accomplish our goal of deleting zero rows (i.e., new_stoichiometry = E*Stoichimetry).
+
+	gsl_vector *tmp = gsl_vector_alloc(N);
+	int counter = 0;
+	//This for-loop counts how many zer-rows are there in matrix A (Stoichiometric matrix)
+	for(int i=0;i<M;i++)
+	{
+		gsl_matrix_get_row (tmp, A, i);
+
+		if(!gsl_vector_isnull(tmp))
+		{
+			counter++;
+		}
+	}
+
+	gsl_vector_free(tmp); //deallocate memory from the temporal vector "tmp"
+
+	if(counter != 0)
+	{
+
+		//Vector "non_zero_rows contain the index of the non-zero rows of the stoichiometric matrix
+		gsl_vector *non_zero_rows = gsl_vector_calloc(counter);
+		SPECIES **newSpeciesOrder = malloc(sizeof(SPECIES*)*counter);
+		gsl_vector * tmp = gsl_vector_alloc(N); //This vector will hold a row of A temporarily
+
+		int k = 0; //this this an counter
+
+		for(int i = 0;i<M;i++)
+		{
+			gsl_matrix_get_row (tmp, A, i);
+			if(!gsl_vector_isnull(tmp))
+			{
+				gsl_vector_set(non_zero_rows,k,i);
+				newSpeciesOrder[k] = speciesOrder[i];
+				k++;
+			}
+		}
+
+		gsl_matrix * E = gsl_matrix_calloc(counter,M);
+		//Now create the masking matrix to eliminate the zero rows from the stoichiometry matrix
+		for(int i = 0;i<counter;i++)
+		{
+			int column_index = gsl_vector_get(non_zero_rows,i);
+			gsl_matrix_set(E,i,column_index,1.0);
+		}
+
+		//Now multiply the masking matrix E by the stoichiometry matrix A: new_Stoich = E*S
+		gsl_matrix * new_Stoichiometry = gsl_matrix_alloc(counter,N);
+		gsl_linalg_matmult(E,A,new_Stoichiometry);
+
+		//Now reorder the new stoichiometry matrix and return that matrix.
+		for(int i=0;i<L;i++)
+		{
+			int k = gsl_vector_get(I,i);
+			for(int j=k-i;j<counter-1;j++)
+			{
+				gsl_matrix_swap_rows(new_Stoichiometry, j, j+1);
+				SPECIES *species = newSpeciesOrder[j];
+				newSpeciesOrder[j] = newSpeciesOrder[j+1];
+				newSpeciesOrder[j+1] = species;
+			}
+		}
+
+		gsl_vector_free(tmp);
+		gsl_vector_free(non_zero_rows);
+		gsl_matrix_free(E);
+		gsl_matrix_free(A);
+
+		speciesOrder = newSpeciesOrder;
+		return new_Stoichiometry;
+	}
+	//=================================================================================================
+
+	for(int i=0;i<L;i++)
 	{
 		int k = gsl_vector_get(I,i);
-		for(j=k-i;j<M-1;j++)
+		for(int j=k-i;j<M-1;j++)
 		{
 			gsl_matrix_swap_rows(A, j, j+1);
 			SPECIES *species = speciesOrder[j];
