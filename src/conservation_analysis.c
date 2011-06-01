@@ -470,10 +470,10 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 	}
 	//=================================================================================================
 
-	for(int i=0;i<L;i++)
+	for(i=0;i<L;i++)
 	{
 		int k = gsl_vector_get(I,i);
-		for(int j=k-i;j<M-1;j++)
+		for(j=k-i;j<M-1;j++)
 		{
 			gsl_matrix_swap_rows(A, j, j+1);
 			SPECIES *species = speciesOrder[j];

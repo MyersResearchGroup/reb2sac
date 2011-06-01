@@ -754,7 +754,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
 
-/*    if (useMP == 0) {
+    if (useMP == 0) {
         speciesOrder = malloc(sizeof(SPECIES*)*size);
         for (i = 0; i < size; i ++ ) {
           speciesOrder[i] = speciesArray[i];
@@ -773,7 +773,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         G_matrix = gamma_matrix(Lo_matrix);
         //printf("\nG = \n");
 	    //disp_mat(G_matrix);
-    } */
+    }
 
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
