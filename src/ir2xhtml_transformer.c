@@ -917,7 +917,7 @@ static RET_VAL _PrintCompartmentForXHTML( COMPARTMENT *compartment, FILE *file )
       fprintf( file, "%g",GetSizeInCompartment( compartment ) );
     }
     fprintf( file, REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT,
-	     empty, IsCompartmentConstant( compartment ) ? "True" : "False");
+	     units, IsCompartmentConstant( compartment ) ? "True" : "False");
     /*fprintf( file, REB2SAC_XHTML_END_COMPARTMENT_ENTRY_FORMAT,
       empty, outside, IsCompartmentConstant( compartment ) ? "True" : "False");*/
 
