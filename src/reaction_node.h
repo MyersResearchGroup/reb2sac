@@ -41,6 +41,7 @@ typedef struct {
     IR_NODE *(*Clone)( IR_NODE *node );    
     RET_VAL (*ReleaseResource)( IR_NODE *node );
     
+    STRING *compartment;
     BOOL isReversible;    
     BOOL fast;
     KINETIC_LAW *kineticLaw;
@@ -56,6 +57,8 @@ RET_VAL InitReactionNode( REACTION *reaction, char *name );
 STRING *GetReactionNodeID( REACTION *reaction );
 STRING *GetReactionNodeName( REACTION *reaction );
 RET_VAL SetReactionNodeName( REACTION *reaction, STRING *name );
+STRING *GetReactionNodeCompartment( REACTION *reaction );
+RET_VAL SetReactionNodeCompartment( REACTION *reaction, char *compartment );
 
 BOOL IsReactionReversibleInReactionNode( REACTION *reaction );
 BOOL IsReactionFastInReactionNode( REACTION *reaction );

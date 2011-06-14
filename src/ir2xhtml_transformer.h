@@ -304,13 +304,13 @@
 "" 
 
 #define REB2SAC_XHTML_START_REACTION_FORMAT \
-"<table border=\"2\"><tr><th>Reaction ID</th><th>Rev</th><th>Fast</th><th>Reactants</th><th>Products</th><th>Modifiers</th><th>Kinetic Law</th></tr>" NEW_LINE
+"<table border=\"2\"><tr><th>Reaction ID</th><th>Compartment</th><th>Rev</th><th>Fast</th><th>Reactants</th><th>Products</th><th>Modifiers</th><th>Kinetic Law</th></tr>" NEW_LINE
 
 #define REB2SAC_XHTML_END_REACTION_FORMAT \
 "</table>" NEW_LINE
 
 #define REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT \
-"<tr><td>%s</td><td>%s</td><td>%s</td><td>"
+"<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>"
 
 #define REB2SAC_XHTML_SEPARATOR_FORMAT \
 "</td><td>"
