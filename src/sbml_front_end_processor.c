@@ -1495,6 +1495,10 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
         END_FUNCTION("_CreateReactionNode", ret );
         return ret;   
     }    
+    if( IS_FAILED( ( ret = SetReactionNodeCompartment( reactionNode, Reaction_getCompartment( reaction ) ) ) ) ) {
+      END_FUNCTION("_CreateReactionNode", ret );
+      return ret;
+    }
 
     if( Reaction_getFast( reaction ) ) {
         TRACE_0("\tsetting reversible true");

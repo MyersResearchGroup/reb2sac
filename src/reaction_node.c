@@ -42,6 +42,7 @@ RET_VAL InitReactionNode( REACTION *reaction, char *name ) {
     reaction->GetType = _GetType;
     reaction->ReleaseResource = _ReleaseResource;
     reaction->count = 0;
+    reaction->compartment = NULL;
     
     END_FUNCTION("InitReactionNode", SUCCESS );
     return ret;    
@@ -85,6 +86,34 @@ RET_VAL SetReactionNodeName( REACTION *reaction, STRING *name ) {
     FreeString( &(reaction->name) );
     reaction->name = name;
     END_FUNCTION("SetReactionNodeName", SUCCESS );
+    return ret;
+}
+
+STRING *GetReactionNodeCompartment( REACTION *reaction ) {
+    START_FUNCTION("GetReactionNodeCompartment");
+    if( reaction == NULL ) {
+        END_FUNCTION("GetReactionNodeCompartment", FAILING );
+        return NULL;
+    }
+    END_FUNCTION("GetReactionNodeCompartment", SUCCESS );
+    return reaction->compartment;
+}
+
+RET_VAL SetReactionNodeCompartment( REACTION *reaction, char *compartment ) {
+   RET_VAL ret = SUCCESS;
+   STRING *compartmentStr = NULL;
+    
+    START_FUNCTION("SetReactionNodeCompartment");
+    if( reaction == NULL ) {
+        return ErrorReport( FAILING, "SetReactionNodeCompartment", "input reaction node is NULL" );
+    }
+    FreeString( &(reaction->compartment) );
+    if( ( compartmentStr = CreateString( compartment ) ) == NULL ) {
+        END_FUNCTION("SetReactionNodeCompartment", FAILING );
+        return FAILING;
+    }
+    reaction->compartment = compartmentStr;
+    END_FUNCTION("SetReactionNodeCompartment", SUCCESS );
     return ret;
 }
 

@@ -257,6 +257,7 @@ static RET_VAL _HandleReaction( BACK_END_PROCESSOR *backend, REACTION *reaction,
     START_FUNCTION("_HandleReaction");
 
     fprintf( file, REB2SAC_XHTML_START_REACTION_ENTRY_FORMAT, GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+	     GetCharArrayOfString( GetReactionNodeCompartment( reaction ) ),
 	     IsReactionReversibleInReactionNode( reaction ) ? "True" : "False",
 	     IsReactionFastInReactionNode( reaction ) ? "True" : "False");
     
