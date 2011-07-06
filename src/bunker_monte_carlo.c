@@ -39,7 +39,7 @@ static RET_VAL _FindNextReactionTime( BUNKER_MONTE_CARLO_RECORD *rec );
 static RET_VAL _FindNextReaction( BUNKER_MONTE_CARLO_RECORD *rec );
 static RET_VAL _Update( BUNKER_MONTE_CARLO_RECORD *rec );
 static RET_VAL _Print( BUNKER_MONTE_CARLO_RECORD *rec );
-static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec );
+static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( BUNKER_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( BUNKER_MONTE_CARLO_RECORD *rec );
