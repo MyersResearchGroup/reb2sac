@@ -19,6 +19,8 @@
  ***************************************************************************/
 #include <math.h>
 #include <float.h>
+#include "gsl/gsl_vector.h"
+#include "gsl/gsl_multiroots.h"
 #include "type1pili_gillespie_ci.h"
 #include "type_1_pili1_simulation_run_termination_decider.h"
 #include "confidence_interval_stop_rule.h"
@@ -41,6 +43,7 @@ static RET_VAL _FindNextReactionTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _FindNextReaction( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _Update( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _Print( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
+static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
@@ -449,6 +452,15 @@ static RET_VAL _CleanRecord( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
     }    
     fclose( file );
     
+    sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
+    if( ( file = fopen( filename, "w" ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CleanRecord", "could not create a statistics file" );
+    }
+    if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
+        return ret;
+    }
+    fclose( file );
+
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
     }
@@ -463,6 +475,104 @@ static RET_VAL _CleanRecord( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
     decider->Destroy( decider );
     
     return ret;            
+}
+
+static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD *rec, FILE *file) {
+	RET_VAL ret = SUCCESS;
+	double stoichiometry = 0;
+	UINT32 i = 0;
+	UINT32 j = 0;
+	UINT32 reactionsSize = rec->reactionsSize;
+	UINT32 speciesSize = rec->speciesSize;
+	REACTION *reaction = NULL;
+	REACTION **reactionArray = rec->reactionArray;
+	SPECIES *species = NULL;
+	SPECIES **speciesArray = rec->speciesArray;
+	REB2SAC_SYMBOL *speciesRef = NULL;
+	REB2SAC_SYMBOL *convFactor = NULL;
+	IR_EDGE *edge = NULL;
+	LINKED_LIST *edges = NULL;
+	gsl_matrix *delta_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
+	gsl_matrix *reactant_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
+
+	for (i = 0; i < reactionsSize; i++) {
+		for (j = 0; j < speciesSize; j++) {
+			gsl_matrix_set(delta_matrix, j, i, 0);
+			gsl_matrix_set(reactant_matrix, j, i, 0);
+		}
+	}
+
+	fprintf( file, "Reaction Rate Array:" NEW_LINE);
+
+	for (i = 0; i < reactionsSize; i++) {
+		reaction = reactionArray[i];
+		fprintf( file, "%d ", GetReactionRate(reaction));
+		edges = GetReactantEdges((IR_NODE*) reaction);
+		ResetCurrentElement(edges);
+		while ((edge = GetNextEdge(edges)) != NULL) {
+			speciesRef = GetSpeciesRefInIREdge(edge);
+			if (speciesRef) {
+				stoichiometry = GetCurrentRealValueInSymbol(speciesRef);
+			} else {
+				stoichiometry = GetStoichiometryInIREdge(edge);
+			}
+			species = GetSpeciesInIREdge(edge);
+			if ((convFactor = GetConversionFactorInSpeciesNode(species)) != NULL) {
+				stoichiometry *= GetCurrentRealValueInSymbol(convFactor);
+			}
+			if (HasBoundaryConditionInSpeciesNode(species))
+				continue;
+			for (j = 0; j < speciesSize; j++) {
+				if (species == speciesArray[j]) {
+					gsl_matrix_set(delta_matrix, j, i, gsl_matrix_get(delta_matrix, j, i) - stoichiometry);
+					gsl_matrix_set(reactant_matrix, j, i, gsl_matrix_get(reactant_matrix, j, i)+stoichiometry);
+				}
+			}
+		}
+		edges = GetProductEdges((IR_NODE*) reaction);
+		ResetCurrentElement(edges);
+		while ((edge = GetNextEdge(edges)) != NULL) {
+			speciesRef = GetSpeciesRefInIREdge(edge);
+			if (speciesRef) {
+				stoichiometry = GetCurrentRealValueInSymbol(speciesRef);
+			} else {
+				stoichiometry = GetStoichiometryInIREdge(edge);
+			}
+			species = GetSpeciesInIREdge(edge);
+			if ((convFactor = GetConversionFactorInSpeciesNode(species)) != NULL) {
+				stoichiometry *= GetCurrentRealValueInSymbol(convFactor);
+			}
+			if (HasBoundaryConditionInSpeciesNode(species))
+				continue;
+			for (j = 0; j < speciesSize; j++) {
+				if (species == speciesArray[j]) {
+					gsl_matrix_set(delta_matrix, j, i, gsl_matrix_get(delta_matrix, j, i) + stoichiometry);
+				}
+			}
+		}
+	}
+	fprintf( file, NEW_LINE);
+	fprintf( file, NEW_LINE);
+
+	fprintf( file, "Reactant Matrix:" NEW_LINE);
+	for (i = 0; i < reactionsSize; i++) {
+		for (j = 0; j < speciesSize; j++) {
+			fprintf( file, "%i ", gsl_matrix_get(reactant_matrix, j, i));
+		}
+		fprintf( file, NEW_LINE);
+	}
+
+	fprintf( file, NEW_LINE);
+
+	fprintf( file, "Delta Matrix:" NEW_LINE);
+	for (i = 0; i < reactionsSize; i++) {
+		for (j = 0; j < speciesSize; j++) {
+			fprintf(file, "%i ", gsl_matrix_get(delta_matrix, j, i));
+		}
+		fprintf(file, NEW_LINE);
+	}
+
+	return ret;
 }
 
 static BOOL _IsTerminationConditionMet( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
