@@ -19,6 +19,8 @@
  ***************************************************************************/
 #include <math.h>
 #include <float.h>
+#include "gsl/gsl_vector.h"
+#include "gsl/gsl_multiroots.h"
 #include "bunker_monte_carlo.h"
 
 static BOOL _IsModelConditionSatisfied( IR *ir );
