@@ -690,6 +690,8 @@ static RET_VAL _CleanSimulation( IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
 
 static RET_VAL _CleanRecord( IMPLICIT_GEAR1_SIMULATION_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
+    char filename[512];
+    FILE *file = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
 
