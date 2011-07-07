@@ -43,7 +43,7 @@ static RET_VAL _FindNextReactionTime( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
 static RET_VAL _FindNextReaction( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _Update( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _Print( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
-static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
+static RET_VAL _PrintStatistics( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec );
@@ -758,7 +758,7 @@ static RET_VAL _CleanRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     return ret;
 }
 
-static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD *rec, FILE *file) {
+static RET_VAL _PrintStatistics(NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;

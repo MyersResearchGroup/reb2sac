@@ -43,7 +43,7 @@ static RET_VAL _FindNextReactionTime( BUNKER_MONTE_CARLO_RECORD2 *rec );
 static RET_VAL _FindNextReaction( BUNKER_MONTE_CARLO_RECORD2 *rec );
 static RET_VAL _Update( BUNKER_MONTE_CARLO_RECORD2 *rec );
 static RET_VAL _Print( BUNKER_MONTE_CARLO_RECORD2 *rec );
-static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
+static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD2 *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( BUNKER_MONTE_CARLO_RECORD2 *rec );
 static RET_VAL _UpdateSpeciesValues( BUNKER_MONTE_CARLO_RECORD2 *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( BUNKER_MONTE_CARLO_RECORD2 *rec );
@@ -646,7 +646,7 @@ static RET_VAL _CleanRecord( BUNKER_MONTE_CARLO_RECORD2 *rec ) {
     return ret;            
 }
 
-static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD *rec, FILE *file) {
+static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD2 *rec, FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;

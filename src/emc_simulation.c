@@ -43,7 +43,7 @@ static RET_VAL _FindNextReactionTime( EMC_SIMULATION_RECORD *rec );
 static RET_VAL _FindNextReaction( EMC_SIMULATION_RECORD *rec );
 static RET_VAL _Update( EMC_SIMULATION_RECORD *rec );
 static RET_VAL _Print( EMC_SIMULATION_RECORD *rec );
-static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
+static RET_VAL _PrintStatistics( EMC_SIMULATION_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( EMC_SIMULATION_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( EMC_SIMULATION_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( EMC_SIMULATION_RECORD *rec );
@@ -753,7 +753,7 @@ static RET_VAL _CleanRecord( EMC_SIMULATION_RECORD *rec ) {
     return ret;
 }
 
-static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD *rec, FILE *file) {
+static RET_VAL _PrintStatistics(EMC_SIMULATION_RECORD *rec, FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;
