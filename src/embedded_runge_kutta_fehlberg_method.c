@@ -22,6 +22,8 @@
 #include "gsl/gsl_errno.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_odeiv.h"
+#include "gsl/gsl_vector.h"
+#include "gsl/gsl_multiroots.h"
 #include "embedded_runge_kutta_fehlberg_method.h"
 
 
@@ -39,6 +41,7 @@ static RET_VAL _CalculateReactionRates( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION
 static RET_VAL _CalculateReactionRate( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, REACTION *reaction );
 static int _Update( double t, const double y[], double f[], EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
 static RET_VAL _Print( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time );
+static RET_VAL _PrintStatistics( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, FILE *file);
 
 static double fireEvents( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time );
 static void fireEvent( EVENT *event, EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec );
@@ -689,6 +692,15 @@ static RET_VAL _CleanRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *re
     SIMULATION_PRINTER *printer = rec->printer;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
 
+    sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
+    if( ( file = fopen( filename, "w" ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CleanRecord", "could not create a statistics file" );
+    }
+    if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
+        return ret;
+    }
+    fclose( file );
+
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
     }
@@ -706,6 +718,104 @@ static RET_VAL _CleanRecord( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *re
     decider->Destroy( decider );
 
     return ret;
+}
+
+static RET_VAL _PrintStatistics(EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, FILE *file) {
+	RET_VAL ret = SUCCESS;
+	double stoichiometry = 0;
+	UINT32 i = 0;
+	UINT32 j = 0;
+	UINT32 reactionsSize = rec->reactionsSize;
+	UINT32 speciesSize = rec->speciesSize;
+	REACTION *reaction = NULL;
+	REACTION **reactionArray = rec->reactionArray;
+	SPECIES *species = NULL;
+	SPECIES **speciesArray = rec->speciesArray;
+	REB2SAC_SYMBOL *speciesRef = NULL;
+	REB2SAC_SYMBOL *convFactor = NULL;
+	IR_EDGE *edge = NULL;
+	LINKED_LIST *edges = NULL;
+	gsl_matrix *delta_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
+	gsl_matrix *reactant_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
+
+	for (i = 0; i < reactionsSize; i++) {
+		for (j = 0; j < speciesSize; j++) {
+			gsl_matrix_set(delta_matrix, j, i, 0);
+			gsl_matrix_set(reactant_matrix, j, i, 0);
+		}
+	}
+
+	fprintf( file, "Reaction Rate Array:" NEW_LINE);
+
+	for (i = 0; i < reactionsSize; i++) {
+		reaction = reactionArray[i];
+		fprintf( file, "%f ", GetReactionRate(reaction));
+		edges = GetReactantEdges((IR_NODE*) reaction);
+		ResetCurrentElement(edges);
+		while ((edge = GetNextEdge(edges)) != NULL) {
+			speciesRef = GetSpeciesRefInIREdge(edge);
+			if (speciesRef) {
+				stoichiometry = GetCurrentRealValueInSymbol(speciesRef);
+			} else {
+				stoichiometry = GetStoichiometryInIREdge(edge);
+			}
+			species = GetSpeciesInIREdge(edge);
+			if ((convFactor = GetConversionFactorInSpeciesNode(species)) != NULL) {
+				stoichiometry *= GetCurrentRealValueInSymbol(convFactor);
+			}
+			if (HasBoundaryConditionInSpeciesNode(species))
+				continue;
+			for (j = 0; j < speciesSize; j++) {
+				if (species == speciesArray[j]) {
+					gsl_matrix_set(delta_matrix, j, i, gsl_matrix_get(delta_matrix, j, i) - stoichiometry);
+					gsl_matrix_set(reactant_matrix, j, i, gsl_matrix_get(reactant_matrix, j, i)+stoichiometry);
+				}
+			}
+		}
+		edges = GetProductEdges((IR_NODE*) reaction);
+		ResetCurrentElement(edges);
+		while ((edge = GetNextEdge(edges)) != NULL) {
+			speciesRef = GetSpeciesRefInIREdge(edge);
+			if (speciesRef) {
+				stoichiometry = GetCurrentRealValueInSymbol(speciesRef);
+			} else {
+				stoichiometry = GetStoichiometryInIREdge(edge);
+			}
+			species = GetSpeciesInIREdge(edge);
+			if ((convFactor = GetConversionFactorInSpeciesNode(species)) != NULL) {
+				stoichiometry *= GetCurrentRealValueInSymbol(convFactor);
+			}
+			if (HasBoundaryConditionInSpeciesNode(species))
+				continue;
+			for (j = 0; j < speciesSize; j++) {
+				if (species == speciesArray[j]) {
+					gsl_matrix_set(delta_matrix, j, i, gsl_matrix_get(delta_matrix, j, i) + stoichiometry);
+				}
+			}
+		}
+	}
+	fprintf( file, NEW_LINE);
+	fprintf( file, NEW_LINE);
+
+	fprintf( file, "Reactant Matrix:" NEW_LINE);
+	for (i = 0; i < reactionsSize; i++) {
+		for (j = 0; j < speciesSize; j++) {
+			fprintf( file, "%f ", gsl_matrix_get(reactant_matrix, j, i));
+		}
+		fprintf( file, NEW_LINE);
+	}
+
+	fprintf( file, NEW_LINE);
+
+	fprintf( file, "Delta Matrix:" NEW_LINE);
+	for (i = 0; i < reactionsSize; i++) {
+		for (j = 0; j < speciesSize; j++) {
+			fprintf(file, "%f ", gsl_matrix_get(delta_matrix, j, i));
+		}
+		fprintf(file, NEW_LINE);
+	}
+
+	return ret;
 }
 
 static RET_VAL _Print( EMBEDDED_RUNGE_KUTTA_FEHLBERG_SIMULATION_RECORD *rec, double time ) {
