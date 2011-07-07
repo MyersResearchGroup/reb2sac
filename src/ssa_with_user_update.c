@@ -43,7 +43,7 @@ static RET_VAL _FindNextReactionTime( SSA_WITH_USER_UPDATE_RECORD *rec );
 static RET_VAL _FindNextReaction( SSA_WITH_USER_UPDATE_RECORD *rec );
 static RET_VAL _Update( SSA_WITH_USER_UPDATE_RECORD *rec );
 static RET_VAL _Print( SSA_WITH_USER_UPDATE_RECORD *rec );
-static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
+static RET_VAL _PrintStatistics( SSA_WITH_USER_UPDATE_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( SSA_WITH_USER_UPDATE_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( SSA_WITH_USER_UPDATE_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( SSA_WITH_USER_UPDATE_RECORD *rec );
@@ -650,7 +650,7 @@ static RET_VAL _CleanRecord( SSA_WITH_USER_UPDATE_RECORD *rec ) {
     return ret;            
 }
 
-static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD *rec, FILE *file) {
+static RET_VAL _PrintStatistics(SSA_WITH_USER_UPDATE_RECORD *rec, FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;

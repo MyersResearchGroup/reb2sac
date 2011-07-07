@@ -43,7 +43,7 @@ static RET_VAL _FindNextReactionTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _FindNextReaction( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _Update( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _Print( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
-static RET_VAL _PrintStatistics( BUNKER_MONTE_CARLO_RECORD *rec, FILE *file);
+static RET_VAL _PrintStatistics( TYPE1PILI_GILLESPIE_CI_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _UpdateSpeciesValues( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
 static RET_VAL _UpdateReactionRateUpdateTime( TYPE1PILI_GILLESPIE_CI_RECORD *rec );
@@ -477,7 +477,7 @@ static RET_VAL _CleanRecord( TYPE1PILI_GILLESPIE_CI_RECORD *rec ) {
     return ret;            
 }
 
-static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD *rec, FILE *file) {
+static RET_VAL _PrintStatistics(TYPE1PILI_GILLESPIE_CI_RECORD *rec, FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;
