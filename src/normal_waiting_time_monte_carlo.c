@@ -787,7 +787,7 @@ static RET_VAL _PrintStatistics(NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FIL
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%d ", GetReactionRate(reaction));
+		fprintf( file, "%f ", GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
@@ -838,7 +838,7 @@ static RET_VAL _PrintStatistics(NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FIL
 	fprintf( file, "Reactant Matrix:" NEW_LINE);
 	for (i = 0; i < reactionsSize; i++) {
 		for (j = 0; j < speciesSize; j++) {
-			fprintf( file, "%i ", gsl_matrix_get(reactant_matrix, j, i));
+			fprintf( file, "%f ", gsl_matrix_get(reactant_matrix, j, i));
 		}
 		fprintf( file, NEW_LINE);
 	}
@@ -848,7 +848,7 @@ static RET_VAL _PrintStatistics(NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FIL
 	fprintf( file, "Delta Matrix:" NEW_LINE);
 	for (i = 0; i < reactionsSize; i++) {
 		for (j = 0; j < speciesSize; j++) {
-			fprintf(file, "%i ", gsl_matrix_get(delta_matrix, j, i));
+			fprintf(file, "%f ", gsl_matrix_get(delta_matrix, j, i));
 		}
 		fprintf(file, NEW_LINE);
 	}
