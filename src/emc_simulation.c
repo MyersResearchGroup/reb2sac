@@ -782,7 +782,7 @@ static RET_VAL _PrintStatistics(EMC_SIMULATION_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%d ", GetReactionRate(reaction));
+		fprintf( file, "%f ", GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
@@ -833,7 +833,7 @@ static RET_VAL _PrintStatistics(EMC_SIMULATION_RECORD *rec, FILE *file) {
 	fprintf( file, "Reactant Matrix:" NEW_LINE);
 	for (i = 0; i < reactionsSize; i++) {
 		for (j = 0; j < speciesSize; j++) {
-			fprintf( file, "%i ", gsl_matrix_get(reactant_matrix, j, i));
+			fprintf( file, "%f ", gsl_matrix_get(reactant_matrix, j, i));
 		}
 		fprintf( file, NEW_LINE);
 	}
@@ -843,7 +843,7 @@ static RET_VAL _PrintStatistics(EMC_SIMULATION_RECORD *rec, FILE *file) {
 	fprintf( file, "Delta Matrix:" NEW_LINE);
 	for (i = 0; i < reactionsSize; i++) {
 		for (j = 0; j < speciesSize; j++) {
-			fprintf(file, "%i ", gsl_matrix_get(delta_matrix, j, i));
+			fprintf(file, "%f ", gsl_matrix_get(delta_matrix, j, i));
 		}
 		fprintf(file, NEW_LINE);
 	}
