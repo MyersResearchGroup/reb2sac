@@ -104,6 +104,19 @@ static RET_VAL _PutKeepFlagInSpeciesNodes( ABSTRACTION_ENGINE *abstractionEngine
     manager = abstractionEngine->manager;
     
     list = ir->GetListOfSpeciesNodes( ir );
+    ResetCurrentElement( list );
+    sprintf( buf, "%s%i", REB2SAC_INTERESTING_SPECIES_KEY_PREFIX, 1 );
+    if( ( interestingSpeciesName = properties->GetProperty( properties, buf ) ) != NULL ) {
+      while( ( species = (SPECIES*)GetNextFromLinkedList( list ) ) != NULL ) {
+	if( IS_FAILED( ( ret = SetPrintFlagInSpeciesNode( species, FALSE ) ) ) ) {
+	  END_FUNCTION("_PutKeepFlagInSpeciesNodes", ret );
+	  return ret;
+	}
+      }
+    } else {
+      END_FUNCTION("_PutKeepFlagInSpeciesNodes", SUCCESS );
+      return ret;
+    }
     
     for( num = 1; ; num++ ) {
         sprintf( buf, "%s%i", REB2SAC_INTERESTING_SPECIES_KEY_PREFIX, num );
@@ -119,6 +132,10 @@ static RET_VAL _PutKeepFlagInSpeciesNodes( ABSTRACTION_ENGINE *abstractionEngine
                     END_FUNCTION("_PutKeepFlagInSpeciesNodes", ret );
                     return ret;
                 }
+		if( IS_FAILED( ( ret = SetPrintFlagInSpeciesNode( species, TRUE ) ) ) ) {
+		  END_FUNCTION("_PutKeepFlagInSpeciesNodes", ret );
+		  return ret;
+		}
                 /* names may not be unique */
 #if 0            
                 break; 
@@ -356,12 +373,12 @@ static RET_VAL _Abstract( ABSTRACTION_ENGINE *abstractionEngine, IR *ir ) {
 #endif
 
 
-    if( IS_FAILED( ( ret = _PutKeepFlagInSpeciesNodes( abstractionEngine, ir ) ) ) ) {
+    if( IS_FAILED( ( ret = _PutPrintFlagInNodes( abstractionEngine, ir ) ) ) ) {
         END_FUNCTION("_Abstract", ret );
         return ret;
     }
 
-    if( IS_FAILED( ( ret = _PutPrintFlagInNodes( abstractionEngine, ir ) ) ) ) {
+    if( IS_FAILED( ( ret = _PutKeepFlagInSpeciesNodes( abstractionEngine, ir ) ) ) ) {
         END_FUNCTION("_Abstract", ret );
         return ret;
     }
