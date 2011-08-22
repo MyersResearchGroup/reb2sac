@@ -62,11 +62,11 @@ STRING *GetSpeciesNodeID( SPECIES *species ) {
         return NULL;
     }
     END_FUNCTION("GetSpeciesNodeID", SUCCESS );
-#ifdef NAME_FOR_ID
+    //#ifdef NAME_FOR_ID
     return species->name;
-#else 
-    return species->id;
-#endif
+    //#else 
+    //return species->id;
+    //#endif
 }
 
 STRING *GetSpeciesNodeName( SPECIES *species ) {        
