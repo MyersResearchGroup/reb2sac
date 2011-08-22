@@ -461,7 +461,6 @@ static RET_VAL _PrintFunctionForXHTML( FUNCTION_DEFINITION *function, FILE *file
       strcat( funcLabel, argument );
     }
     strcat( funcLabel, " )" );
-
     kineticLaw = GetFunctionInFunctionDefinition( function );
     if( IS_FAILED( ( ret = _PrintMathInXHTML( kineticLaw, funcLabel, file ) ) ) ) {
         END_FUNCTION("_PrintFunctionForXHTML", ret );
@@ -1091,9 +1090,9 @@ static RET_VAL _PrintMathInXHTML( KINETIC_LAW *kineticLaw, char * LHS, FILE *fil
     fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );
     fprintf( file, NEW_LINE );
     tabCount++;
-        
+
     if (LHS != NULL) {
-      fprintf( file, "%s = ",LHS);
+      fprintf( file, "<mi>%s = </mi>",LHS);
     }
     if( IS_FAILED( ( ret = kineticLaw->Accept( kineticLaw, &visitor ) ) ) ) {
         END_FUNCTION("_PrintKineticLawInXHTML", ret );
