@@ -840,6 +840,9 @@ static RET_VAL _PrintStatistics(MONTE_CARLO_RECORD *rec, FILE *file) {
 	REB2SAC_SYMBOL *convFactor = NULL;
 	IR_EDGE *edge = NULL;
 	LINKED_LIST *edges = NULL;
+
+	if ((speciesSize <= 0) || (reactionsSize <= 0)) return ret;
+
 	gsl_matrix *delta_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
 	gsl_matrix *reactant_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
 
