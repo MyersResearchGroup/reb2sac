@@ -133,20 +133,20 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
 //         /*this is not actually error*/
 //         SBMLDocument_printWarnings( doc, stderr );        
 //     }     
-    
-//     errorNum = SBMLDocument_getNumErrors( doc );
-//     if( errorNum > 0 ) {
-//         SBMLDocument_printErrors( doc, stderr );
-//         error = TRUE;         
-//     }
+    if (doc != NULL) {
+      errorNum = SBMLDocument_getNumErrors( doc );
+      if( errorNum > 0 ) {
+	SBMLDocument_printErrors( doc, stderr );
+	error = TRUE;         
+      }
+    }
 
 //     errorNum = SBMLDocument_getNumFatals( doc );
 //     if( errorNum > 0 ) {
 //         SBMLDocument_printFatals( doc, stderr );
 //         error = TRUE;
 //     }
-
-    if( error ) {
+    if( !doc || error ) {
         END_FUNCTION("_ParseSBML", FAILING );
         return ErrorReport( FAILING, "_ParseSBML", "input file error" );                                             
     }
