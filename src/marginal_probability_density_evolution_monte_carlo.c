@@ -713,6 +713,124 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     return ret;
 }
 
+// This function detects if at least one species bifurcated based on a specified threshold
+// value and returns the number of runs, the mean values and the mean paths that went to
+// bifurcated route. All this values are returned into the <birec> struct.
+// If no bifurcation happened, no memory is allocated and this struct is returned empty.
+// On the other hand, if a bifurcation happened, the memory allocated for each array must
+// be freed to avoid memory leaks
+
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, BIFURCATION_RECORD *birec) {
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    int k = 0;
+    double min_val = 0;
+    double max_val = 0;
+    double meanCluster1 = 0;
+    double meanCluster2 = 0;
+    double mpRuns_k_i = 0;
+    double min_dist1 = 0;
+    double min_dist2 = 0;
+    BOOL bifurcationHappened = false;
+    UINT32 size = rec->speciesSize;
+    UINT32 runs = rec->runs;
+
+    // Allocate memory for vector indicating which species bifurcated
+
+    if( ( birec->isBifurcated = (BOOL*)MALLOC( size * sizeof(BOOL) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for isBifurcated array" );
+    }
+
+    for (i = 0; i < size; i++) {
+        if (rec->newSpeciesMeans[i] != 0.0) {
+            if (rec->speciesSD[i] / rec->newSpeciesMeans[i] > BIFURCATION_THRESHOLD) {
+                bifurcationHappened = true;
+                birec->isBifurcated[i] = true;
+            }
+            else birec->isBifurcated[i] = false;
+        }
+    }
+
+    if (! bifurcationHappened) {
+        FREE( birec->isBifurcated );
+        return ret;
+    }
+
+    // If at least one species bifurcated, allocate memory and perform clustering analysis
+
+    if( ( birec->runsFirstCluster = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for runsFirstCluster array" );
+    }
+
+    if( ( birec->runsSecondCluster = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for runsSecondCluster array" );
+    }
+
+    if( ( birec->meansFirstCluster = (double*)MALLOC( size * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meansFirstCluster array" );
+    }
+
+    if( ( birec->meansSecondCluster = (double*)MALLOC( size * sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meansSecondCluster array" );
+    }
+
+    if( ( birec->meanPathCluster1 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster1 array" );
+    }
+
+    if( ( birec->meanPathCluster2 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster2 array" );
+    }
+
+    for (i = 0; i < size; i++) {
+
+        birec->runsFirstCluster[i] = 0;
+        birec->runsSecondCluster[i] = 0;
+
+        min_val = mpRuns[0][i];
+        max_val = mpRuns[0][i];
+
+        for (k = 1; k < runs; k++) {
+            mpRuns_k_i = mpRuns[k][i];
+            if ( min_val > mpRuns[k][i] ) min_val = mpRuns_k_i;
+            if ( max_val < mpRuns[k][i] ) max_val = mpRuns_k_i;
+        }
+
+        for (k = 0; k < runs; k++) {
+            mpRuns_k_i = mpRuns[k][i];
+            if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
+                birec->runsFirstCluster[i]++;
+                meanCluster1 += mpRuns_k_i;
+            } else {
+                birec->runsSecondCluster[i]++;
+                meanCluster2 += mpRuns_k_i;
+            }
+        }
+
+        meanCluster1 = meanCluster1 / birec->runsFirstCluster[i];
+	birec->meansFirstCluster[i] = meanCluster1;
+        meanCluster2 = meanCluster2 / birec->runsSecondCluster[i];
+	birec->meansSecondCluster[i] = meanCluster2;
+
+        min_dist1 = mpRuns[0][i] - meanCluster1;
+        min_dist2 = mpRuns[0][i] - meanCluster2;
+
+        for (k = 1; k < runs; k++) {
+            mpRuns_k_i = mpRuns[k][i];
+            if ( mpRuns_k_i - meanCluster1 < min_dist1 ) {
+                 min_dist1 = mpRuns_k_i - meanCluster1;
+                 birec->meanPathCluster1[i] = k;
+            }
+            if ( mpRuns_k_i - meanCluster2 < min_dist2 ) {
+                 min_dist2 = mpRuns_k_i - meanCluster2;
+                 birec->meanPathCluster2[i] = k;
+            }
+        }
+    }
+
+    return ret;
+}
+
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend) {
     RET_VAL ret = SUCCESS;
     int i = 0;
@@ -816,6 +934,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         }
     }
     while (rec->time < timeLimit) {
+
+        printf("Hi, rec->time is %f, timeLimit is %f\n", rec->time, timeLimit);
+        fflush(stdout);
+
+
         rec->time = time;
         if (minPrintInterval >= 0.0) {
             if (useMP == 3) {
@@ -892,6 +1015,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
 	rec->decider->timeLimit = end;
         decider = rec->decider;
         for (k = 1; k <= rec->runs; k++) {
+
             eventCounter = 0;
             rec->time = time;
             i = 0;
@@ -922,6 +1046,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             while (!(decider->IsTerminationConditionMet(decider, reaction, rec->time))) {
                 i++;
+
                 if (useMP == 2 || useMP == 3) {
                     maxTime = DBL_MAX;
                 } else {
@@ -997,7 +1122,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         break;
                     }
                 }
+
             }
+
             if (k == 1) {
                 for (l = 0; l < size; l++) {
                     species = speciesArray[l];
@@ -1026,6 +1153,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 mpTimes[k - 1] = rec->time;
             }
         }
+
         if (useMP != 3) {
             time = end;
         }

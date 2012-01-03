@@ -62,6 +62,23 @@ typedef struct {
     int useMP;
 } MPDE_MONTE_CARLO_RECORD;
 
+// This struct contains the vectors holding the number of runs that went into each
+// bifurcated path, as well as the mean value and mean path of each one
+
+typedef struct {
+    UINT32 *runsFirstCluster;
+    UINT32 *runsSecondCluster;
+    double *meansFirstCluster;
+    double *meansSecondCluster;
+    UINT32 *meanPathCluster1;
+    UINT32 *meanPathCluster2;
+    BOOL *isBifurcated;
+} BIFURCATION_RECORD;
+
+#define BIFURCATION_THRESHOLD 0.2
+#define false 0
+#define true 1
+
 END_C_NAMESPACE
 
 #endif
