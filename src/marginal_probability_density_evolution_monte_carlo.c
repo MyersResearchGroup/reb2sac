@@ -752,6 +752,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     // Allocate memory for vector indicating which species bifurcated
 
+    printf("Got here.\n");
+    fflush(stdout);
+
     if( ( birec->isBifurcated = (BOOL*)MALLOC( size * sizeof(BOOL) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for isBifurcated array" );
     }
