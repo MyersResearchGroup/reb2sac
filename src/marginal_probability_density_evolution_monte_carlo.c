@@ -803,14 +803,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         birec->runsFirstCluster[i] = 0;
         birec->runsSecondCluster[i] = 0;
 
-        printf("Before\n");
-        fflush(stdout);
-
         min_val = mpRuns[0][i];
         max_val = mpRuns[0][i];
-
-        printf("After\n");
-        fflush(stdout);
 
         for (k = 1; k < runs; k++) {
             mpRuns_k_i = mpRuns[k][i];
