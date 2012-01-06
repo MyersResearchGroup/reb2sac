@@ -750,6 +750,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     UINT32 size = rec->speciesSize;
     UINT32 runs = rec->runs;
 
+    printf("Got here.\n");
+    fflush(stdout);
+
     // Allocate memory for vector indicating which species bifurcated
 
     if( ( birec->isBifurcated = (BOOL*)MALLOC( size * sizeof(BOOL) ) ) == NULL ) {
@@ -1245,9 +1248,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        printf("Got here.\n");
-        fflush(stdout);
-        //_CheckBifurcation(rec, &mpRuns[0][0], birec);
+        _CheckBifurcation(rec, &mpRuns[0][0], birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
