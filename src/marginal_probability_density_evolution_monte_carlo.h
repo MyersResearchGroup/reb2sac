@@ -36,7 +36,8 @@ typedef struct {
     SIMULATION_PRINTER *meanPrinter;
     SIMULATION_PRINTER *varPrinter;
     SIMULATION_PRINTER *sdPrinter;
-    SIMULATION_PRINTER *mpPrinter;
+    SIMULATION_PRINTER *mpPrinter1;
+    SIMULATION_PRINTER *mpPrinter2;
     SIMULATION_RUN_TERMINATION_DECIDER *decider;
     double time;
     double t;
