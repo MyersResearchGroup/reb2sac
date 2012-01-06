@@ -888,15 +888,15 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *L_matrix = NULL;
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
-    BIFURCATION_RECORD birec;
+    BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(size * sizeof(BIFURCATION_RECORD));
 
-    birec.runsFirstCluster = NULL;
-    birec.runsSecondCluster = NULL;
-    birec.meansFirstCluster = NULL;
-    birec.meansSecondCluster = NULL;
-    birec.meanPathCluster1 = NULL;
-    birec.meanPathCluster2 = NULL;
-    birec.isBifurcated = NULL;
+    birec->runsFirstCluster = NULL;
+    birec->runsSecondCluster = NULL;
+    birec->meansFirstCluster = NULL;
+    birec->meansSecondCluster = NULL;
+    birec->meanPathCluster1 = NULL;
+    birec->meanPathCluster2 = NULL;
+    birec->isBifurcated = NULL;
 
     //if (useMP == 0) {
     //    speciesOrder = malloc(sizeof(SPECIES*)*size);
@@ -1049,7 +1049,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->time = time;
             i = 0;
             if (useMP != 0) {
-            	if (birec.isBifurcated == NULL) {
+            	if (birec->isBifurcated == NULL) {
             		for (l = 0; l < size; l++) {
                     	species = speciesArray[l];
                     	newValue = mpRun[l];
@@ -1057,17 +1057,17 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 	}
             	}
             	else {
-            		if (k <= birec.runsFirstCluster) {
+            		if (k <= birec->runsFirstCluster) {
             			for (l = 0; l < size; l++) {
             				species = speciesArray[l];
-            			    newValue = birec.meanPathCluster1[l];
+            			    newValue = birec->meanPathCluster1[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
             		}
             		else {
             			for (l = 0; l < size; l++) {
             			    species = speciesArray[l];
-            			    newValue = birec.meanPathCluster2[l];
+            			    newValue = birec->meanPathCluster2[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
             		}
@@ -1237,14 +1237,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 rec->time = time;
             }
         }
-        FREE(birec.runsFirstCluster);
-        FREE(birec.runsSecondCluster);
-        FREE(birec.meansFirstCluster);
-        FREE(birec.meansSecondCluster);
-        FREE(birec.meanPathCluster1);
-        FREE(birec.meanPathCluster2);
-        FREE(birec.isBifurcated);
-        //_CheckBifurcation(rec, &mpRuns, &birec);
+        FREE(birec->runsFirstCluster);
+        FREE(birec->runsSecondCluster);
+        FREE(birec->meansFirstCluster);
+        FREE(birec->meansSecondCluster);
+        FREE(birec->meanPathCluster1);
+        FREE(birec->meanPathCluster2);
+        FREE(birec->isBifurcated);
+        _CheckBifurcation(rec, &(mpRuns[0][0]), birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
@@ -1278,7 +1278,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 return ret;
             }
             if (useMP != 0) {
-            	if (birec.isBifurcated == NULL) {
+            	if (birec->isBifurcated == NULL) {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
             			SetAmountInSpeciesNode(species, mpRun[l]);
@@ -1293,14 +1293,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             	else {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
-            		    SetAmountInSpeciesNode(species, birec.meanPathCluster1[l]);
+            		    SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
             		}
             		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
             		    return ret;
             		}
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
-            			SetAmountInSpeciesNode(species, birec.meanPathCluster2[l]);
+            			SetAmountInSpeciesNode(species, birec->meanPathCluster2[l]);
             		}
             		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
             			return ret;
@@ -1374,6 +1374,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = _CleanSimulation(rec)))) {
         return ret;
     }
+    FREE(birec->runsFirstCluster);
+    FREE(birec->runsSecondCluster);
+    FREE(birec->meansFirstCluster);
+    FREE(birec->meansSecondCluster);
+    FREE(birec->meanPathCluster1);
+    FREE(birec->meanPathCluster2);
+    FREE(birec->isBifurcated);
+    FREE(birec);
 
     return ret;
 }
