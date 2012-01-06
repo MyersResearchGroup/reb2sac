@@ -750,16 +750,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     UINT32 size = rec->speciesSize;
     UINT32 runs = rec->runs;
 
-    printf("1\n");
-    fflush(stdout);
-
     // Allocate memory for vector indicating which species bifurcated
 
     if( ( birec->isBifurcated = (BOOL*)MALLOC( size * sizeof(BOOL) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for isBifurcated array" );
     }
-    printf("2\n");
-    fflush(stdout);
 
     for (i = 0; i < size; i++) {
         if (rec->newSpeciesMeans[i] != 0.0) {
@@ -770,17 +765,12 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
             else birec->isBifurcated[i] = false;
         }
     }
-    printf("3\n");
-    fflush(stdout);
 
     if (! bifurcationHappened) {
         FREE( birec->isBifurcated );
         birec->isBifurcated = NULL;
         return ret;
     }
-
-    printf("4\n");
-    fflush(stdout);
 
     // If at least one species bifurcated, allocate memory and perform clustering analysis
 
@@ -808,16 +798,19 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster2 array" );
     }
 
-    printf("5\n");
-    fflush(stdout);
-
     for (i = 0; i < size; i++) {
 
         birec->runsFirstCluster[i] = 0;
         birec->runsSecondCluster[i] = 0;
 
+        printf("Before\n");
+        fflush(stdout);
+
         min_val = mpRuns[0][i];
         max_val = mpRuns[0][i];
+
+        printf("After\n");
+        fflush(stdout);
 
         for (k = 1; k < runs; k++) {
             mpRuns_k_i = mpRuns[k][i];
@@ -856,9 +849,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
             }
         }
     }
-
-    printf("6\n");
-    fflush(stdout);
 
     return ret;
 }
