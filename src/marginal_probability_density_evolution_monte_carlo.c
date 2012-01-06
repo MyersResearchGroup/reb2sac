@@ -752,9 +752,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     // Allocate memory for vector indicating which species bifurcated
 
-    printf("Got here.\n");
-    fflush(stdout);
-
     if( ( birec->isBifurcated = (BOOL*)MALLOC( size * sizeof(BOOL) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for isBifurcated array" );
     }
@@ -1248,7 +1245,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        _CheckBifurcation(rec, &mpRuns[0][0], birec);
+        printf("Got here.\n");
+        fflush(stdout);
+        //_CheckBifurcation(rec, &mpRuns[0][0], birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
