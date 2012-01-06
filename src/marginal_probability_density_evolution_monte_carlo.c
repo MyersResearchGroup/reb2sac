@@ -447,12 +447,17 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
         return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
     }
     if (backend->useMP != 0) {
-        if ((rec->mpPrinter = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+        if ((rec->mpPrinter1 = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
                 rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
-            return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
+            return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
         }
+        if ((rec->mpPrinter2 = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+                rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
+            return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
+                }
     } else {
-        rec->mpPrinter = NULL;
+        rec->mpPrinter1 = NULL;
+        rec->mpPrinter2 = NULL;
     }
 
     if ((constraintManager = ir->GetConstraintManager(ir)) == NULL) {
@@ -538,7 +543,8 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     char meanFilenameStem[512];
     char varFilenameStem[512];
     char sdFilenameStem[512];
-    char mpFilenameStem[512];
+    char mpFilenameStem1[512];
+    char mpFilenameStem2[512];
     double amount = 0;
     double param = 0;
     UINT32 i = 0;
@@ -551,7 +557,8 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
-    SIMULATION_PRINTER *mpPrinter = rec->mpPrinter;
+    SIMULATION_PRINTER *mpPrinter1 = rec->mpPrinter1;
+    SIMULATION_PRINTER *mpPrinter2 = rec->mpPrinter2;
     double compSize = 0.0;
     COMPARTMENT *compartment = NULL;
     COMPARTMENT **compartmentArray = rec->compartmentArray;
@@ -563,7 +570,8 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     sprintf(meanFilenameStem, "%s%cmean", rec->outDir, FILE_SEPARATOR);
     sprintf(varFilenameStem, "%s%cvariance", rec->outDir, FILE_SEPARATOR);
     sprintf(sdFilenameStem, "%s%cstandard_deviation", rec->outDir, FILE_SEPARATOR);
-    sprintf(mpFilenameStem, "%s%crun-1", rec->outDir, FILE_SEPARATOR);
+    sprintf(mpFilenameStem1, "%s%crun-1", rec->outDir, FILE_SEPARATOR);
+    sprintf(mpFilenameStem2, "%s%crun-2", rec->outDir, FILE_SEPARATOR);
     if (IS_FAILED((ret = meanPrinter->PrintStart(meanPrinter, meanFilenameStem)))) {
         return ret;
     }
@@ -583,10 +591,16 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
         return ret;
     }
     if (rec->useMP != 0) {
-        if (IS_FAILED((ret = mpPrinter->PrintStart(mpPrinter, mpFilenameStem)))) {
+        if (IS_FAILED((ret = mpPrinter1->PrintStart(mpPrinter1, mpFilenameStem1)))) {
             return ret;
         }
-        if (IS_FAILED((ret = mpPrinter->PrintHeader(mpPrinter)))) {
+        if (IS_FAILED((ret = mpPrinter1->PrintHeader(mpPrinter1)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = mpPrinter2->PrintStart(mpPrinter2, mpFilenameStem2)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = mpPrinter2->PrintHeader(mpPrinter2)))) {
             return ret;
         }
     }
@@ -753,6 +767,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     if (! bifurcationHappened) {
         FREE( birec->isBifurcated );
+        birec->isBifurcated = NULL;
         return ret;
     }
 
@@ -846,7 +861,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     SIMULATION_PRINTER *meanPrinter = NULL;
     SIMULATION_PRINTER *varPrinter = NULL;
     SIMULATION_PRINTER *sdPrinter = NULL;
-    SIMULATION_PRINTER *mpPrinter = NULL;
+    SIMULATION_PRINTER *mpPrinter1 = NULL;
+    SIMULATION_PRINTER *mpPrinter2 = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
     int nextEvent = 0;
     double nextEventTime = 0;
@@ -872,6 +888,15 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *L_matrix = NULL;
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
+    BIFURCATION_RECORD birec;
+
+    birec.runsFirstCluster = NULL;
+    birec.runsSecondCluster = NULL;
+    birec.meansFirstCluster = NULL;
+    birec.meansSecondCluster = NULL;
+    birec.meanPathCluster1 = NULL;
+    birec.meanPathCluster2 = NULL;
+    birec.isBifurcated = NULL;
 
     //if (useMP == 0) {
     //    speciesOrder = malloc(sizeof(SPECIES*)*size);
@@ -898,7 +923,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     varPrinter = rec->varPrinter;
     sdPrinter = rec->sdPrinter;
     if (useMP != 0) {
-        mpPrinter = rec->mpPrinter;
+        mpPrinter1 = rec->mpPrinter1;
+        mpPrinter2 = rec->mpPrinter2;
     }
     rec->currentStep++;
     if (minPrintInterval >= 0.0) {
@@ -910,7 +936,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         return ret;
     }
     if (useMP != 0) {
-        if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
+        if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
             return ret;
         }
     }
@@ -935,8 +964,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     }
     while (rec->time < timeLimit) {
 
-        printf("Hi, rec->time is %f, timeLimit is %f\n", rec->time, timeLimit);
-        fflush(stdout);
+       // printf("Hi, rec->time is %f, timeLimit is %f\n", rec->time, timeLimit);
+       // fflush(stdout);
 
 
         rec->time = time;
@@ -1020,11 +1049,29 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->time = time;
             i = 0;
             if (useMP != 0) {
-                for (l = 0; l < size; l++) {
-                    species = speciesArray[l];
-                    newValue = mpRun[l];
-                    SetAmountInSpeciesNode(species, newValue);
-                }
+            	if (birec.isBifurcated == NULL) {
+            		for (l = 0; l < size; l++) {
+                    	species = speciesArray[l];
+                    	newValue = mpRun[l];
+                    	SetAmountInSpeciesNode(species, newValue);
+                	}
+            	}
+            	else {
+            		if (k <= birec.runsFirstCluster) {
+            			for (l = 0; l < size; l++) {
+            				species = speciesArray[l];
+            			    newValue = birec.meanPathCluster1[l];
+            			    SetAmountInSpeciesNode(species, newValue);
+            			}
+            		}
+            		else {
+            			for (l = 0; l < size; l++) {
+            			    species = speciesArray[l];
+            			    newValue = birec.meanPathCluster2[l];
+            			    SetAmountInSpeciesNode(species, newValue);
+            			}
+            		}
+            	}
             } else {
                 do {
                     for (l = 0; l < size; l++) {
@@ -1190,6 +1237,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 rec->time = time;
             }
         }
+        FREE(birec.runsFirstCluster);
+        FREE(birec.runsSecondCluster);
+        FREE(birec.meansFirstCluster);
+        FREE(birec.meansSecondCluster);
+        FREE(birec.meanPathCluster1);
+        FREE(birec.meanPathCluster2);
+        FREE(birec.isBifurcated);
+        _CheckBifurcation(rec, &mpRuns, &birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
@@ -1223,13 +1278,34 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 return ret;
             }
             if (useMP != 0) {
-                for (l = 0; l < size; l++) {
-                    species = speciesArray[l];
-                    SetAmountInSpeciesNode(species, mpRun[l]);
-                }
-                if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
-                    return ret;
-                }
+            	if (birec.isBifurcated == NULL) {
+            		for (l = 0; l < size; l++) {
+            			species = speciesArray[l];
+            			SetAmountInSpeciesNode(species, mpRun[l]);
+            		}
+            		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
+            			return ret;
+            		}
+            		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
+            			return ret;
+            		}
+            	}
+            	else {
+            		for (l = 0; l < size; l++) {
+            			species = speciesArray[l];
+            		    SetAmountInSpeciesNode(species, birec.meanPathCluster1[l]);
+            		}
+            		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
+            		    return ret;
+            		}
+            		for (l = 0; l < size; l++) {
+            			species = speciesArray[l];
+            			SetAmountInSpeciesNode(species, birec.meanPathCluster2[l]);
+            		}
+            		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
+            			return ret;
+            		}
+            	}
             }
         }
     }
@@ -1265,7 +1341,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             species = speciesArray[l];
             SetAmountInSpeciesNode(species, mpRun[l]);
         }
-        if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, rec->time)))) {
+        if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
             return ret;
         }
     }
@@ -1284,7 +1363,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         return ret;
     }
     if (useMP != 0) {
-        if (IS_FAILED((ret = mpPrinter->PrintEnd(mpPrinter)))) {
+        if (IS_FAILED((ret = mpPrinter1->PrintEnd(mpPrinter1)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = mpPrinter2->PrintEnd(mpPrinter2)))) {
             return ret;
         }
     }
@@ -1317,7 +1399,8 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
-    SIMULATION_PRINTER *mpPrinter = rec->mpPrinter;
+    SIMULATION_PRINTER *mpPrinter1 = rec->mpPrinter1;
+    SIMULATION_PRINTER *mpPrinter2 = rec->mpPrinter2;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = rec->decider;
 
     sprintf(filename, "%s%csim-rep.txt", rec->outDir, FILE_SEPARATOR);
@@ -1370,7 +1453,8 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     varPrinter->Destroy(varPrinter);
     sdPrinter->Destroy(sdPrinter);
     if (rec->useMP != 0) {
-        mpPrinter->Destroy(mpPrinter);
+        mpPrinter1->Destroy(mpPrinter1);
+        mpPrinter2->Destroy(mpPrinter2);
     }
     decider->Destroy(decider);
 
@@ -1691,7 +1775,8 @@ static RET_VAL _Print(MPDE_MONTE_CARLO_RECORD *rec) {
     SIMULATION_PRINTER *meanPrinter = rec->meanPrinter;
     SIMULATION_PRINTER *varPrinter = rec->varPrinter;
     SIMULATION_PRINTER *sdPrinter = rec->sdPrinter;
-    SIMULATION_PRINTER *mpPrinter = rec->mpPrinter;
+    SIMULATION_PRINTER *mpPrinter1 = rec->mpPrinter1;
+    SIMULATION_PRINTER *mpPrinter2 = rec->mpPrinter2;
 
     while ((nextPrintTime < time) && (nextPrintTime < rec->timeLimit)) {
         if (nextPrintTime > 0)
@@ -1706,7 +1791,10 @@ static RET_VAL _Print(MPDE_MONTE_CARLO_RECORD *rec) {
             return ret;
         }
         if (rec->useMP != 0) {
-            if (IS_FAILED((ret = mpPrinter->PrintValues(mpPrinter, nextPrintTime)))) {
+            if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, nextPrintTime)))) {
+                return ret;
+            }
+            if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, nextPrintTime)))) {
                 return ret;
             }
         }
