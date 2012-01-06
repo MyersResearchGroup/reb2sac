@@ -897,9 +897,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *G_matrix = NULL;
     BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
 
-    mpRuns = new double* [rec->runs];
+    mpRuns = (double*)MALLOC(rec->runs * sizeof(double));
     for (i = 0 ; i < rec->runs; i ++) {
-    	mpRuns[i] = new double[size];
+    	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
     }
     birec->runsFirstCluster = NULL;
     birec->runsSecondCluster = NULL;
