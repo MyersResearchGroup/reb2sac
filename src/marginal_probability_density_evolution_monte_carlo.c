@@ -857,6 +857,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         }
     }
 
+    printf("6\n");
+    fflush(stdout);
+
     return ret;
 }
 
