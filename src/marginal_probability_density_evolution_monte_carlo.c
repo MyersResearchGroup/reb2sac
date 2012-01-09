@@ -891,16 +891,16 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *G_matrix = NULL;
     BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
 
-    mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
+    mpRuns = MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
-    	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
+    	mpRuns[i] = MALLOC(size * sizeof(double));
     	for (j = 0 ; j < size; j ++) {
     		mpRuns[i][j] = 0;
     		printf("%d ", mpRuns[i][j]);
     	}
-    	printf("/n");
+    	printf("\n");
     }
-    printf("/n");
+    printf("\n");
     fflush(stdout);
     birec->runsFirstCluster = NULL;
     birec->runsSecondCluster = NULL;
