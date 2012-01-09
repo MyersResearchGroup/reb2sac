@@ -1187,7 +1187,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesVariances[l] = 0;
                     if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
-                        printf("%d ", mpRuns[k - 1][l]);
+                        printf("%d(%d) ", mpRuns[k - 1][l], GetAmountInSpeciesNode(species));
                     }
                 }
                 printf("\n");
@@ -1204,7 +1204,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesVariances[l] = newVary;
                     if (useMP != 0) {
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
-                        printf("%d ", mpRuns[k - 1][l]);
+                        printf("%d(%d) ", mpRuns[k - 1][l], GetAmountInSpeciesNode(species));
                     }
                 }
                 printf("\n");
