@@ -1272,7 +1272,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             }
             printf("\n");
         }
-        _CheckBifurcation(rec, mpRuns, birec);
+        _CheckBifurcation(rec, &mpRuns, birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
