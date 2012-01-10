@@ -899,33 +899,33 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     birec->meanPathCluster2 = NULL;
     birec->isBifurcated = NULL;
 
-    if (useMP == 0) {
-        speciesOrder = malloc(sizeof(SPECIES*)*size);
-        for (i = 0; i < size; i ++ ) {
-        	speciesOrder[i] = speciesArray[i];
-        }
-        stoich_matrix = _GetStoichiometricMatrix(rec);
-        printf("\nStoich = \n");
-	    disp_mat(stoich_matrix);
-	    printf("\n");
-	    for (i = 0; i < size; i ++ ) {
-	    	printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
-	    }
-	    printf("\n\n");
-        L_matrix = conservation(stoich_matrix, speciesOrder);
-        for (i = 0; i < size; i ++ ) {
-        	printf("%d ", GetSpeciesNodeID(speciesArray[i]));
-        }
-        printf("\n");
-        for (i = 0; i < size; i ++ ) {
-            printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
-         }
-        printf("\n");
-        Lo_matrix = linkzero(L_matrix);
-        G_matrix = gamma_matrix(Lo_matrix);
-        printf("\nG = \n");
-	    disp_mat(G_matrix);
-    }
+//    if (useMP == 0) {
+//        speciesOrder = malloc(sizeof(SPECIES*)*size);
+//        for (i = 0; i < size; i ++ ) {
+//        	speciesOrder[i] = speciesArray[i];
+//        }
+//        stoich_matrix = _GetStoichiometricMatrix(rec);
+//        printf("\nStoich = \n");
+//	    disp_mat(stoich_matrix);
+//	    printf("\n");
+//	    for (i = 0; i < size; i ++ ) {
+//	    	printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
+//	    }
+//	    printf("\n\n");
+//        L_matrix = conservation(stoich_matrix, speciesOrder);
+//        for (i = 0; i < size; i ++ ) {
+//        	printf("%d ", GetSpeciesNodeID(speciesArray[i]));
+//        }
+//        printf("\n");
+//        for (i = 0; i < size; i ++ ) {
+//            printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
+//         }
+//        printf("\n");
+//        Lo_matrix = linkzero(L_matrix);
+//        G_matrix = gamma_matrix(Lo_matrix);
+//        printf("\nG = \n");
+//	    disp_mat(G_matrix);
+//    }
 
     meanPrinter = rec->meanPrinter;
     varPrinter = rec->varPrinter;
