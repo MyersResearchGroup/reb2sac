@@ -902,12 +902,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (useMP == 0) {
         speciesOrder = malloc(sizeof(SPECIES*)*size);
         for (i = 0; i < size; i ++ ) {
-        	if (i == 0) {
-        		speciesOrder[size - 1] = speciesArray[i];
-        	}
-        	else {
-        		speciesOrder[i-1] = speciesArray[i];
-        	}
+        	speciesOrder[i] = speciesArray[i];
         }
         stoich_matrix = _GetStoichiometricMatrix(rec);
         printf("\nStoich = \n");
