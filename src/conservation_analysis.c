@@ -424,7 +424,7 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 
 		int k = 0; //this this an counter
 
-		for(i = 0;i<M-1;i++)
+		for(i = 0;i<M;i++)
 		{
 			gsl_matrix_get_row (tmp, A, i);
 			if(!gsl_vector_isnull(tmp))
