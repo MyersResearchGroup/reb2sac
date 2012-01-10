@@ -961,7 +961,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (useMP != 0) {
         for (l = 0; l < size; l++) {
             mpRun[l] = rec->oldSpeciesMeans[l];
-        }
+        }size
     }
     while (rec->time < timeLimit) {
 
@@ -1251,7 +1251,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        //_CheckBifurcation(rec, &(mpRuns[0][0]), birec);
+        double (*matrix_ptr)[size] = mpRuns;
+        _CheckBifurcation(rec, matrix_ptr, birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
