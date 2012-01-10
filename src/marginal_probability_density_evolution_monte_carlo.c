@@ -800,7 +800,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     for (k = 0; k < runs; k++) {
     	for (i = 0; i < size; i++) {
-    		printf("%4.2f ", mpRuns[k][i]);
+    		printf("%4.2f ", &mpRuns[k][i]);
     	}
     	printf("\n");
     }
