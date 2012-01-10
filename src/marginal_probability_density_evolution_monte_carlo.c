@@ -961,7 +961,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (useMP != 0) {
         for (l = 0; l < size; l++) {
             mpRun[l] = rec->oldSpeciesMeans[l];
-        }size
+        }
     }
     while (rec->time < timeLimit) {
 
