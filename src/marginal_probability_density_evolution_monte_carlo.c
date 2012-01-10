@@ -879,7 +879,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double distance;
     double newDistance;
     int index;
-    double **mpRuns;
+    double mpRuns[rec->runs][size];
     double mpTimes[rec->runs];
     double n;
     int eventCounter = 0;
@@ -891,17 +891,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *G_matrix = NULL;
     BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
 
-    mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
-    for (i = 0 ; i < rec->runs; i ++) {
-    	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
-    	for (j = 0 ; j < size; j ++) {
-    		*(mpRuns + (i * size) + j) = 0;
-    		printf("%d ", mpRuns[i][j]);
-    	}
-    	printf("\n");
-    }
-    printf("\n");
-    fflush(stdout);
     birec->runsFirstCluster = NULL;
     birec->runsSecondCluster = NULL;
     birec->meansFirstCluster = NULL;
@@ -1262,7 +1251,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        _CheckBifurcation(rec, mpRuns, birec);
+        _CheckBifurcation(rec, &(mpRuns[0][0]), birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
@@ -1392,10 +1381,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = _CleanSimulation(rec)))) {
         return ret;
     }
-    for (i = 0 ; i < rec->runs; i ++) {
-    	FREE(mpRuns[i]);
-    }
-    FREE(mpRuns);
     FREE(birec->runsFirstCluster);
     FREE(birec->runsSecondCluster);
     FREE(birec->meansFirstCluster);
