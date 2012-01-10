@@ -434,7 +434,6 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 				k++;
 			}
 		}
-		speciesOrder = &newSpeciesOrder;
 
 		gsl_matrix * E = gsl_matrix_calloc(counter,M);
 		//Now create the masking matrix to eliminate the zero rows from the stoichiometry matrix
@@ -455,9 +454,9 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 			for(j=k-i;j<counter-1;j++)
 			{
 				gsl_matrix_swap_rows(new_Stoichiometry, j, j+1);
-				SPECIES *species = speciesOrder[j];
-				speciesOrder[j] = speciesOrder[j+1];
-				speciesOrder[j+1] = species;
+				SPECIES *species = newSpeciesOrder[j];
+				newSpeciesOrder[j] = newSpeciesOrder[j+1];
+				newSpeciesOrder[j+1] = species;
 			}
 		}
 
@@ -466,6 +465,7 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 		gsl_matrix_free(E);
 		gsl_matrix_free(A);
 
+		speciesOrder = newSpeciesOrder;
 		return new_Stoichiometry;
 	}
 	//=================================================================================================
