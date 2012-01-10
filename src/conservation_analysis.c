@@ -430,7 +430,7 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 			if(!gsl_vector_isnull(tmp))
 			{
 				gsl_vector_set(non_zero_rows,k,i);
-				newSpeciesOrder[k] = speciesOrder[i];
+				newSpeciesOrder[k] = &speciesOrder[i];
 				k++;
 			}
 		}
@@ -454,8 +454,8 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 			for(j=k-i;j<counter-1;j++)
 			{
 				gsl_matrix_swap_rows(new_Stoichiometry, j, j+1);
-				SPECIES *species = newSpeciesOrder[j];
-				newSpeciesOrder[j] = newSpeciesOrder[j+1];
+				SPECIES *species = &newSpeciesOrder[j];
+				newSpeciesOrder[j] = &newSpeciesOrder[j+1];
 				newSpeciesOrder[j+1] = species;
 			}
 		}
