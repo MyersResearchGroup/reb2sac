@@ -1265,6 +1265,12 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
+        for (k = 0; k < rec->runs; k++) {
+            for (i = 0; i < size; i++) {
+            	printf("%d ", mpRuns[k][i]);
+            }
+            printf("\n");
+        }
         _CheckBifurcation(rec, &mpRuns[0][0], birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
