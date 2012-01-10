@@ -798,10 +798,21 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double *mpRuns, B
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster2 array" );
     }
 
+    for (k = 0; k < runs; k++) {
+    	for (i = 0; i < size; i++) {
+    		printf("%d ", mpRuns[k * size + i]);
+    	}
+    	printf("\n");
+    }
+
     for (i = 0; i < size; i++) {
 
         birec->runsFirstCluster[i] = 0;
         birec->runsSecondCluster[i] = 0;
+
+        for (k = 0; k < runs; k++) {
+        	printf("%d ", mpRuns[k * size + i]);
+        }
 
         min_val = mpRuns[0 * size + i];
         max_val = mpRuns[0 * size + i];
