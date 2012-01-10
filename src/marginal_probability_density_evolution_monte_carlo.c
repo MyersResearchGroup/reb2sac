@@ -800,7 +800,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     for (k = 0; k < runs; k++) {
     	for (i = 0; i < size; i++) {
-    		printf("%d ", mpRuns[k][i]);
+    		printf("%f ", mpRuns[k][i]);
     	}
     	printf("\n");
     }
@@ -809,10 +809,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
         birec->runsFirstCluster[i] = 0;
         birec->runsSecondCluster[i] = 0;
-
-        for (k = 0; k < runs; k++) {
-        	printf("%d ", mpRuns[k][i]);
-        }
 
         min_val = mpRuns[0][i];
         max_val = mpRuns[0][i];
@@ -1267,7 +1263,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->isBifurcated);
         for (k = 0; k < rec->runs; k++) {
             for (i = 0; i < size; i++) {
-            	printf("%d(%d) ", mpRuns[k][i], mpRun[i]);
+            	printf("%f(%f) ", mpRuns[k][i], mpRun[i]);
             }
             printf("\n");
         }
