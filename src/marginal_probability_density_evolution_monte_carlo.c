@@ -735,7 +735,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 // On the other hand, if a bifurcation happened, the memory allocated for each array must
 // be freed to avoid memory leaks
 
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double mpRuns[][], BIFURCATION_RECORD *birec) {
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double *mpRuns, BIFURCATION_RECORD *birec) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
@@ -803,17 +803,17 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double mpRuns[][]
         birec->runsFirstCluster[i] = 0;
         birec->runsSecondCluster[i] = 0;
 
-        min_val = mpRuns[0][i];
-        max_val = mpRuns[0][i];
+        min_val = mpRuns[0 + i * size];
+        max_val = mpRuns[0 + i * size];
 
         for (k = 1; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k][i];
-            if ( min_val > mpRuns[k][i] ) min_val = mpRuns_k_i;
-            if ( max_val < mpRuns[k][i] ) max_val = mpRuns_k_i;
+            mpRuns_k_i = mpRuns[k + i * size];
+            if ( min_val > mpRuns[k + i * size] ) min_val = mpRuns_k_i;
+            if ( max_val < mpRuns[k + i * size] ) max_val = mpRuns_k_i;
         }
 
         for (k = 0; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k][i];
+            mpRuns_k_i = mpRuns[k + i * size];
             if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
                 birec->runsFirstCluster[i]++;
                 meanCluster1 += mpRuns_k_i;
@@ -828,11 +828,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double mpRuns[][]
         meanCluster2 = meanCluster2 / birec->runsSecondCluster[i];
 	birec->meansSecondCluster[i] = meanCluster2;
 
-        min_dist1 = mpRuns[0][i] - meanCluster1;
-        min_dist2 = mpRuns[0][i] - meanCluster2;
+        min_dist1 = mpRuns[0 + i * size] - meanCluster1;
+        min_dist2 = mpRuns[0 + i * size] - meanCluster2;
 
         for (k = 1; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k][i];
+            mpRuns_k_i = mpRuns[k + i * size];
             if ( mpRuns_k_i - meanCluster1 < min_dist1 ) {
                  min_dist1 = mpRuns_k_i - meanCluster1;
                  birec->meanPathCluster1[i] = k;
@@ -1251,7 +1251,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        _CheckBifurcation(rec, mpRuns, birec);
+        _CheckBifurcation(rec, &mpRuns[0][0], birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
