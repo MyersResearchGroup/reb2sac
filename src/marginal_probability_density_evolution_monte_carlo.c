@@ -10,7 +10,7 @@ static BOOL _IsModelConditionSatisfied(IR *ir);
 static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir);
 static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum);
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend);
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, BIFURCATION_RECORD *birec);
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, boolean useMP, BIFURCATION_RECORD *birec);
 
 static RET_VAL _CleanSimulation(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec);
@@ -735,7 +735,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 // On the other hand, if a bifurcation happened, the memory allocated for each array must
 // be freed to avoid memory leaks
 
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, BIFURCATION_RECORD *birec) {
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, boolean useMP, BIFURCATION_RECORD *birec) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
@@ -890,7 +890,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double newDistance;
     int index;
     double **mpRuns;
-    double mpTimes[rec->runs];
+    double *mpTimes;
     double n;
     int eventCounter = 0;
     int maxEvents = ceil(rec->timeStep);
@@ -905,6 +905,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     for (i = 0 ; i < rec->runs; i ++) {
     	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
     }
+    mpTimes = (double*)MALLOC(rec->runs * sizeof(double));
     birec->runsFirstCluster = NULL;
     birec->runsSecondCluster = NULL;
     birec->meansFirstCluster = NULL;
@@ -1276,7 +1277,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             printf("\n");
         }
         printf("\n");
-        _CheckBifurcation(rec, mpRuns, birec);
+        _CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
@@ -1406,6 +1407,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = _CleanSimulation(rec)))) {
         return ret;
     }
+    for (i = 0 ; i < rec->runs; i ++) {
+    	FREE(mpRuns[i]);
+    }
+    FREE(mpRuns);
+    FREE(mpTimes);
     FREE(birec->runsFirstCluster);
     FREE(birec->runsSecondCluster);
     FREE(birec->meansFirstCluster);
