@@ -909,14 +909,12 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
 	    disp_mat(stoich_matrix);
 	    printf("\n");
 	    for (i = 0; i < size; i ++ ) {
-	        printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
-	        printf("%d ", GetSpeciesNodeName(speciesOrder[i]));
+	        printf("%d ", speciesOrder[i]);
 	    }
 	    printf("\n\n");
         L_matrix = conservation(stoich_matrix, speciesOrder);
         for (i = 0; i < size; i ++ ) {
-            printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
-            printf("%d ", GetSpeciesNodeName(speciesOrder[i]));
+            printf("%d ", speciesOrder[i]);
          }
         printf("\n");
         Lo_matrix = linkzero(L_matrix);
