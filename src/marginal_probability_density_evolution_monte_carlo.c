@@ -1251,7 +1251,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        double (*matrix_ptr)[size] = mpRuns;
+        double ***matrix_ptr = &mpRuns;
         _CheckBifurcation(rec, matrix_ptr, birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
