@@ -879,7 +879,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double distance;
     double newDistance;
     int index;
-    double **mpRuns;
+    double mat[rec->runs][size];
     double mpTimes[rec->runs];
     double n;
     int eventCounter = 0;
@@ -890,13 +890,18 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
     BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
+    double *aux[rec->runs];
+    double **mpRuns;
 
-    mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
+    mpRuns = (double **)aux;
+    for (i = 0 ; i < rec->runs ; i++) {
+        aux[i] = (double *)mat + i * n;
+    }
+
     for (i = 0 ; i < rec->runs; i ++) {
-    	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
     	for (j = 0 ; j < size; j ++) {
-    		&mpRuns[i][j] = 0;
-    		printf("%d(%d) ", &mpRuns[i][j]);
+    		mpRuns[i][j] = 0;
+    		printf("%d ", mpRuns[i][j]);
     	}
     	printf("\n");
     }
@@ -1392,10 +1397,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     if (IS_FAILED((ret = _CleanSimulation(rec)))) {
         return ret;
     }
-    for (i = 0 ; i < rec->runs; i ++) {
-    	FREE(mpRuns[i]);
-    }
-    FREE(mpRuns);
     FREE(birec->runsFirstCluster);
     FREE(birec->runsSecondCluster);
     FREE(birec->meansFirstCluster);
