@@ -803,17 +803,17 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double *mpRuns, B
         birec->runsFirstCluster[i] = 0;
         birec->runsSecondCluster[i] = 0;
 
-        min_val = mpRuns[0 + i * size];
-        max_val = mpRuns[0 + i * size];
+        min_val = mpRuns[0 * size + i];
+        max_val = mpRuns[0 * size + i];
 
         for (k = 1; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k + i * size];
-            if ( min_val > mpRuns[k + i * size] ) min_val = mpRuns_k_i;
-            if ( max_val < mpRuns[k + i * size] ) max_val = mpRuns_k_i;
+            mpRuns_k_i = mpRuns[k * size + i];
+            if ( min_val > mpRuns[k * size + i] ) min_val = mpRuns_k_i;
+            if ( max_val < mpRuns[k * size + i] ) max_val = mpRuns_k_i;
         }
 
         for (k = 0; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k + i * size];
+            mpRuns_k_i = mpRuns[k * size + i];
             if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
                 birec->runsFirstCluster[i]++;
                 meanCluster1 += mpRuns_k_i;
@@ -828,11 +828,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double *mpRuns, B
         meanCluster2 = meanCluster2 / birec->runsSecondCluster[i];
 	birec->meansSecondCluster[i] = meanCluster2;
 
-        min_dist1 = mpRuns[0 + i * size] - meanCluster1;
-        min_dist2 = mpRuns[0 + i * size] - meanCluster2;
+        min_dist1 = mpRuns[0 * size + i] - meanCluster1;
+        min_dist2 = mpRuns[0 * size + i] - meanCluster2;
 
         for (k = 1; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k + i * size];
+            mpRuns_k_i = mpRuns[k * size + i];
             if ( mpRuns_k_i - meanCluster1 < min_dist1 ) {
                  min_dist1 = mpRuns_k_i - meanCluster1;
                  birec->meanPathCluster1[i] = k;
