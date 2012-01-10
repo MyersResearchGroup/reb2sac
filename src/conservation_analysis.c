@@ -465,6 +465,7 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 		gsl_matrix_free(E);
 		gsl_matrix_free(A);
 
+		free(speciesOrder);
 		speciesOrder = newSpeciesOrder;
 		return new_Stoichiometry;
 	}
@@ -655,7 +656,7 @@ gsl_matrix *gsl_matrix_pinv(gsl_matrix *A)
 		gsl_matrix_free(UT);
 		gsl_matrix_free(tmp_S);
 		gsl_vector_free(S);
-		gsl_vector_free(work);
+		gsl_vector_free(work);printf("\n");
 
 		return PinvT;
 	}
