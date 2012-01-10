@@ -1267,7 +1267,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->isBifurcated);
         for (k = 0; k < rec->runs; k++) {
             for (i = 0; i < size; i++) {
-            	printf("%d ", mpRuns[k][i]);
+            	printf("%d(%d) ", mpRuns[k][i], &mpRuns[k][i]);
             }
             printf("\n");
         }
