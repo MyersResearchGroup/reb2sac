@@ -10,7 +10,7 @@ static BOOL _IsModelConditionSatisfied(IR *ir);
 static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir);
 static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum);
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend);
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, BIFURCATION_RECORD *birec);
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double *mpRuns, BIFURCATION_RECORD *birec);
 
 static RET_VAL _CleanSimulation(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec);
