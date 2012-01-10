@@ -895,7 +895,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     for (i = 0 ; i < rec->runs; i ++) {
     	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
     	for (j = 0 ; j < size; j ++) {
-    		**mpRuns[i][j] = 0;
+    		*mpRuns[i][j] = 0;
     		printf("%d ", mpRuns[i][j]);
     	}
     	printf("\n");
