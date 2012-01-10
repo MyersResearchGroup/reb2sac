@@ -735,7 +735,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 // On the other hand, if a bifurcation happened, the memory allocated for each array must
 // be freed to avoid memory leaks
 
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, BIFURCATION_RECORD *birec) {
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double mpRuns[][], BIFURCATION_RECORD *birec) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
@@ -1251,8 +1251,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
-        double **matrix_ptr = &mpRuns[0][0];
-        _CheckBifurcation(rec, matrix_ptr, birec);
+        _CheckBifurcation(rec, mpRuns, birec);
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
