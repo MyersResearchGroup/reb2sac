@@ -434,8 +434,7 @@ gsl_matrix *reorder(gsl_vector *I, gsl_matrix *A1, SPECIES **speciesOrder)
 				k++;
 			}
 		}
-		free(speciesOrder);
-		speciesOrder = newSpeciesOrder;
+		speciesOrder = &newSpeciesOrder;
 
 		gsl_matrix * E = gsl_matrix_calloc(counter,M);
 		//Now create the masking matrix to eliminate the zero rows from the stoichiometry matrix
