@@ -887,7 +887,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double distance;
     double newDistance;
     int index;
-    double **mpRuns;
+    double ***mpRuns;
     double mpTimes[rec->runs];
     double n;
     int eventCounter = 0;
@@ -899,9 +899,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *G_matrix = NULL;
     BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
 
-    mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
+    mpRuns = (double***)MALLOC(sizeof(double**));
+    &mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
-    	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
+    	&mpRuns[i] = (double*)MALLOC(size * sizeof(double));
     }
     birec->runsFirstCluster = NULL;
     birec->runsSecondCluster = NULL;
@@ -1198,7 +1199,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     rec->newSpeciesMeans[l] = GetAmountInSpeciesNode(species);
                     rec->newSpeciesVariances[l] = 0;
                     if (useMP != 0) {
-                        mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                        &mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
                 printf("\n");
@@ -1214,7 +1215,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                             * (GetAmountInSpeciesNode(species) - old)) / (k - 1);
                     rec->newSpeciesVariances[l] = newVary;
                     if (useMP != 0) {
-                        mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
+                        &mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
             }
@@ -1238,7 +1239,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             for (k = 0; k < rec->runs; k++) {
                 newDistance = 0;
                 for (l = 0; l < size; l++) {
-                    newDistance += pow(mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
+                    newDistance += pow(&mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
                 }
                 if (useMP == 3) {
                     newDistance += pow(mpTimes[k] - time, 2);
@@ -1252,7 +1253,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 }
             }
             for (l = 0; l < size; l++) {
-                mpRun[l] = mpRuns[index][l];
+                mpRun[l] = &mpRuns[index][l];
             }
             if (useMP == 3) {
                 time = mpTimes[index];
@@ -1268,7 +1269,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->isBifurcated);
         for (k = 0; k < rec->runs; k++) {
             for (i = 0; i < size; i++) {
-            	printf("%4.2f ", mpRuns[k][i]);
+            	printf("%4.2f ", &mpRuns[k][i]);
             }
             printf("\n");
         }
