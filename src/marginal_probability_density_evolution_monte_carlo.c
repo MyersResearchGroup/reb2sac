@@ -1169,14 +1169,14 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->time = time;
             i = 0;
             if (useMP != 0) {
-            	if (birec->isBifurcated == NULL) {
+            	if (!useBifur) {
             		for (l = 0; l < size; l++) {
                     	species = speciesArray[l];
                     	newValue = mpRun[l];
                     	SetAmountInSpeciesNode(species, newValue);
                 	}
             	}
-            	else if (useBifur) {
+            	else if (birec->isBifurcated != NULL) {
             		if (k <= birec->runsFirstCluster) {
             			for (l = 0; l < size; l++) {
             				species = speciesArray[l];
@@ -1408,7 +1408,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 return ret;
             }
             if (useMP != 0) {
-            	if (birec->isBifurcated == NULL) {
+            	if (!useBifur) {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
             			SetAmountInSpeciesNode(species, mpRun[l]);
@@ -1417,7 +1417,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			return ret;
             		}
             	}
-            	else if (useBifur) {
+            	else if (birec->isBifurcated != NULL) {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
             		    SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
@@ -1470,7 +1470,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         return ret;
     }
     if (useMP != 0) {
-    	if (birec->isBifurcated == NULL) {
+    	if (!useBifur) {
     		for (l = 0; l < size; l++) {
     			species = speciesArray[l];
     			SetAmountInSpeciesNode(species, mpRun[l]);
@@ -1479,7 +1479,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     			return ret;
     		}
     	}
-    	else if (useBifur) {
+    	else if (birec->isBifurcated == NULL) {
     		for (l = 0; l < size; l++) {
     			species = speciesArray[l];
     			SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
@@ -1529,14 +1529,16 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     }
     FREE(mpRuns);
     FREE(mpTimes);
-    FREE(birec->runsFirstCluster);
-    FREE(birec->runsSecondCluster);
-    FREE(birec->meansFirstCluster);
-    FREE(birec->meansSecondCluster);
-    FREE(birec->meanPathCluster1);
-    FREE(birec->meanPathCluster2);
-    FREE(birec->isBifurcated);
-    FREE(birec);
+    if (useBifur) {
+    	FREE(birec->runsFirstCluster);
+    	FREE(birec->runsSecondCluster);
+    	FREE(birec->meansFirstCluster);
+    	FREE(birec->meansSecondCluster);
+    	FREE(birec->meanPathCluster1);
+    	FREE(birec->meanPathCluster2);
+    	FREE(birec->isBifurcated);
+    	FREE(birec);
+    }
 
     return ret;
 }
