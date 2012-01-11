@@ -61,6 +61,7 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, I
 
     runs = rec.runs;
     rec.useMP = backend->useMP;
+    rec.useBifur = backend->useBifur;
     //for( i = 1; i <= runs; i++ ) {
     SeedRandomNumberGenerators(rec.seed);
     rec.seed = GetNextUniformRandomNumber(0, RAND_MAX);
@@ -452,10 +453,12 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
                 rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
             return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
         }
-        if ((rec->mpPrinter2 = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
-                rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
-            return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
-                }
+        if (backend->useBifur) {
+        	if ((rec->mpPrinter2 = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
+        			rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
+        		return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
+        	}
+        }
     } else {
         rec->mpPrinter1 = NULL;
         rec->mpPrinter2 = NULL;
@@ -598,11 +601,13 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
         if (IS_FAILED((ret = mpPrinter1->PrintHeader(mpPrinter1)))) {
             return ret;
         }
-        if (IS_FAILED((ret = mpPrinter2->PrintStart(mpPrinter2, mpFilenameStem2)))) {
-            return ret;
-        }
-        if (IS_FAILED((ret = mpPrinter2->PrintHeader(mpPrinter2)))) {
-            return ret;
+        if (rec->useBifur) {
+        	if (IS_FAILED((ret = mpPrinter2->PrintStart(mpPrinter2, mpFilenameStem2)))) {
+        		return ret;
+        	}
+        	if (IS_FAILED((ret = mpPrinter2->PrintHeader(mpPrinter2)))) {
+        		return ret;
+        	}
         }
     }
     rec->time = 0.0;
@@ -969,6 +974,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double end;
     double newValue;
     int useMP = rec->useMP;
+    BOOL useBifur = rec->useBifur;
     double mpRun[size];
     double distance;
     double newDistance;
@@ -983,20 +989,23 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *L_matrix = NULL;
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
-    BIFURCATION_RECORD *birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
+    BIFURCATION_RECORD *birec = NULL;
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
     	mpRuns[i] = (double*)MALLOC(size * sizeof(double));
     }
     mpTimes = (double*)MALLOC(rec->runs * sizeof(double));
-    birec->runsFirstCluster = NULL;
-    birec->runsSecondCluster = NULL;
-    birec->meansFirstCluster = NULL;
-    birec->meansSecondCluster = NULL;
-    birec->meanPathCluster1 = NULL;
-    birec->meanPathCluster2 = NULL;
-    birec->isBifurcated = NULL;
+    if (useBifur) {
+    	birec = (BIFURCATION_RECORD*)MALLOC(sizeof(BIFURCATION_RECORD));
+    	birec->runsFirstCluster = NULL;
+    	birec->runsSecondCluster = NULL;
+    	birec->meansFirstCluster = NULL;
+    	birec->meansSecondCluster = NULL;
+    	birec->meanPathCluster1 = NULL;
+    	birec->meanPathCluster2 = NULL;
+    	birec->isBifurcated = NULL;
+    }
 
 //    if (useMP == 0) {
 //        speciesOrder = malloc(sizeof(SPECIES*)*size);
@@ -1031,7 +1040,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     sdPrinter = rec->sdPrinter;
     if (useMP != 0) {
         mpPrinter1 = rec->mpPrinter1;
-        mpPrinter2 = rec->mpPrinter2;
+        if (useBifur) {
+        	mpPrinter2 = rec->mpPrinter2;
+        }
     }
     rec->currentStep++;
     if (minPrintInterval >= 0.0) {
@@ -1046,8 +1057,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
             return ret;
         }
-        if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
-            return ret;
+        if (useBifur) {
+        	if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
+        		return ret;
+        	}
         }
     }
     for (l = 0; l < size; l++) {
@@ -1163,7 +1176,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     	SetAmountInSpeciesNode(species, newValue);
                 	}
             	}
-            	else {
+            	else if (useBifur) {
             		if (k <= birec->runsFirstCluster) {
             			for (l = 0; l < size; l++) {
             				species = speciesArray[l];
@@ -1352,14 +1365,16 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 rec->time = time;
             }
         }
-        FREE(birec->runsFirstCluster);
-        FREE(birec->runsSecondCluster);
-        FREE(birec->meansFirstCluster);
-        FREE(birec->meansSecondCluster);
-        FREE(birec->meanPathCluster1);
-        FREE(birec->meanPathCluster2);
-        FREE(birec->isBifurcated);
-        _CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec);
+        if (useBifur) {
+        	FREE(birec->runsFirstCluster);
+        	FREE(birec->runsSecondCluster);
+        	FREE(birec->meansFirstCluster);
+        	FREE(birec->meansSecondCluster);
+        	FREE(birec->meanPathCluster1);
+        	FREE(birec->meanPathCluster2);
+        	FREE(birec->isBifurcated);
+        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec);
+        }
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
                 nextPrintTime += minPrintInterval;
@@ -1401,11 +1416,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
             			return ret;
             		}
-            		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
-            			return ret;
-            		}
             	}
-            	else {
+            	else if (useBifur) {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
             		    SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
@@ -1458,16 +1470,31 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         return ret;
     }
     if (useMP != 0) {
-        for (l = 0; l < size; l++) {
-            species = speciesArray[l];
-            SetAmountInSpeciesNode(species, mpRun[l]);
-        }
-        if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
-            return ret;
-        }
-        if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
-            return ret;
-        }
+    	if (birec->isBifurcated == NULL) {
+    		for (l = 0; l < size; l++) {
+    			species = speciesArray[l];
+    			SetAmountInSpeciesNode(species, mpRun[l]);
+    		}
+    		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
+    			return ret;
+    		}
+    	}
+    	else if (useBifur) {
+    		for (l = 0; l < size; l++) {
+    			species = speciesArray[l];
+    			SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
+    		}
+    		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
+    			return ret;
+    		}
+    		for (l = 0; l < size; l++) {
+    			species = speciesArray[l];
+    			SetAmountInSpeciesNode(species, birec->meanPathCluster2[l]);
+    		}
+    		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
+    			return ret;
+    		}
+    	}
     }
     /*
      if( IS_FAILED( ( ret = printer->PrintValues( printer, rec->time ) ) ) ) {
@@ -1487,8 +1514,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         if (IS_FAILED((ret = mpPrinter1->PrintEnd(mpPrinter1)))) {
             return ret;
         }
-        if (IS_FAILED((ret = mpPrinter2->PrintEnd(mpPrinter2)))) {
-            return ret;
+        if (useBifur) {
+        	if (IS_FAILED((ret = mpPrinter2->PrintEnd(mpPrinter2)))) {
+        		return ret;
+        	}
         }
     }
 
@@ -1588,7 +1617,9 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     sdPrinter->Destroy(sdPrinter);
     if (rec->useMP != 0) {
         mpPrinter1->Destroy(mpPrinter1);
-        mpPrinter2->Destroy(mpPrinter2);
+        if (rec->useBifur) {
+        	mpPrinter2->Destroy(mpPrinter2);
+        }
     }
     decider->Destroy(decider);
 
@@ -1928,8 +1959,10 @@ static RET_VAL _Print(MPDE_MONTE_CARLO_RECORD *rec) {
             if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, nextPrintTime)))) {
                 return ret;
             }
-            if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, nextPrintTime)))) {
-                return ret;
+            if (rec->useBifur) {
+            	if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, nextPrintTime)))) {
+            		return ret;
+            	}
             }
         }
         nextPrintTime += printInterval;

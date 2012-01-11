@@ -49,6 +49,7 @@ struct _BACK_END_PROCESSOR {
     RET_VAL (*Process)( BACK_END_PROCESSOR *backend, IR *ir );
     RET_VAL (*Close)( BACK_END_PROCESSOR *backend );
     int useMP;
+    BOOL useBifur;
 };
 
 typedef struct {
