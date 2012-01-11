@@ -739,6 +739,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
+    int l = 0;
     double min_val = 0;
     double max_val = 0;
     double meanCluster1 = 0;
@@ -746,8 +747,14 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     double mpRuns_k_i = 0;
     double min_dist1 = 0;
     double min_dist2 = 0;
+    double newDistance1 = 0;
+    double newDistance2 = 0;
+    int index1 = 0;
+    int index2 = 0;
     double timesFirstCluster = 0;
     double timesSecondCluster = 0;
+    double meanTimeFirstCluster = 0;
+    double meanTimeSecondCluster = 0;
     double mpTimes_k = 0;
     BOOL bifurcationHappened = false;
     UINT32 size = rec->speciesSize;
@@ -793,11 +800,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meansSecondCluster array" );
     }
 
-    if( ( birec->meanPathCluster1 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+    if( ( birec->meanPathCluster1 = (double*)MALLOC( size * sizeof(double) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster1 array" );
     }
 
-    if( ( birec->meanPathCluster2 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+    if( ( birec->meanPathCluster2 = (double*)MALLOC( size * sizeof(double) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster2 array" );
     }
 
@@ -826,22 +833,24 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	}
 
     	meanCluster1 = meanCluster1 / timesFirstCluster;
+    	meanTimeFirstCluster = meanCluster1;
     	meanCluster2 = meanCluster2 / timesSecondCluster;
+    	meanTimeSecondCluster = meanCluster2;
 
-    	min_dist1 = mpTimes[0] - meanCluster1;
-    	min_dist2 = mpTimes[0] - meanCluster2;
-
-    	for (k = 1; k < runs; k++) {
-    		mpTimes_k = mpTimes[k];
-    		if ( mpTimes_k - meanCluster1 < min_dist1 ) {
-    			min_dist1 = mpTimes_k - meanCluster1;
-    			birec->timeFirstCluster = k;
-    		}
-    		if ( mpTimes_k - meanCluster2 < min_dist2 ) {
-    			min_dist2 = mpTimes_k - meanCluster2;
-    			birec->timeSecondCluster = k;
-    		}
-    	}
+//    	min_dist1 = mpTimes[0] - meanCluster1;
+//    	min_dist2 = mpTimes[0] - meanCluster2;
+//
+//    	for (k = 1; k < runs; k++) {
+//    		mpTimes_k = mpTimes[k];
+//    		if ( mpTimes_k - meanCluster1 < min_dist1 ) {
+//    			min_dist1 = mpTimes_k - meanCluster1;
+//    			birec->timeFirstCluster = k;
+//    		}
+//    		if ( mpTimes_k - meanCluster2 < min_dist2 ) {
+//    			min_dist2 = mpTimes_k - meanCluster2;
+//    			birec->timeSecondCluster = k;
+//    		}
+//    	}
     }
 
     for (i = 0; i < size; i++) {
@@ -870,24 +879,63 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         }
 
         meanCluster1 = meanCluster1 / birec->runsFirstCluster[i];
-	birec->meansFirstCluster[i] = meanCluster1;
+        birec->meansFirstCluster[i] = meanCluster1;
         meanCluster2 = meanCluster2 / birec->runsSecondCluster[i];
-	birec->meansSecondCluster[i] = meanCluster2;
+        birec->meansSecondCluster[i] = meanCluster2;
 
-        min_dist1 = mpRuns[0][i] - meanCluster1;
-        min_dist2 = mpRuns[0][i] - meanCluster2;
+//        min_dist1 = mpRuns[0][i] - meanCluster1;
+//        min_dist2 = mpRuns[0][i] - meanCluster2;
+//
+//        for (k = 1; k < runs; k++) {
+//            mpRuns_k_i = mpRuns[k][i];
+//            if ( mpRuns_k_i - meanCluster1 < min_dist1 ) {
+//                 min_dist1 = mpRuns_k_i - meanCluster1;
+//                 birec->meanPathCluster1[i] = k;
+//            }
+//            if ( mpRuns_k_i - meanCluster2 < min_dist2 ) {
+//                 min_dist2 = mpRuns_k_i - meanCluster2;
+//                 birec->meanPathCluster2[i] = k;
+//            }
+//        }
+    }
 
-        for (k = 1; k < runs; k++) {
-            mpRuns_k_i = mpRuns[k][i];
-            if ( mpRuns_k_i - meanCluster1 < min_dist1 ) {
-                 min_dist1 = mpRuns_k_i - meanCluster1;
-                 birec->meanPathCluster1[i] = k;
-            }
-            if ( mpRuns_k_i - meanCluster2 < min_dist2 ) {
-                 min_dist2 = mpRuns_k_i - meanCluster2;
-                 birec->meanPathCluster2[i] = k;
-            }
-        }
+    min_dist1 = -1;
+    min_dist2 = -1;
+    index1 = -1;
+    index2 = -1;
+    for (k = 0; k < runs; k++) {
+    	newDistance1 = 0;
+    	newDistance2 = 0;
+    	for (l = 0; l < size; l++) {
+    		newDistance1 += pow(mpRuns[k][l] - rec->meansFirstCluster[l], 2);
+    		newDistance2 += pow(mpRuns[k][l] - rec->meansSecondCluster[l], 2);
+    	}
+    	if (useMP == 3) {
+    		newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
+    		newDistance2 += pow(mpTimes[k] - meanTimeSecondCluster, 2);
+    	}
+    	if (min_dist1 == -1) {
+    		min_dist1 = newDistance1;
+    		index1 = k;
+    	} else if (newDistance1 < distance1) {
+    		distance1 = newDistance1;
+    		index1 = k;
+    	}
+    	if (min_dist2 == -1) {
+    		min_dist2 = newDistance2;
+    		index2 = k;
+    	} else if (newDistance2 < distance2) {
+    		distance2 = newDistance2;
+    		index2 = k;
+    	}
+    }
+    for (l = 0; l < size; l++) {
+    	birec->meanPathCluster1[l] = mpRuns[index1][l];
+    	birec->meanPathCluster2[l] = mpRuns[index2][l];
+    }
+    if (useMP == 3) {
+    	birec->timeFirstCluster = mpTimes[index1];
+    	birec->timeSecondCluster = mpTimes[index2];
     }
 
     return ret;
@@ -1119,21 +1167,21 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             		if (k <= birec->runsFirstCluster) {
             			for (l = 0; l < size; l++) {
             				species = speciesArray[l];
-            			    newValue = mpRuns[birec->meanPathCluster1[l]][l];
+            			    newValue = birec->meanPathCluster1[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
             			if (useMP == 3) {
-            				rec->time = mpTimes[birec->timeFirstCluster];
+            				rec->time = birec->timeFirstCluster;
             			}
             		}
             		else {
             			for (l = 0; l < size; l++) {
             			    species = speciesArray[l];
-            			    newValue = mpRuns[birec->meanPathCluster2[l]][l];
+            			    newValue = birec->meanPathCluster2[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
             			if (useMP == 3) {
-            				rec->time = mpTimes[birec->timeSecondCluster];
+            				rec->time = birec->timeSecondCluster;
             			}
             		}
             	}
@@ -1360,20 +1408,20 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             	else {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
-            		    SetAmountInSpeciesNode(species, mpRuns[birec->meanPathCluster1[l]][l]);
+            		    SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
             		}
             		if (useMP == 3) {
-            			rec->time = mpTimes[birec->timeFirstCluster];
+            			rec->time = birec->timeFirstCluster;
             		}
             		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
             		    return ret;
             		}
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
-            			SetAmountInSpeciesNode(species, mpRuns[birec->meanPathCluster2[l]][l]);
+            			SetAmountInSpeciesNode(species, birec->meanPathCluster2[l]);
             		}
             		if (useMP == 3) {
-            			rec->time = mpTimes[birec->timeSecondCluster];
+            			rec->time = birec->timeSecondCluster;
             		}
             		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
             			return ret;
