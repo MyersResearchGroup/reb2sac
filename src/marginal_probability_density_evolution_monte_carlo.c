@@ -818,8 +818,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     	for (k = 1; k < runs; k++) {
     		mpTimes_k = mpTimes[k];
-    		if ( min_val > mpTimes[k][i] ) min_val = mpTimes_k;
-    		if ( max_val < mpTimes[k][i] ) max_val = mpTimes_k;
+    		if ( min_val > mpTimes[k] ) min_val = mpTimes_k;
+    		if ( max_val < mpTimes[k] ) max_val = mpTimes_k;
     	}
 
     	for (k = 0; k < runs; k++) {
@@ -834,7 +834,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	}
 
     	meanCluster1 = meanCluster1 / timesFirstCluster;
-    	meanCluster2 = meanCluster2 / timesSecondCluster[i];
+    	meanCluster2 = meanCluster2 / timesSecondCluster;
 
     	min_dist1 = mpTimes[0] - meanCluster1;
     	min_dist2 = mpTimes[0] - meanCluster2;
