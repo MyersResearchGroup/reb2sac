@@ -907,8 +907,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	newDistance1 = 0;
     	newDistance2 = 0;
     	for (l = 0; l < size; l++) {
-    		newDistance1 += pow(mpRuns[k][l] - rec->meansFirstCluster[l], 2);
-    		newDistance2 += pow(mpRuns[k][l] - rec->meansSecondCluster[l], 2);
+    		newDistance1 += pow(mpRuns[k][l] - birec->meansFirstCluster[l], 2);
+    		newDistance2 += pow(mpRuns[k][l] - birec->meansSecondCluster[l], 2);
     	}
     	if (useMP == 3) {
     		newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
@@ -917,15 +917,15 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	if (min_dist1 == -1) {
     		min_dist1 = newDistance1;
     		index1 = k;
-    	} else if (newDistance1 < distance1) {
-    		distance1 = newDistance1;
+    	} else if (newDistance1 < min_dist1) {
+    		min_dist1 = newDistance1;
     		index1 = k;
     	}
     	if (min_dist2 == -1) {
     		min_dist2 = newDistance2;
     		index2 = k;
-    	} else if (newDistance2 < distance2) {
-    		distance2 = newDistance2;
+    	} else if (newDistance2 < min_dist2) {
+    		min_dist2 = newDistance2;
     		index2 = k;
     	}
     }
