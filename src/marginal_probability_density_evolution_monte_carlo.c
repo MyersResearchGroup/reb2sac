@@ -746,6 +746,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     double mpRuns_k_i = 0;
     double min_dist1 = 0;
     double min_dist2 = 0;
+    double timesFirstCluster = 0;
+    double timesSecondCluster = 0;
+    double mpTimes_k = 0;
     BOOL bifurcationHappened = false;
     UINT32 size = rec->speciesSize;
     UINT32 runs = rec->runs;
@@ -790,12 +793,63 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meansSecondCluster array" );
     }
 
+    if( ( birec->timeFirstCluster = (double*)MALLOC( sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for timeFirstCluster variable" );
+    }
+
+    if( ( birec->timeSecondCluster = (double*)MALLOC( sizeof(double) ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for timeSecondCluster variable" );
+    }
+
     if( ( birec->meanPathCluster1 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster1 array" );
     }
 
     if( ( birec->meanPathCluster2 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster2 array" );
+    }
+
+    if (useMP == 3) {
+    	timesFirstCluster = 0;
+    	timesSecondCluster = 0;
+
+    	min_val = mpTimes[0];
+    	max_val = mpTimes[0];
+
+    	for (k = 1; k < runs; k++) {
+    		mpTimes_k = mpTimes[k];
+    		if ( min_val > mpTimes[k][i] ) min_val = mpTimes_k;
+    		if ( max_val < mpTimes[k][i] ) max_val = mpTimes_k;
+    	}
+
+    	for (k = 0; k < runs; k++) {
+    		mpTimes_k = mpTimes[k];
+    		if ( mpTimes_k - min_val > max_val - mpTimes_k ) {
+    			timesFirstCluster++;
+    			meanCluster1 += mpTimes_k;
+    		} else {
+    			timesSecondCluster++;
+    			meanCluster2 += mpTimes_k;
+    		}
+    	}
+
+    	meanCluster1 = meanCluster1 / timesFirstCluster;
+    	meanCluster2 = meanCluster2 / timesSecondCluster[i];
+
+    	min_dist1 = mpTimes[0] - meanCluster1;
+    	min_dist2 = mpTimes[0] - meanCluster2;
+
+    	for (k = 1; k < runs; k++) {
+    		mpTimes_k = mpTimes[k];
+    		if ( mpTimes_k - meanCluster1 < min_dist1 ) {
+    			min_dist1 = mpTimes_k - meanCluster1;
+    			birec->timeFirstCluster[0] = mpTimes_k;
+    		}
+    		if ( mpTimes_k - meanCluster2 < min_dist2 ) {
+    			min_dist2 = mpTimes_k - meanCluster2;
+    			birec->timeSecondCluster[0] = mpTimes_k;
+    		}
+    	}
     }
 
     for (i = 0; i < size; i++) {
@@ -835,11 +889,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
             mpRuns_k_i = mpRuns[k][i];
             if ( mpRuns_k_i - meanCluster1 < min_dist1 ) {
                  min_dist1 = mpRuns_k_i - meanCluster1;
-                 birec->meanPathCluster1[i] = k;
+                 birec->meanPathCluster1[i] = mpRuns_k_i;
             }
             if ( mpRuns_k_i - meanCluster2 < min_dist2 ) {
                  min_dist2 = mpRuns_k_i - meanCluster2;
-                 birec->meanPathCluster2[i] = k;
+                 birec->meanPathCluster2[i] = mpRuns_k_i;
             }
         }
     }
@@ -900,6 +954,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     birec->runsSecondCluster = NULL;
     birec->meansFirstCluster = NULL;
     birec->meansSecondCluster = NULL;
+    birec->timeFirstCluster = NULL;
+    birec->timeSecondCluster = NULL;
     birec->meanPathCluster1 = NULL;
     birec->meanPathCluster2 = NULL;
     birec->isBifurcated = NULL;
@@ -1256,6 +1312,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->runsSecondCluster);
         FREE(birec->meansFirstCluster);
         FREE(birec->meansSecondCluster);
+        FREE(birec->timeFirstCluster);
+        FREE(birec->timeSecondCluster);
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
@@ -1398,6 +1456,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     FREE(birec->runsSecondCluster);
     FREE(birec->meansFirstCluster);
     FREE(birec->meansSecondCluster);
+    FREE(birec->timeFirstCluster);
+    FREE(birec->timeSecondCluster);
     FREE(birec->meanPathCluster1);
     FREE(birec->meanPathCluster2);
     FREE(birec->isBifurcated);
