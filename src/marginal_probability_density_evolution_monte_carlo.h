@@ -71,10 +71,10 @@ typedef struct {
     UINT32 *runsSecondCluster;
     double *meansFirstCluster;
     double *meansSecondCluster;
-    UINT32 timeFirstCluster;
-    UINT32 timeSecondCluster;
-    UINT32 *meanPathCluster1;
-    UINT32 *meanPathCluster2;
+    double timeFirstCluster;
+    double timeSecondCluster;
+    double *meanPathCluster1;
+    double *meanPathCluster2;
     BOOL *isBifurcated;
 } BIFURCATION_RECORD;
 
