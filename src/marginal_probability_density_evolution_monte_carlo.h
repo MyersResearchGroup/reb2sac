@@ -71,6 +71,8 @@ typedef struct {
     UINT32 *runsSecondCluster;
     double *meansFirstCluster;
     double *meansSecondCluster;
+    double *timeFirstCluster;
+    double *timeSecondCluster;
     UINT32 *meanPathCluster1;
     UINT32 *meanPathCluster2;
     BOOL *isBifurcated;
