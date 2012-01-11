@@ -61,6 +61,7 @@ typedef struct {
     double *newSpeciesVariances;
     double *speciesSD;
     int useMP;
+    BOOL useBifur;
 } MPDE_MONTE_CARLO_RECORD;
 
 // This struct contains the vectors holding the number of runs that went into each
