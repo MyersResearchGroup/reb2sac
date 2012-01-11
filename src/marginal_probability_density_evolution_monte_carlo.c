@@ -1132,12 +1132,18 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			    newValue = birec->meanPathCluster1[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
+            			if (useMP == 3) {
+            				rec->time = birec->timeFirstCluster;
+            			}
             		}
             		else {
             			for (l = 0; l < size; l++) {
             			    species = speciesArray[l];
             			    newValue = birec->meanPathCluster2[l];
             			    SetAmountInSpeciesNode(species, newValue);
+            			}
+            			if (useMP == 3) {
+            				rec->time = birec->timeSecondCluster;
             			}
             		}
             	}
@@ -1368,12 +1374,18 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			species = speciesArray[l];
             		    SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
             		}
+            		if (useMP == 3) {
+            			rec->time = birec->timeFirstCluster;
+            		}
             		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
             		    return ret;
             		}
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
             			SetAmountInSpeciesNode(species, birec->meanPathCluster2[l]);
+            		}
+            		if (useMP == 3) {
+            			rec->time = birec->timeSecondCluster;
             		}
             		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
             			return ret;
