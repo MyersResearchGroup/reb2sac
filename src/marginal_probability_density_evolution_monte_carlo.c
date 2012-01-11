@@ -793,14 +793,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meansSecondCluster array" );
     }
 
-    if( ( birec->timeFirstCluster = (double*)MALLOC( sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for timeFirstCluster variable" );
-    }
-
-    if( ( birec->timeSecondCluster = (double*)MALLOC( sizeof(double) ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for timeSecondCluster variable" );
-    }
-
     if( ( birec->meanPathCluster1 = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for meanPathCluster1 array" );
     }
@@ -843,11 +835,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		mpTimes_k = mpTimes[k];
     		if ( mpTimes_k - meanCluster1 < min_dist1 ) {
     			min_dist1 = mpTimes_k - meanCluster1;
-    			birec->timeFirstCluster[0] = mpTimes_k;
+    			birec->timeFirstCluster = mpTimes_k;
     		}
     		if ( mpTimes_k - meanCluster2 < min_dist2 ) {
     			min_dist2 = mpTimes_k - meanCluster2;
-    			birec->timeSecondCluster[0] = mpTimes_k;
+    			birec->timeSecondCluster = mpTimes_k;
     		}
     	}
     }
@@ -954,8 +946,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     birec->runsSecondCluster = NULL;
     birec->meansFirstCluster = NULL;
     birec->meansSecondCluster = NULL;
-    birec->timeFirstCluster = NULL;
-    birec->timeSecondCluster = NULL;
     birec->meanPathCluster1 = NULL;
     birec->meanPathCluster2 = NULL;
     birec->isBifurcated = NULL;
@@ -1318,8 +1308,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         FREE(birec->runsSecondCluster);
         FREE(birec->meansFirstCluster);
         FREE(birec->meansSecondCluster);
-        FREE(birec->timeFirstCluster);
-        FREE(birec->timeSecondCluster);
         FREE(birec->meanPathCluster1);
         FREE(birec->meanPathCluster2);
         FREE(birec->isBifurcated);
@@ -1468,8 +1456,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     FREE(birec->runsSecondCluster);
     FREE(birec->meansFirstCluster);
     FREE(birec->meansSecondCluster);
-    FREE(birec->timeFirstCluster);
-    FREE(birec->timeSecondCluster);
     FREE(birec->meanPathCluster1);
     FREE(birec->meanPathCluster2);
     FREE(birec->isBifurcated);
