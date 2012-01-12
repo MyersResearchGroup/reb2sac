@@ -1169,7 +1169,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             rec->time = time;
             i = 0;
             if (useMP != 0) {
-            	if (!useBifur) {
+            	if (!useBifur || birec->isBifurcated == NULL) {
             		for (l = 0; l < size; l++) {
                     	species = speciesArray[l];
                     	newValue = mpRun[l];
@@ -1408,13 +1408,18 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 return ret;
             }
             if (useMP != 0) {
-            	if (!useBifur) {
+            	if (!useBifur || birec->isBifurcated == NULL) {
             		for (l = 0; l < size; l++) {
             			species = speciesArray[l];
             			SetAmountInSpeciesNode(species, mpRun[l]);
             		}
             		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
             			return ret;
+            		}
+            		if (useBifur) {
+            			if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
+            				return ret;
+            			}
             		}
             	}
             	else if (birec->isBifurcated != NULL) {
@@ -1470,13 +1475,18 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         return ret;
     }
     if (useMP != 0) {
-    	if (!useBifur) {
+    	if (!useBifur || birec->isBifurcated == NULL) {
     		for (l = 0; l < size; l++) {
     			species = speciesArray[l];
     			SetAmountInSpeciesNode(species, mpRun[l]);
     		}
     		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
     			return ret;
+    		}
+    		if (useBifur) {
+    			if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
+    				return ret;
+    			}
     		}
     	}
     	else if (birec->isBifurcated == NULL) {
