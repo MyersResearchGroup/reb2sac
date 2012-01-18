@@ -990,6 +990,9 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     gsl_matrix *Lo_matrix = NULL;
     gsl_matrix *G_matrix = NULL;
     BIFURCATION_RECORD *birec = NULL;
+    UINT32 reacSize = rec->reactionsSize;
+    double smallProp = 0.0;
+    REACTION **reactionArray = rec->reactionArray;
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
@@ -1104,13 +1107,26 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
                     return ret;
                 }
-                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
-                    return ret;
+                if (reacSize > 0) {
+                	smallProp = GetReactionRate(reactionArray[0]);
+                    for (i = 1; i < reacSize; i++) {
+                    	if (smallProp < GetReactionRate(reactionArray[i])) {
+                    		smallProp = GetReactionRate(reactionArray[i]);
+                    	}
+                    }
                 }
-                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
-                    n = timeStep;
+                //if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                //    return ret;
+                //}
+                //if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                //    n = timeStep;
+                //} else {
+                //    n = (timeStep / rec->totalPropensities);
+                //}
+                if (IS_REAL_EQUAL(smallProp, 0.0)) {
+                	n = timeStep;
                 } else {
-                    n = (timeStep / rec->totalPropensities);
+                	n = (timeStep / smallProp);
                 }
                 end = n + rec->time;
             } else {
@@ -1134,13 +1150,26 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
                     return ret;
                 }
-                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
-                    return ret;
+                if (reacSize > 0) {
+                	smallProp = GetReactionRate(reactionArray[0]);
+                	for (i = 1; i < reacSize; i++) {
+                		if (smallProp < GetReactionRate(reactionArray[i])) {
+                			smallProp = GetReactionRate(reactionArray[i]);
+                		}
+                	}
                 }
-                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                //if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                //    return ret;
+                //}
+                //if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                //	n = timeStep;
+                //} else {
+                //	n = (timeStep / rec->totalPropensities);
+                //}
+                if (IS_REAL_EQUAL(smallProp, 0.0)) {
                     n = timeStep;
                 } else {
-                    n = (timeStep / rec->totalPropensities);
+                    n = (timeStep / smallProp);
                 }
                 if ((n + rec->time) > nextPrintTime) {
                     end = nextPrintTime;
