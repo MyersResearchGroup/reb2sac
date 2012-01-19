@@ -939,6 +939,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     for (l = 0; l < size; l++) {
     	birec->meanPathCluster1[l] = mpRuns[index1][l];
     	birec->meanPathCluster2[l] = mpRuns[index2][l];
+    	printf("Run 1: %f Run 2: %f\n", birec->meanPathCluster1[l], birec->meanPathCluster2[l]);
     }
     if (useMP == 3) {
     	birec->timeFirstCluster = mpTimes[index1];
