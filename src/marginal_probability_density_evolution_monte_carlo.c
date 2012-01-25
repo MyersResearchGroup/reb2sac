@@ -1115,19 +1115,19 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     	}
                     }
                 }
-                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
-                    return ret;
-                }
-                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
-                    n = timeStep;
-                } else {
-                    n = (timeStep / rec->totalPropensities);
-                }
-                //if (IS_REAL_EQUAL(smallProp, 0.0)) {
-                //	n = timeStep;
-                //} else {
-                //	n = (timeStep / smallProp);
+                //if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                //    return ret;
                 //}
+                //if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                //    n = timeStep;
+                //} else {
+                //    n = (timeStep / rec->totalPropensities);
+                //}
+                if (IS_REAL_EQUAL(smallProp, 0.0)) {
+                	n = timeStep;
+                } else {
+                	n = (timeStep / smallProp);
+                }
                 end = n + rec->time;
             } else {
                 end = rec->time + timeStep;
@@ -1158,19 +1158,19 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 		}
                 	}
                 }
-                if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
-                    return ret;
-                }
-                if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
-                	n = timeStep;
-                } else {
-                	n = (timeStep / rec->totalPropensities);
-                }
-                //if (IS_REAL_EQUAL(smallProp, 0.0)) {
-                //    n = timeStep;
-                //} else {
-                //    n = (timeStep / smallProp);
+                //if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
+                //    return ret;
                 //}
+                //if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
+                //	n = timeStep;
+                //} else {
+                //	n = (timeStep / rec->totalPropensities);
+                //}
+                if (IS_REAL_EQUAL(smallProp, 0.0)) {
+                    n = timeStep;
+                } else {
+                    n = (timeStep / smallProp);
+                }
                 if ((n + rec->time) > nextPrintTime) {
                     end = nextPrintTime;
                 } else {
