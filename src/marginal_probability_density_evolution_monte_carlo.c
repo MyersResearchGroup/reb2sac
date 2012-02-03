@@ -940,16 +940,15 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		min_dist2 = newDistance2;
     		index2 = k;
     	}
+    	printf("Dist1: %f, Dist2: %f\n", newDistance1, newDistance2);
     	if (newDistance1 <= newDistance2) {
     		birec->numberFirstCluster++;
     		if (k < previousNumberFirstCluster) {
     			firstToFirst++;
     		}
-    		printf("%i\n", birec->numberFirstCluster);
     	}
     	else {
     		birec->numberSecondCluster++;
-    		printf("%i\n", birec->numberSecondCluster);
     	}
     }
     printf("\n");
