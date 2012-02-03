@@ -826,10 +826,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	max_val = mpTimes[0];
 
     	for (k = 1; k < runs; k++) {
-    		mpTimes_k = mpTimesfirstToFirst = 0;
-    	    firstToSecond = 0;
-    	    secondToFirst = 0;
-    	    secondToSecond = 0;
+    		mpTimes_k = mpTimes[k];
     		if ( min_val > mpTimes[k] ) min_val = mpTimes_k;
     		if ( max_val < mpTimes[k] ) max_val = mpTimes_k;
     	}
