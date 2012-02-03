@@ -833,6 +833,16 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     	for (k = 0; k < runs; k++) {
     		mpTimes_k = mpTimes[k];
+    		if ( mpTimes_k - min_val == max_val - mpTimes_k ) {
+    			if (timesFirstCluster > timesSecondCluster) {
+    				timesSecondCluster++;
+    				meanCluster2 += mpTimes_k;
+    			}
+    			else {
+    				timesFirstCluster++;
+    				meanCluster1 += mpTimes_k;
+    			}
+    		}
     		if ( mpTimes_k - min_val > max_val - mpTimes_k ) {
     			timesFirstCluster++;
     			meanCluster1 += mpTimes_k;
@@ -879,14 +889,22 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
         for (k = 0; k < runs; k++) {
             mpRuns_k_i = mpRuns[k][i];
-            if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
+            if ( mpRuns_k_i - min_val == max_val - mpRuns_k_i ) {
+            	if (birec->runsFirstCluster[i] > birec->runsSecondCluster[i]) {
+            		birec->runsSecondCluster[i]++;
+            		meanCluster2 += mpRuns_k_i;
+            	}
+            	else {
+            		birec->runsFirstCluster[i]++;
+            		meanCluster1 += mpRuns_k_i;
+            	}
+            }
+            else if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
                 birec->runsFirstCluster[i]++;
                 meanCluster1 += mpRuns_k_i;
-                printf("Got here.\n");
             } else {
                 birec->runsSecondCluster[i]++;
                 meanCluster2 += mpRuns_k_i;
-                printf("Also here.\n");
             }
         }
 
