@@ -879,6 +879,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
         for (k = 0; k < runs; k++) {
             mpRuns_k_i = mpRuns[k][i];
+            printf("mpRuns_k_i - min_val: %f, max_val - mpRuns_k_i: %f\n", mpRuns_k_i - min_val, max_val - mpRuns_k_i);
             if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
                 birec->runsFirstCluster[i]++;
                 meanCluster1 += mpRuns_k_i;
@@ -940,7 +941,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		min_dist2 = newDistance2;
     		index2 = k;
     	}
-    	printf("Dist1: %f, Dist2: %f\n", newDistance1, newDistance2);
     	if (newDistance1 <= newDistance2) {
     		birec->numberFirstCluster++;
     		if (k < previousNumberFirstCluster) {
