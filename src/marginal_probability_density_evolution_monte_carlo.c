@@ -952,6 +952,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     }
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
+    printf("percentFirst = %f, percentFirstToFirst = %f\n", percentFirst, percentFirstToFirst);
+    fflush(stdout);
     for (l = 0; l < size; l++) {
     	if (percentFirst > percentFirstToFirst) {
     		birec->meanPathCluster1[l] = mpRuns[index2][l];
