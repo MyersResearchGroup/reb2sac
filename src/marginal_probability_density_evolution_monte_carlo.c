@@ -950,27 +950,27 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->numberSecondCluster++;
     	}
     }
-    percentFirst = ((double) previousNumberFirstCluster) / runs;
-    percentFirstToFirst = ((double) firstToFirst) / birec->numberFirstCluster;
+    percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
+    percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
     for (l = 0; l < size; l++) {
-    	//if (percentFirst > percentFirstToFirst) {
-    	//	birec->meanPathCluster1[l] = mpRuns[index2][l];
-    	//	birec->meanPathCluster2[l] = mpRuns[index1][l];
-    	//}
-    	//else {
+    	if (percentFirst > percentFirstToFirst) {
+    		birec->meanPathCluster1[l] = mpRuns[index2][l];
+    		birec->meanPathCluster2[l] = mpRuns[index1][l];
+    	}
+    	else {
     		birec->meanPathCluster1[l] = mpRuns[index1][l];
     		birec->meanPathCluster2[l] = mpRuns[index2][l];
-    	//}
+    	}
     }
     if (useMP == 3) {
-    	//if (percentFirst > percentFirstToFirst) {
-    	//	birec->timeFirstCluster = mpTimes[index2];
-    	//	birec->timeSecondCluster = mpTimes[index1];
-    	//}
-    	//else {
+    	if (percentFirst > percentFirstToFirst) {
+    		birec->timeFirstCluster = mpTimes[index2];
+    		birec->timeSecondCluster = mpTimes[index1];
+    	}
+    	else {
     		birec->timeFirstCluster = mpTimes[index1];
     		birec->timeSecondCluster = mpTimes[index2];
-    	//}
+    	}
     }
 
     return ret;
