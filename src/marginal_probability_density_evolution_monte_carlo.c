@@ -950,6 +950,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->numberSecondCluster++;
     	}
     }
+    printf("percentFirst should be %i / %i, percentFirstToFirst should be %i / %i\n", previousNumberFirstCluster, runs, firstToFirst, birec->numberFirstCluster);
+    fflush(stdout);
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
     printf("percentFirst = %f, percentFirstToFirst = %f\n", percentFirst, percentFirstToFirst);
