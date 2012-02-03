@@ -760,6 +760,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     double timesSecondCluster = 0;
     double meanTimeFirstCluster = 0;
     double meanTimeSecondCluster = 0;
+    int firstToFirst = 0;
+    double percentFirst = 0;
+    double percentFirstToFirst = 0;
     double mpTimes_k = 0;
     BOOL bifurcationHappened = false;
     UINT32 size = rec->speciesSize;
@@ -823,7 +826,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	max_val = mpTimes[0];
 
     	for (k = 1; k < runs; k++) {
-    		mpTimes_k = mpTimes[k];
+    		mpTimes_k = mpTimesfirstToFirst = 0;
+    	    firstToSecond = 0;
+    	    secondToFirst = 0;
+    	    secondToSecond = 0;
     		if ( min_val > mpTimes[k] ) min_val = mpTimes_k;
     		if ( max_val < mpTimes[k] ) max_val = mpTimes_k;
     	}
@@ -939,18 +945,35 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	}
     	if (newDistance1 <= newDistance2) {
     		birec->numberFirstCluster++;
+    		if (k < previousNumberFirstCluster) {
+    			firstToFirst++;
+    		}
     	}
     	else {
     		birec->numberSecondCluster++;
     	}
     }
+    percentFirst = ((double) previousNumberFirstCluster) / runs;
+    percentFirstToFirst = ((double) firstToFirst) / birec->numberFirstCluster;
     for (l = 0; l < size; l++) {
-    	birec->meanPathCluster1[l] = mpRuns[index1][l];
-    	birec->meanPathCluster2[l] = mpRuns[index2][l];
+    	if (percentFirst > percentFirstToFirst) {
+    		birec->meanPathCluster1[l] = mpRuns[index2][l];
+    		birec->meanPathCluster2[l] = mpRuns[index1][l];
+    	}
+    	else {
+    		birec->meanPathCluster1[l] = mpRuns[index1][l];
+    		birec->meanPathCluster2[l] = mpRuns[index2][l];
+    	}
     }
     if (useMP == 3) {
-    	birec->timeFirstCluster = mpTimes[index1];
-    	birec->timeSecondCluster = mpTimes[index2];
+    	if (percentFirst > percentFirstToFirst) {
+    		birec->timeFirstCluster = mpTimes[index2];
+    		birec->timeSecondCluster = mpTimes[index1];
+    	}
+    	else {
+    		birec->timeFirstCluster = mpTimes[index1];
+    		birec->timeSecondCluster = mpTimes[index2];
+    	}
     }
 
     return ret;
