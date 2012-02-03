@@ -1003,7 +1003,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     UINT32 reacSize = rec->reactionsSize;
     double smallProp = 0.0;
     REACTION **reactionArray = rec->reactionArray;
-    int runsFirstCluster = 0;
+    int numberFirstCluster = 0;
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
