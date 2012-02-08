@@ -794,11 +794,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     // If at least one species bifurcated, allocate memory and perform clustering analysis
 
-    if( ( birec->runsFirstCluster = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+    if( ( birec->runsFirstCluster = (double*)MALLOC( size * sizeof(double) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for runsFirstCluster array" );
     }
 
-    if( ( birec->runsSecondCluster = (UINT32*)MALLOC( size * sizeof(UINT32) ) ) == NULL ) {
+    if( ( birec->runsSecondCluster = (double*)MALLOC( size * sizeof(double) ) ) == NULL ) {
         return ErrorReport( FAILING, "_CheckBifurcation", "could not allocate memory for runsSecondCluster array" );
     }
 
@@ -834,16 +834,12 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	for (k = 0; k < runs; k++) {
     		mpTimes_k = mpTimes[k];
     		if ( mpTimes_k - min_val == max_val - mpTimes_k ) {
-    			if (timesFirstCluster > timesSecondCluster) {
-    				timesSecondCluster++;
-    				meanCluster2 += mpTimes_k;
-    			}
-    			else {
-    				timesFirstCluster++;
-    				meanCluster1 += mpTimes_k;
-    			}
+    			timesSecondCluster += 0.5;
+    			meanCluster2 += (mpTimes_k / 2);
+    			timesFirstCluster += 0.5;
+    			meanCluster1 += (mpTimes_k / 2);
     		}
-    		if ( mpTimes_k - min_val > max_val - mpTimes_k ) {
+    		else if ( mpTimes_k - min_val > max_val - mpTimes_k ) {
     			timesFirstCluster++;
     			meanCluster1 += mpTimes_k;
     		} else {
@@ -890,14 +886,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         for (k = 0; k < runs; k++) {
             mpRuns_k_i = mpRuns[k][i];
             if ( mpRuns_k_i - min_val == max_val - mpRuns_k_i ) {
-            	if (birec->runsFirstCluster[i] > birec->runsSecondCluster[i]) {
-            		birec->runsSecondCluster[i]++;
-            		meanCluster2 += mpRuns_k_i;
-            	}
-            	else {
-            		birec->runsFirstCluster[i]++;
-            		meanCluster1 += mpRuns_k_i;
-            	}
+            	birec->runsSecondCluster[i] += 0.5;
+            	meanCluster2 += (mpRuns_k_i / 2);
+            	birec->runsFirstCluster[i] += 0.5;
+            	meanCluster1 += (mpRuns_k_i / 2);
             }
             else if ( mpRuns_k_i - min_val > max_val - mpRuns_k_i ) {
                 birec->runsFirstCluster[i]++;

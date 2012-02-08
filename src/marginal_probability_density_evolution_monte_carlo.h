@@ -68,8 +68,8 @@ typedef struct {
 // bifurcated path, as well as the mean value and mean path of each one
 
 typedef struct {
-    UINT32 *runsFirstCluster;
-    UINT32 *runsSecondCluster;
+	double *runsFirstCluster;
+    double *runsSecondCluster;
     double *meansFirstCluster;
     double *meansSecondCluster;
     double timeFirstCluster;
