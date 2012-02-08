@@ -905,7 +905,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         meanCluster2 = meanCluster2 / birec->runsSecondCluster[i];
         birec->meansSecondCluster[i] = meanCluster2;
 
-        printf("Species %d: Mean 1: %f, Mean 2: %f\n", i, birec->meansFirstCluster[i], birec->meansSecondCluster[i]);
+        //printf("Species %d: Mean 1: %f, Mean 2: %f\n", i, birec->meansFirstCluster[i], birec->meansSecondCluster[i]);
 
 //        min_dist1 = mpRuns[0][i] - meanCluster1;
 //        min_dist2 = mpRuns[0][i] - meanCluster2;
