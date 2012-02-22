@@ -771,6 +771,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     double meanCluster2[size];
     int half = 0;
     BOOL converge = false;
+    int iterations = 0;
 
     // Allocate memory for vector indicating which species bifurcated
 
@@ -911,7 +912,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     if (useMP == 3) {
     	meanTimeSecondCluster /= half;
     }
-    while (!converge) {
+    iterations = 0;
+    while (!converge && iterations < 100) {
     	for (i = 0; i < size; i++) {
     		meanCluster1[i] = 0;
     		meanCluster2[i] = 0;
@@ -967,6 +969,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->meansFirstCluster[i] = meanCluster1[i];
     		birec->meansSecondCluster[i] = meanCluster2[i];
     	}
+    	iterations ++;
     }
 
 //    for (i = 0; i < size; i++) {
