@@ -767,6 +767,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     BOOL bifurcationHappened = false;
     UINT32 size = rec->speciesSize;
     UINT32 runs = rec->runs;
+    SPECIES **speciesArray = rec->speciesArray;
     double meanCluster1[size];
     double meanCluster2[size];
     int half = 0;
@@ -876,8 +877,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
 
     half = runs/2;
     for (i = 0; i < size; i++) {
-        birec->meansFirstCluster[i] = 0;
-        birec->meansSecondCluster[i] = 0;
+    	if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    		birec->meansFirstCluster[i] = 0;
+    		birec->meansSecondCluster[i] = 0;
+    	}
     }
     if (useMP == 3) {
     	meanTimeFirstCluster = 0;
@@ -885,14 +888,18 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     }
     for (k = 0; k < half; k++) {
     	for (i = 0; i < size; i++) {
-    		birec->meansFirstCluster[i] += mpRuns[k][i];
+    		if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    			birec->meansFirstCluster[i] += mpRuns[k][i];
+    		}
     	}
     	if (useMP == 3) {
     		meanTimeFirstCluster += mpTimes[k];
     	}
     }
     for (i = 0; i < size; i++) {
-    	birec->meansFirstCluster[i] /= half;
+    	if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    		birec->meansFirstCluster[i] /= half;
+    	}
     }
     if (useMP == 3) {
     	meanTimeFirstCluster /= half;
@@ -900,14 +907,18 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     half = runs - half;
     for (k = runs/2; k < runs; k++) {
     	for (i = 0; i < size; i++) {
-    		birec->meansSecondCluster[i] += mpRuns[k][i];
+    		if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    			birec->meansSecondCluster[i] += mpRuns[k][i];
+    		}
     	}
     	if (useMP == 3) {
     		meanTimeSecondCluster += mpTimes[k];
     	}
     }
     for (i = 0; i < size; i++) {
-    	birec->meansSecondCluster[i] /= half;
+    	if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    		birec->meansSecondCluster[i] /= half;
+    	}
     }
     if (useMP == 3) {
     	meanTimeSecondCluster /= half;
@@ -915,8 +926,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     iterations = 0;
     while (!converge && iterations < 100) {
     	for (i = 0; i < size; i++) {
-    		meanCluster1[i] = 0;
-    		meanCluster2[i] = 0;
+    		if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    			meanCluster1[i] = 0;
+    			meanCluster2[i] = 0;
+    		}
     	}
     	newMeanTimeFirstCluster = 0;
     	newMeanTimeSecondCluster = 0;
@@ -926,8 +939,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		newDistance1 = 0;
     		newDistance2 = 0;
     		for (i = 0; i < size; i++) {
-    			newDistance1 += pow(mpRuns[k][i] - birec->meansFirstCluster[i], 2);
-    			newDistance2 += pow(mpRuns[k][i] - birec->meansSecondCluster[i], 2);
+    			if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    				newDistance1 += pow(mpRuns[k][i] - birec->meansFirstCluster[i], 2);
+    				newDistance2 += pow(mpRuns[k][i] - birec->meansSecondCluster[i], 2);
+    			}
     		}
     		if (useMP == 3) {
     			newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
@@ -935,7 +950,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		}
     		if (newDistance1 <= newDistance2) {
     			for (i = 0; i < size; i++) {
-    				meanCluster1[i] += mpRuns[k][i];
+    				if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    					meanCluster1[i] += mpRuns[k][i];
+    				}
     			}
     			if (useMP == 3) {
     				newMeanTimeFirstCluster += mpTimes[k];
@@ -944,7 +961,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		}
     		else {
     			for (i = 0; i < size; i++) {
-    				meanCluster2[i] += mpRuns[k][i];
+    				if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    					meanCluster2[i] += mpRuns[k][i];
+    				}
     			}
     			if (useMP == 3) {
     				newMeanTimeSecondCluster += mpTimes[k];
@@ -961,13 +980,15 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	meanTimeFirstCluster = newMeanTimeFirstCluster;
     	meanTimeSecondCluster = newMeanTimeSecondCluster;
     	for (i = 0; i < size; i++) {
-    		meanCluster1[i] /= birec->numberFirstCluster;
-    		meanCluster2[i] /= birec->numberSecondCluster;
-    		if (meanCluster1[i] != birec->meansFirstCluster[i] || meanCluster2[i] != birec->meansSecondCluster[i]) {
-    			converge = false;
+    		if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+    			meanCluster1[i] /= birec->numberFirstCluster;
+    			meanCluster2[i] /= birec->numberSecondCluster;
+    			if (meanCluster1[i] != birec->meansFirstCluster[i] || meanCluster2[i] != birec->meansSecondCluster[i]) {
+    				converge = false;
+    			}
+    			birec->meansFirstCluster[i] = meanCluster1[i];
+    			birec->meansSecondCluster[i] = meanCluster2[i];
     		}
-    		birec->meansFirstCluster[i] = meanCluster1[i];
-    		birec->meansSecondCluster[i] = meanCluster2[i];
     	}
     	iterations ++;
     }
@@ -1036,8 +1057,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	newDistance1 = 0;
     	newDistance2 = 0;
     	for (l = 0; l < size; l++) {
-    		newDistance1 += pow(mpRuns[k][l] - birec->meansFirstCluster[l], 2);
-    		newDistance2 += pow(mpRuns[k][l] - birec->meansSecondCluster[l], 2);
+    		if (IsPrintFlagSetInSpeciesNode(speciesArray[l])) {
+    			newDistance1 += pow(mpRuns[k][l] - birec->meansFirstCluster[l], 2);
+    			newDistance2 += pow(mpRuns[k][l] - birec->meansSecondCluster[l], 2);
+    		}
     	}
     	if (useMP == 3) {
     		newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
@@ -1070,13 +1093,15 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
     for (l = 0; l < size; l++) {
-    	if (percentFirst > percentFirstToFirst) {
-    		birec->meanPathCluster1[l] = mpRuns[index2][l];
-    		birec->meanPathCluster2[l] = mpRuns[index1][l];
-    	}
-    	else {
-    		birec->meanPathCluster1[l] = mpRuns[index1][l];
-    		birec->meanPathCluster2[l] = mpRuns[index2][l];
+    	if (IsPrintFlagSetInSpeciesNode(speciesArray[l])) {
+    		if (percentFirst > percentFirstToFirst) {
+    			birec->meanPathCluster1[l] = mpRuns[index2][l];
+    			birec->meanPathCluster2[l] = mpRuns[index1][l];
+    		}
+    		else {
+    			birec->meanPathCluster1[l] = mpRuns[index1][l];
+    			birec->meanPathCluster2[l] = mpRuns[index2][l];
+    		}
     	}
     }
     if (useMP == 3) {
