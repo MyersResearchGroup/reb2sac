@@ -1851,10 +1851,14 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
 }
 
 static RET_VAL _PrintBifurcationStatistics(double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file) {
+	RET_VAL ret = SUCCESS;
+
 	fprintf( file, "At time %f:" NEW_LINE, time);
-	fprintf( file, "%f (%f/%f) percent of the runs went to the first cluster." NEW_LINE, numberFirstCluster / (double)runs, numberFirstCluster, (double)runs);
-	fprintf( file, "%f (%f/%f) percent of the runs went to the second cluster." NEW_LINE, numberSecondCluster / (double)runs, numberSecondCluster, (double)runs);
+	fprintf( file, "%f (%d/%d) percent of the runs went to the first cluster." NEW_LINE, (numberFirstCluster / (double)runs) * 100, (int)numberFirstCluster, runs);
+	fprintf( file, "%f (%d/%d) percent of the runs went to the second cluster." NEW_LINE, (numberSecondCluster / (double)runs)  * 100, (int)numberSecondCluster, runs);
 	fprintf( file, NEW_LINE);
+
+	return ret;
 }
 
 static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
