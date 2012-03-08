@@ -1165,6 +1165,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     REACTION **reactionArray = rec->reactionArray;
     int numberFirstCluster = 0;
     FILE *bifurFile = NULL;
+    char filename[512];
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
@@ -1856,7 +1857,7 @@ static RET_VAL _PrintBifurcationStatistics(double time, double numberFirstCluste
 	fprintf( file, NEW_LINE);
 }
 
-static RET_VAL _PrintStatistics(FILE *file) {
+static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;
