@@ -1087,7 +1087,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->numberSecondCluster++;
     	}
     }
-    if( IS_FAILED( ( ret = _PrintStatistics( rec->time, birec->numberFirstCluster, birec->numberSecondCluster, runs, file ) ) ) ) {
+    if( IS_FAILED( ( ret = _PrintBifurcationStatistics( rec->time, birec->numberFirstCluster, birec->numberSecondCluster, runs, file ) ) ) ) {
     	return ret;
     }
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
