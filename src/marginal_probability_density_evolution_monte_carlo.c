@@ -10,7 +10,7 @@ static BOOL _IsModelConditionSatisfied(IR *ir);
 static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir);
 static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum);
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend);
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster);
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file);
 
 static RET_VAL _CleanSimulation(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec);
@@ -22,6 +22,7 @@ static RET_VAL _FindNextReactionTime(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _FindNextReaction(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _Update(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _Print(MPDE_MONTE_CARLO_RECORD *rec);
+static RET_VAL _PrintBifurcationStatistics( double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file);
 static RET_VAL _PrintStatistics( MPDE_MONTE_CARLO_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec);
@@ -740,7 +741,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 // On the other hand, if a bifurcation happened, the memory allocated for each array must
 // be freed to avoid memory leaks
 
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster) {
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
@@ -1086,6 +1087,9 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->numberSecondCluster++;
     	}
     }
+    if( IS_FAILED( ( ret = _PrintStatistics( rec->time, birec->numberFirstCluster, birec->numberSecondCluster, runs, file ) ) ) ) {
+    	return ret;
+    }
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
     for (l = 0; l < size; l++) {
@@ -1160,6 +1164,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double smallProp = 0.0;
     REACTION **reactionArray = rec->reactionArray;
     int numberFirstCluster = 0;
+    FILE *bifurFile = NULL;
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
@@ -1179,6 +1184,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     	birec->timeSecondCluster = 0;
     	birec->numberFirstCluster = 0;
     	birec->numberSecondCluster = 0;
+    	sprintf( filename, "%s%cbifurcation_statistics.txt", rec->outDir, FILE_SEPARATOR );
+    	if( ( bifurFile = fopen( filename, "w" ) ) == NULL ) {
+    		return ErrorReport( FAILING, "_RunSimulation", "could not create a bifurcation statistics file" );
+    	}
     }
 
 //    if (useMP == 0) {
@@ -1574,7 +1583,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         	FREE(birec->meanPathCluster1);
         	FREE(birec->meanPathCluster2);
         	FREE(birec->isBifurcated);
-        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec, numberFirstCluster);
+        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec, numberFirstCluster, bifurFile);
         }
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
@@ -1749,6 +1758,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     	FREE(birec->meanPathCluster2);
     	FREE(birec->isBifurcated);
     	FREE(birec);
+    	fclose( bifurFile );
     }
 
     return ret;
@@ -1839,7 +1849,14 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     return ret;
 }
 
-static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
+static RET_VAL _PrintBifurcationStatistics(double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file) {
+	fprintf( file, "At time %f:" NEW_LINE, time);
+	fprintf( file, "%f (%f/%f) percent of the runs went to the first cluster." NEW_LINE, numberFirstCluster / (double)runs, numberFirstCluster, (double)runs);
+	fprintf( file, "%f (%f/%f) percent of the runs went to the second cluster." NEW_LINE, numberSecondCluster / (double)runs, numberSecondCluster, (double)runs);
+	fprintf( file, NEW_LINE);
+}
+
+static RET_VAL _PrintStatistics(FILE *file) {
 	RET_VAL ret = SUCCESS;
 	double stoichiometry = 0;
 	UINT32 i = 0;
