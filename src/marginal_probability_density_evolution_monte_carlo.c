@@ -1191,7 +1191,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
 //	    disp_mat(stoich_matrix);
 //	    printf("\n");
 //	    for (i = 0; i < size; i ++ ) {
-//	    	printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
+//	    	printf("%d ", GetSpeciesNodeID(speciesOrder[i]));reaction
 //	    }
 //	    printf("\n\n");
 //        L_matrix = conservation(stoich_matrix, speciesOrder);
@@ -1201,7 +1201,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
 //        printf("\n");
 //        for (i = 0; i < size; i ++ ) {
 //            printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
-//         }
+//         }reaction
 //        printf("\n");
 //        Lo_matrix = linkzero(L_matrix);
 //        G_matrix = gamma_matrix(Lo_matrix);
@@ -1856,6 +1856,15 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 	LINKED_LIST *edges = NULL;
 
 	if ((speciesSize <= 0) || (reactionsSize <= 0)) return ret;
+
+	fprintf( file, "Initial State Vector:" NEW_LINE);
+
+	for (i = 0; i < speciesSize; i++) {
+		species = speciesArray[i];
+		fprintf( file, "%f ", GetInitialAmountInSpeciesNode(species));
+	}
+	fprintf( file, NEW_LINE);
+	fprintf( file, NEW_LINE);
 
 	gsl_matrix *delta_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
 	gsl_matrix *reactant_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
