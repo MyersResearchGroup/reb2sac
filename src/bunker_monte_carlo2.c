@@ -661,6 +661,18 @@ static RET_VAL _PrintStatistics(BUNKER_MONTE_CARLO_RECORD2 *rec, FILE *file) {
 	REB2SAC_SYMBOL *convFactor = NULL;
 	IR_EDGE *edge = NULL;
 	LINKED_LIST *edges = NULL;
+
+	if ((speciesSize <= 0) || (reactionsSize <= 0)) return ret;
+
+	fprintf( file, "Initial State Vector:" NEW_LINE);
+
+	for (i = 0; i < speciesSize; i++) {
+		species = speciesArray[i];
+		fprintf( file, "%f ", GetInitialAmountInSpeciesNode(species));
+	}
+	fprintf( file, NEW_LINE);
+	fprintf( file, NEW_LINE);
+
 	gsl_matrix *delta_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
 	gsl_matrix *reactant_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
 
