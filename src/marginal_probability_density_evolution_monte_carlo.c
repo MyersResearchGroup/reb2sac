@@ -1293,10 +1293,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 	smallProp = GetReactionRate(reactionArray[0]);
                     for (i = 1; i < reacSize; i++) {
                     	prop = GetReactionRate(reactionArray[i]);
-                    	if (smallProp == 0) {
+                    	if (IS_REAL_EQUAL(smallProp, 0.0)) {
                     		smallProp = prop;
                     	}
-                    	else if (smallProp > prop && prop != 0) {
+                    	else if (smallProp > prop && !IS_REAL_EQUAL(prop, 0.0)) {
                     		smallProp = prop;
                     	}
                     }
@@ -1340,10 +1340,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 	smallProp = GetReactionRate(reactionArray[0]);
                 	for (i = 1; i < reacSize; i++) {
                 		prop = GetReactionRate(reactionArray[i]);
-                		if (smallProp == 0) {
+                		if (IS_REAL_EQUAL(smallProp, 0.0)) {
                 			smallProp = prop;
                 		}
-                		else if (smallProp > prop && prop != 0) {
+                		else if (smallProp > prop && !IS_REAL_EQUAL(prop, 0.0)) {
                 			smallProp = prop;
                 		}
                 	}
