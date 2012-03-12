@@ -167,6 +167,24 @@ static RET_VAL _VisitPWToSupport( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kin
 	}
       }
       break;
+    case KINETIC_LAW_OP_PLUS:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+      }
+      break;
+    case KINETIC_LAW_OP_TIMES:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+      }
+      break;
     default:
       END_FUNCTION("_VisitUnaryOpToSupport", E_WRONGDATA );
       return E_WRONGDATA;

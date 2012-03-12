@@ -1157,6 +1157,48 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     ResetCurrentElement( children );
     _PrintTab( file, *tabCount );
     switch( GetPWTypeFromKineticLaw( kineticLaw ) ) {
+    case KINETIC_LAW_OP_PLUS:
+    case KINETIC_LAW_OP_TIMES:
+      (*tabCount)++;
+      _PrintTab( file, *tabCount );
+      fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
+      fprintf( file, NEW_LINE );             
+
+      (*tabCount)++;
+      _PrintTab( file, *tabCount );
+      fprintf( file, REB2SAC_XHTML_MATHML_L_PAREN_FORMAT );
+      fprintf( file, NEW_LINE );
+      (*tabCount)++;
+
+      while( ( child = (KINETIC_LAW*)GetNextFromLinkedList( children ) ) != NULL ) {
+	if (first) {
+	  first = FALSE;
+	} else {
+	  if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_PLUS) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_PLUS_FORMAT ); 
+	  } else {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_TIMES_FORMAT ); 
+	  }
+	}
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToPrintInXHTML", ret );
+	  return ret;
+	}      
+      }
+    
+      (*tabCount)--;
+      _PrintTab( file, *tabCount );
+      fprintf( file, REB2SAC_XHTML_MATHML_R_PAREN_FORMAT );
+      fprintf( file, NEW_LINE );
+	    
+      (*tabCount)--;
+      _PrintTab( file, *tabCount );
+      fprintf( file, REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT );
+      fprintf( file, NEW_LINE );
+      (*tabCount)--;
+
+      return ret;
+      break;
     case KINETIC_LAW_OP_PW:
       fprintf( file, REB2SAC_XHTML_MATHML_OP_PW_FORMAT );
       break;
@@ -1204,6 +1246,8 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     fprintf( file, REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT );
     fprintf( file, NEW_LINE );
     (*tabCount)--;
+
+    return ret;
 }
 
 static RET_VAL _VisitUnaryOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
@@ -1607,7 +1651,6 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
             fprintf( file, REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT );
             fprintf( file, NEW_LINE );
         break;
-
         case KINETIC_LAW_OP_PLUS:
             _PrintTab( file, *tabCount );
             fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
@@ -1695,7 +1738,7 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
             fprintf( file, REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT );
             fprintf( file, NEW_LINE );
         break;
-        
+
         case KINETIC_LAW_OP_MINUS:
             _PrintTab( file, *tabCount );
             fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
@@ -1783,7 +1826,7 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
             fprintf( file, REB2SAC_XHTML_MATHML_END_SUBGROUP_FORMAT );
             fprintf( file, NEW_LINE );
         break;
-        
+	
         case KINETIC_LAW_OP_TIMES:
             if( _NeedParenForLeft( kineticLaw, left ) ) {
                 _PrintTab( file, *tabCount );
@@ -1855,7 +1898,7 @@ static RET_VAL _VisitOpToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
                 }             
             }
         break;
-        
+
         case KINETIC_LAW_OP_DIVIDE:
             _PrintTab( file, *tabCount );
             fprintf( file, REB2SAC_XHTML_MATHML_START_FRAC_FORMAT );            
@@ -2132,6 +2175,8 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_BITWISE_OR ) ||
 	( parentOpType == KINETIC_LAW_OP_BITWISE_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_BIT ) ||
+	( parentOpType == KINETIC_LAW_OP_PLUS ) ||
+	( parentOpType == KINETIC_LAW_OP_TIMES ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2193,6 +2238,8 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_BITWISE_OR ) ||
 	( parentOpType == KINETIC_LAW_OP_BITWISE_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_BIT ) ||
+	( parentOpType == KINETIC_LAW_OP_PLUS ) ||
+	( parentOpType == KINETIC_LAW_OP_TIMES ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2220,6 +2267,8 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	    ( childOpType == KINETIC_LAW_OP_BITWISE_OR ) ||
 	    ( childOpType == KINETIC_LAW_OP_BITWISE_XOR ) ||
 	    ( childOpType == KINETIC_LAW_OP_BIT ) ||
+	    ( childOpType == KINETIC_LAW_OP_PLUS ) ||
+	    ( childOpType == KINETIC_LAW_OP_TIMES ) ||
 	    ( childOpType == KINETIC_LAW_OP_AND ) ||
 	    ( childOpType == KINETIC_LAW_OP_XOR ) ||
 	    ( childOpType == KINETIC_LAW_OP_OR ) ) {

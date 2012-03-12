@@ -127,12 +127,19 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
     record = frontend->record;
     
     doc = readSBML( GetCharArrayOfString( record->inputPath ) );
+    if (( SBMLDocument_getLevel( doc ) != 3) || ( SBMLDocument_getVersion( doc ) != 1)) {
+      SBMLDocument_setLevelAndVersion( doc, 3, 1);
+      writeSBML( doc, GetCharArrayOfString( record->inputPath ) );
+      doc = readSBML( GetCharArrayOfString( record->inputPath ) );
+    }
+
 //     SBMLDocument_checkConsistency( doc );
 //     errorNum = SBMLDocument_getNumWarnings( doc );
 //     if( errorNum > 0 ) {
 //         /*this is not actually error*/
 //         SBMLDocument_printWarnings( doc, stderr );        
-//     }     
+//     }
+    /*
     if (doc != NULL) {
       errorNum = SBMLDocument_getNumErrors( doc );
       if( errorNum > 0 ) {
@@ -140,6 +147,7 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
 	error = TRUE;         
       }
     }
+    */
 
 //     errorNum = SBMLDocument_getNumFatals( doc );
 //     if( errorNum > 0 ) {
@@ -1624,10 +1632,18 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
             return NULL;
 	  }                 
         } else {
-	  if( ( law = _TransformOpKineticLaw( frontend, source, manager, table ) ) == NULL ) {
-            END_FUNCTION("_TransformKineticLaw", FAILING );
-            return NULL;
-	  }         
+	  if ( ( ( ASTNode_getType( source ) != AST_PLUS) && ( ASTNode_getType( source ) != AST_TIMES) ) ||
+	       ( ( ASTNode_getNumChildren( source ) ) == 2 ) ) {
+	    if( ( law = _TransformOpKineticLaw( frontend, source, manager, table ) ) == NULL ) {
+	      END_FUNCTION("_TransformKineticLaw", FAILING );
+	      return NULL;
+	    }
+	  } else {
+	    if( ( law = _TransformFunctionKineticLaw( frontend, source, manager, table ) ) == NULL ) {
+	      END_FUNCTION("_TransformKineticLaw", FAILING );
+	      return NULL;
+	    }
+	  }        
 	}        
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
@@ -1818,9 +1834,13 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     START_FUNCTION("_TransformFunctionKineticLaw");
     
     num = ASTNode_getNumChildren( source );
-    if( ( children = (KINETIC_LAW**)CALLOC( num, sizeof(KINETIC_LAW*) ) ) == NULL ) {
+    if (num > 0) {
+      if( ( children = (KINETIC_LAW**)CALLOC( num, sizeof(KINETIC_LAW*) ) ) == NULL ) {
         END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
         return NULL;
+      }
+    } else {
+      children = NULL;
     }
     
     for( i = 0; i < num; i++ ) {
@@ -1831,7 +1851,7 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
         }  
     }
      
-    type = ASTNode_getType( source );        
+    type = ASTNode_getType( source );  
     switch( type ) {
         case AST_FUNCTION:
 	  funcId = (char*)ASTNode_getName( source );
@@ -2129,6 +2149,30 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    return NULL;
 	  }
 	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_ROOT, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_PLUS:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_PLUS, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_TIMES:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_TIMES, childrenLL ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }

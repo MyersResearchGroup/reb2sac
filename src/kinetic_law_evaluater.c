@@ -428,6 +428,30 @@ static RET_VAL _VisitPWToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
 	*result = *result && childValue;
       }
       break;
+    case KINETIC_LAW_OP_PLUS:
+      *result = 0;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result + childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_TIMES:
+      *result = 1;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result * childValue;
+      }
+      break;
     default:
       END_FUNCTION("_VisitUnaryOpToFindNextTime", E_WRONGDATA );
       return E_WRONGDATA;
@@ -471,15 +495,15 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
         case KINETIC_LAW_OP_PLUS:
             *result = leftValue + rightValue;
         break;
-        
+
         case KINETIC_LAW_OP_MINUS:
             *result = leftValue - rightValue;
         break;
-        
+
         case KINETIC_LAW_OP_TIMES:
             *result = leftValue * rightValue;
         break;
-        
+
         case KINETIC_LAW_OP_DIVIDE:
             *result = leftValue / rightValue;
         break;
@@ -803,12 +827,12 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
             *result = leftValue + rightValue;
         break;
         
-        case KINETIC_LAW_OP_MINUS:
-            *result = leftValue - rightValue;
-        break;
-        
         case KINETIC_LAW_OP_TIMES:
             *result = leftValue * rightValue;
+        break;
+
+        case KINETIC_LAW_OP_MINUS:
+            *result = leftValue - rightValue;
         break;
         
         case KINETIC_LAW_OP_DIVIDE:
@@ -831,6 +855,7 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 	  *result = pow(rightValue,(1./leftValue));
         break;        
 
+	/*
         case KINETIC_LAW_OP_XOR:
 	  *result = (!leftValue && rightValue)||(leftValue && !rightValue);
         break;
@@ -838,6 +863,11 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
         case KINETIC_LAW_OP_AND:
             *result = leftValue && rightValue;
         break;
+
+        case KINETIC_LAW_OP_OR:
+            *result = leftValue || rightValue;
+        break;
+	*/
 
         case KINETIC_LAW_OP_EQ:
 	  *result = (leftValue == rightValue);
@@ -861,10 +891,6 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 
         case KINETIC_LAW_OP_LT:
 	  *result = (leftValue < rightValue);
-        break;
-
-        case KINETIC_LAW_OP_OR:
-            *result = leftValue || rightValue;
         break;
 
         case KINETIC_LAW_OP_UNIFORM:
