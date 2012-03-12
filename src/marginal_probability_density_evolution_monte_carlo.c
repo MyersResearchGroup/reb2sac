@@ -1902,7 +1902,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%f ", GetReactionRate(reaction));
+		fprintf( file, "%e ", GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
