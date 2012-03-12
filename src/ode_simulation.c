@@ -871,6 +871,9 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	if (rec->numberFastSpecies > 0) {
 	  ExecuteFastReactions( rec );
 	}
+	if (time > maxTime) {
+	  maxTime = time;
+	}
 	if (h >= minTimeStep) {
 	  status = gsl_odeiv_evolve_apply( evolve, control, step,
 					   &system, &time, maxTime,
@@ -1178,7 +1181,7 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
 	  }
 	}
 	/* Try to find time to next event trigger */
-	nextEventTime = rec->time + 
+	nextEventTime = time + 
 	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
 	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {

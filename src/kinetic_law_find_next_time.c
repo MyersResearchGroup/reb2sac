@@ -395,6 +395,32 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	  *result = childValue;
       }
       break;
+    case KINETIC_LAW_OP_PLUS:
+      *result = DBL_MAX;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if (childValue > *result) 
+	  *result = childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_TIMES:
+      *result = 0;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if (childValue > *result) 
+	  *result = childValue;
+      }
+      break;
     default:
       END_FUNCTION("_VisitUnaryOpToFindNextTime", E_WRONGDATA );
       return E_WRONGDATA;
@@ -437,24 +463,14 @@ static RET_VAL _VisitOpToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     switch( opType ) {
         case KINETIC_LAW_OP_PLUS:
             *result = leftValue + rightValue;
-	    /*
-	    if ( left->valueType == KINETIC_LAW_VALUE_TYPE_SYMBOL ) {
-	      if (strcmp(GetCharArrayOfString( GetSymbolID( GetSymbolFromKineticLaw( left ) ) ), "t") == 0) {
-		*result = (leftValue - rightValue);
-	      }
-	    } else if ( right->valueType == KINETIC_LAW_VALUE_TYPE_SYMBOL ) {
-	      if (strcmp(GetCharArrayOfString( GetSymbolID( GetSymbolFromKineticLaw( right ) ) ), "t") == 0) {
-		*result = (rightValue - leftValue);
-	      }
-	      } */
-        break;
-        
-        case KINETIC_LAW_OP_MINUS:
-            *result = leftValue - rightValue;
         break;
         
         case KINETIC_LAW_OP_TIMES:
             *result = leftValue * rightValue;
+        break;
+
+        case KINETIC_LAW_OP_MINUS:
+            *result = leftValue - rightValue;
         break;
         
         case KINETIC_LAW_OP_DIVIDE:
@@ -824,12 +840,12 @@ static RET_VAL _VisitOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, KINETI
             *result = leftValue + rightValue;
         break;
         
-        case KINETIC_LAW_OP_MINUS:
-            *result = leftValue - rightValue;
-        break;
-        
         case KINETIC_LAW_OP_TIMES:
             *result = leftValue * rightValue;
+        break;
+
+        case KINETIC_LAW_OP_MINUS:
+            *result = leftValue - rightValue;
         break;
         
         case KINETIC_LAW_OP_DIVIDE:

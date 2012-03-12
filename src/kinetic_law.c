@@ -2372,7 +2372,7 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
             return FALSE;
         }
         else {
-            if( ( childOpType == KINETIC_LAW_OP_PLUS ) || ( childOpType == KINETIC_LAW_OP_MINUS ) ) {
+	  if( ( childOpType == KINETIC_LAW_OP_PLUS ) || ( childOpType == KINETIC_LAW_OP_MINUS ) ) {
                 END_FUNCTION("_NeedParenForLeft", SUCCESS );        
                 return TRUE;
             }

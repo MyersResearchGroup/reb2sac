@@ -415,6 +415,86 @@ static RET_VAL _VisitPWToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
 	result = result && childValue;
       }
       break;
+    case KINETIC_LAW_OP_PLUS:
+      result = 0;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if( IsRealValueKineticLaw( child ) ) {
+	  childValue = GetRealValueFromKineticLaw( child );
+	}
+	else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	  sym = GetSymbolFromKineticLaw( child );
+	  if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+	  }
+	  childValue = GetRealValueInSymbol( sym );
+#endif
+	}
+	else if( IsIntValueKineticLaw( child ) ) {
+	  childValue = (double)GetIntValueFromKineticLaw( child );
+	}
+	else if( IsSpeciesKineticLaw( child ) ) {
+	  species = GetSpeciesFromKineticLaw( child );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    childValue = GetInitialAmountInSpeciesNode( species );
+	  } else {
+	    childValue = GetInitialConcentrationInSpeciesNode( species );
+	  }
+	}
+	else if( IsCompartmentKineticLaw( child ) ) {
+	  compartment = GetCompartmentFromKineticLaw( child );
+	  childValue = GetSizeInCompartment( compartment );
+	}
+	result = result + childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_TIMES:
+      result = 1;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if( IsRealValueKineticLaw( child ) ) {
+	  childValue = GetRealValueFromKineticLaw( child );
+	}
+	else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	  sym = GetSymbolFromKineticLaw( child );
+	  if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+	  }
+	  childValue = GetRealValueInSymbol( sym );
+#endif
+	}
+	else if( IsIntValueKineticLaw( child ) ) {
+	  childValue = (double)GetIntValueFromKineticLaw( child );
+	}
+	else if( IsSpeciesKineticLaw( child ) ) {
+	  species = GetSpeciesFromKineticLaw( child );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    childValue = GetInitialAmountInSpeciesNode( species );
+	  } else {
+	    childValue = GetInitialConcentrationInSpeciesNode( species );
+	  }
+	}
+	else if( IsCompartmentKineticLaw( child ) ) {
+	  compartment = GetCompartmentFromKineticLaw( child );
+	  childValue = GetSizeInCompartment( compartment );
+	}
+	result = result * childValue;
+      }
+      break;
     default:
       END_FUNCTION("_VisitUnaryOpToFindNextTime", E_WRONGDATA );
       return E_WRONGDATA;
@@ -515,13 +595,13 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
         case KINETIC_LAW_OP_PLUS:
             result = leftValue + rightValue;
         break;
-                
-        case KINETIC_LAW_OP_MINUS:
-            result = leftValue - rightValue;
-        break;
         
         case KINETIC_LAW_OP_TIMES:
             result = leftValue * rightValue;
+        break;
+        
+        case KINETIC_LAW_OP_MINUS:
+            result = leftValue - rightValue;
         break;
         
         case KINETIC_LAW_OP_DIVIDE:
@@ -1087,6 +1167,86 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 	result = result && childValue;
       }
       break;
+    case KINETIC_LAW_OP_PLUS:
+      result = 0;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if( IsRealValueKineticLaw( child ) ) {
+	  childValue = GetRealValueFromKineticLaw( child );
+	}
+	else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	  sym = GetSymbolFromKineticLaw( child );
+	  if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+	  }
+	  childValue = GetRealValueInSymbol( sym );
+#endif
+	}
+	else if( IsIntValueKineticLaw( child ) ) {
+	  childValue = (double)GetIntValueFromKineticLaw( child );
+	}
+	else if( IsSpeciesKineticLaw( child ) ) {
+	  species = GetSpeciesFromKineticLaw( child );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    childValue = GetInitialAmountInSpeciesNode( species );
+	  } else {
+	    childValue = GetInitialConcentrationInSpeciesNode( species );
+	  }
+	}
+	else if( IsCompartmentKineticLaw( child ) ) {
+	  compartment = GetCompartmentFromKineticLaw( child );
+	  childValue = GetSizeInCompartment( compartment );
+	}
+	result = result + childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_TIMES:
+      result = 1;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if( IsRealValueKineticLaw( child ) ) {
+	  childValue = GetRealValueFromKineticLaw( child );
+	}
+	else if( IsSymbolKineticLaw( child ) ) {
+#if 1
+	  sym = GetSymbolFromKineticLaw( child );
+	  if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+	  }
+	  childValue = GetRealValueInSymbol( sym );
+#endif
+	}
+	else if( IsIntValueKineticLaw( child ) ) {
+	  childValue = (double)GetIntValueFromKineticLaw( child );
+	}
+	else if( IsSpeciesKineticLaw( child ) ) {
+	  species = GetSpeciesFromKineticLaw( child );
+	  if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	    childValue = GetInitialAmountInSpeciesNode( species );
+	  } else {
+	    childValue = GetInitialConcentrationInSpeciesNode( species );
+	  }
+	}
+	else if( IsCompartmentKineticLaw( child ) ) {
+	  compartment = GetCompartmentFromKineticLaw( child );
+	  childValue = GetSizeInCompartment( compartment );
+	}
+	result = result * childValue;
+      }
+      break;
     default:
       END_FUNCTION("_VisitUnaryOpToFindNextTime", E_WRONGDATA );
       return E_WRONGDATA;
@@ -1171,13 +1331,13 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
         case KINETIC_LAW_OP_PLUS:
             result = leftValue + rightValue;
         break;
-                
-        case KINETIC_LAW_OP_MINUS:
-            result = leftValue - rightValue;
-        break;
         
         case KINETIC_LAW_OP_TIMES:
             result = leftValue * rightValue;
+        break;
+
+        case KINETIC_LAW_OP_MINUS:
+            result = leftValue - rightValue;
         break;
         
         case KINETIC_LAW_OP_DIVIDE:
