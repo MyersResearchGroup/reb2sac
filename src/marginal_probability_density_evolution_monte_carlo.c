@@ -1162,6 +1162,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     BIFURCATION_RECORD *birec = NULL;
     UINT32 reacSize = rec->reactionsSize;
     double smallProp = 0.0;
+    double prop = 0.0;
     REACTION **reactionArray = rec->reactionArray;
     int numberFirstCluster = 0;
     FILE *bifurFile = NULL;
@@ -1291,8 +1292,12 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 if (reacSize > 0) {
                 	smallProp = GetReactionRate(reactionArray[0]);
                     for (i = 1; i < reacSize; i++) {
-                    	if (smallProp > GetReactionRate(reactionArray[i])) {
-                    		smallProp = GetReactionRate(reactionArray[i]);
+                    	prop = GetReactionRate(reactionArray[i]);
+                    	if (smallProp == 0) {
+                    		smallProp = prop;
+                    	}
+                    	else if (smallProp > prop && prop != 0) {
+                    		smallProp = prop;
                     	}
                     }
                 }
@@ -1334,8 +1339,12 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 if (reacSize > 0) {
                 	smallProp = GetReactionRate(reactionArray[0]);
                 	for (i = 1; i < reacSize; i++) {
-                		if (smallProp > GetReactionRate(reactionArray[i])) {
-                			smallProp = GetReactionRate(reactionArray[i]);
+                		prop = GetReactionRate(reactionArray[i]);
+                		if (smallProp == 0) {
+                			smallProp = prop;
+                		}
+                		else if (smallProp > prop && prop != 0) {
+                			smallProp = prop;
                 		}
                 	}
                 }
@@ -1902,7 +1911,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%e ", GetReactionRate(reaction));
+		fprintf( file, "%f ", GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
