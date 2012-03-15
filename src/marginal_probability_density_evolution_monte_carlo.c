@@ -733,7 +733,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 
     sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
     if( ( file = fopen( filename, "w" ) ) == NULL ) {
-    	return ErrorReport( FAILING, "_CleanRecord", "could not create a statistics file" );
+    	return ErrorReport( FAILING, "_InitializeSimulation", "could not create a statistics file" );
     }
     if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
     	return ret;
