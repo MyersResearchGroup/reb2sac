@@ -1895,12 +1895,12 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	fprintf( file, "Parameter Values:" NEW_LINE);
 
-	for (i = 0; i < symbolsSize; i++) {
-		symbol = symbolArray[i];
-		if (IsRealValueSymbol(symbol)) {
-			fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
-		}
-	}
+	//for (i = 0; i < symbolsSize; i++) {
+	//	symbol = symbolArray[i];
+	//	if (IsRealValueSymbol(symbol)) {
+	//		fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
+	//	}
+	//}
 	fprintf( file, NEW_LINE);
 
 	fprintf( file, "Initial State Vector:" NEW_LINE);
