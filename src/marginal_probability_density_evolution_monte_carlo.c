@@ -1897,9 +1897,9 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < symbolArray; i++) {
 		symbol = symbolArray[i];
-		if (IsRealValueSymbol(symbol)) {
-			fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
-		}
+		//if (IsRealValueSymbol(symbol)) {
+		//	fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
+		//}
 	}
 	fprintf( file, NEW_LINE);
 
@@ -1925,7 +1925,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%s = %f" NEW_LINE, *GetReactionNodeID(reaction), GetReactionRate(reaction));
+		//fprintf( file, "%s = %f" NEW_LINE, *GetReactionNodeID(reaction), GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
