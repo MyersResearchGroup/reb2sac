@@ -774,13 +774,6 @@ static RET_VAL _PrintStatistics(EMBEDDED_RUNGE_KUTTA_PRINCE_DORMAND_SIMULATION_R
 		}
 	}
 
-	if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-		return ret;
-	}
-	if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
-		return ret;
-	}
-
 	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {

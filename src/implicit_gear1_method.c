@@ -775,13 +775,6 @@ static RET_VAL _PrintStatistics(IMPLICIT_GEAR1_SIMULATION_RECORD *rec, FILE *fil
 		}
 	}
 
-	if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-		return ret;
-	}
-	if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
-		return ret;
-	}
-
 	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {
