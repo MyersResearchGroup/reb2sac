@@ -1898,7 +1898,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 	for (i = 0; i < symbolArray; i++) {
 		symbol = symbolArray[i];
 		if (IsRealValueSymbol(symbol)) {
-			fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
+			//fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
 		}
 	}
 	fprintf( file, NEW_LINE);
