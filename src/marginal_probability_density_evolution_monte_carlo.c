@@ -1879,13 +1879,13 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 	UINT32 j = 0;
 	UINT32 reactionsSize = rec->reactionsSize;
 	UINT32 speciesSize = rec->speciesSize;
-	UINT32 symbolsSize = rec->symbolsSize;
+	//UINT32 symbolsSize = rec->symbolsSize;
 	REACTION *reaction = NULL;
 	REACTION **reactionArray = rec->reactionArray;
 	SPECIES *species = NULL;
 	SPECIES **speciesArray = rec->speciesArray;
-	REB2SAC_SYMBOL *symbol = NULL;
-	REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
+	//REB2SAC_SYMBOL *symbol = NULL;
+	//REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
 	REB2SAC_SYMBOL *speciesRef = NULL;
 	REB2SAC_SYMBOL *convFactor = NULL;
 	IR_EDGE *edge = NULL;
