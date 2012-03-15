@@ -500,16 +500,6 @@ static RET_VAL _PrintStatistics(TYPE1PILI_GILLESPIE_CI_RECORD *rec, FILE *file) 
 
 	if ((speciesSize <= 0) || (reactionsSize <= 0)) return ret;
 
-	fprintf( file, "Parameter Values:" NEW_LINE);
-
-	for (i = 0; i < symbolsSize; i++) {
-		symbol = symbolArray[i];
-		if (IsRealValueSymbol(symbol)) {
-			fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
-		}
-	}
-	fprintf( file, NEW_LINE);
-
 	fprintf( file, "Initial State Vector:" NEW_LINE);
 
 	for (i = 0; i < speciesSize; i++) {
