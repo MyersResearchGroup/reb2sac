@@ -1965,7 +1965,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%s ", ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
+		fprintf( file, "%s ", *ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
 	}
 	fprintf( file, NEW_LINE);
 	fprintf( file, NEW_LINE);
