@@ -516,13 +516,6 @@ static RET_VAL _PrintStatistics(TYPE1PILI_GILLESPIE_CI_RECORD *rec, FILE *file) 
 		}
 	}
 
-	if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
-		return ret;
-	}
-	if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
-		return ret;
-	}
-
 	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {
