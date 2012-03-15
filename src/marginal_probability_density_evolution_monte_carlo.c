@@ -1907,7 +1907,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < speciesSize; i++) {
 		species = speciesArray[i];
-		//fprintf( file, "%s = %f" NEW_LINE, *GetSpeciesNodeID(species), GetInitialAmountInSpeciesNode(species));
+		fprintf( file, "%s = %f" NEW_LINE, *GetSpeciesNodeID(species), GetInitialAmountInSpeciesNode(species));
 	}
 	fprintf( file, NEW_LINE);
 
@@ -1925,7 +1925,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		//fprintf( file, "%s = %f" NEW_LINE, *GetReactionNodeID(reaction), GetReactionRate(reaction));
+		fprintf( file, "%f" NEW_LINE, GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
@@ -1976,7 +1976,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		//fprintf( file, "%s = %s" NEW_LINE, *GetReactionNodeID(reaction), *ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
+		fprintf( file, "%s" NEW_LINE, *ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
 	}
 	fprintf( file, NEW_LINE);
 
