@@ -974,10 +974,13 @@ static RET_VAL _PrintStatistics(ODE_SIMULATION_RECORD *rec, FILE *file) {
 	UINT32 j = 0;
 	UINT32 reactionsSize = rec->reactionsSize;
 	UINT32 speciesSize = rec->speciesSize;
+	UINT32 symbolsSize = rec->symbolsSize;
 	REACTION *reaction = NULL;
 	REACTION **reactionArray = rec->reactionArray;
 	SPECIES *species = NULL;
 	SPECIES **speciesArray = rec->speciesArray;
+	REB2SAC_SYMBOL *symbol = NULL;
+	REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
 	REB2SAC_SYMBOL *speciesRef = NULL;
 	REB2SAC_SYMBOL *convFactor = NULL;
 	IR_EDGE *edge = NULL;
@@ -985,13 +988,23 @@ static RET_VAL _PrintStatistics(ODE_SIMULATION_RECORD *rec, FILE *file) {
 
 	if ((speciesSize <= 0) || (reactionsSize <= 0)) return ret;
 
+	fprintf( file, "Parameter Values:" NEW_LINE);
+
+	for (i = 0; i < symbolsSize; i++) {
+		symbol = symbolArray[i];
+		if (IsRealValueSymbol(symbol)) {
+			fprintf( file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
+		}
+	}
+	fprintf( file, NEW_LINE);
+
 	fprintf( file, "Initial State Vector:" NEW_LINE);
 
 	for (i = 0; i < speciesSize; i++) {
 		species = speciesArray[i];
-		fprintf( file, "%f ", GetInitialAmountInSpeciesNode(species));
+		SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
+		fprintf( file, "%s = %f" NEW_LINE, *GetSpeciesNodeID(species), GetInitialAmountInSpeciesNode(species));
 	}
-	fprintf( file, NEW_LINE);
 	fprintf( file, NEW_LINE);
 
 	gsl_matrix *delta_matrix = gsl_matrix_alloc(speciesSize, reactionsSize);
@@ -1004,11 +1017,18 @@ static RET_VAL _PrintStatistics(ODE_SIMULATION_RECORD *rec, FILE *file) {
 		}
 	}
 
+	if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+		return ret;
+	}
+	if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
+		return ret;
+	}
+
 	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%f ", GetReactionRate(reaction));
+		fprintf( file, "%f" NEW_LINE, GetReactionRate(reaction));
 		edges = GetReactantEdges((IR_NODE*) reaction);
 		ResetCurrentElement(edges);
 		while ((edge = GetNextEdge(edges)) != NULL) {
@@ -1054,15 +1074,13 @@ static RET_VAL _PrintStatistics(ODE_SIMULATION_RECORD *rec, FILE *file) {
 		}
 	}
 	fprintf( file, NEW_LINE);
-	fprintf( file, NEW_LINE);
 
 	fprintf( file, "Reaction Rate Equation Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
-		fprintf( file, "%s ", ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
+		fprintf( file, "%s" NEW_LINE, *ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
 	}
-	fprintf( file, NEW_LINE);
 	fprintf( file, NEW_LINE);
 
 	fprintf( file, "Reactant Matrix:" NEW_LINE);
