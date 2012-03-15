@@ -339,6 +339,8 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
     REACTION **reactionArray = rec->reactionArray;
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     SIMULATION_PRINTER *printer = rec->printer;
+    char filename[512];
+    FILE *file = NULL;
     
     srand( rec->seed );
     rec->seed = rand();
@@ -376,6 +378,15 @@ static RET_VAL _InitializeSimulation( GILLESPIE_MONTE_CARLO_RECORD *rec, int run
         }
     }
     
+    sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
+    if( ( file = fopen( filename, "w" ) ) == NULL ) {
+    	return ErrorReport( FAILING, "_InitializeSimulation", "could not create a statistics file" );
+    }
+    if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
+    	return ret;
+    }
+    fclose( file );
+
     return ret;            
 }
 
@@ -466,15 +477,6 @@ static RET_VAL _CleanRecord( GILLESPIE_MONTE_CARLO_RECORD *rec ) {
         return ret;            
     }    
     fclose( file );
-    
-    sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
-    if( ( file = fopen( filename, "w" ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CleanRecord", "could not create a statistics file" );
-    }
-    if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
-        return ret;
-    }
-    fclose( file );
 
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
@@ -529,7 +531,7 @@ static RET_VAL _PrintStatistics(GILLESPIE_MONTE_CARLO_RECORD *rec, FILE *file) {
 		}
 	}
 
-	fprintf( file, "Reaction Rate Array:" NEW_LINE);
+	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
@@ -577,6 +579,15 @@ static RET_VAL _PrintStatistics(GILLESPIE_MONTE_CARLO_RECORD *rec, FILE *file) {
 				}
 			}
 		}
+	}
+	fprintf( file, NEW_LINE);
+	fprintf( file, NEW_LINE);
+
+	fprintf( file, "Reaction Rate Equation Array:" NEW_LINE);
+
+	for (i = 0; i < reactionsSize; i++) {
+		reaction = reactionArray[i];
+		fprintf( file, "%s ", ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
 	}
 	fprintf( file, NEW_LINE);
 	fprintf( file, NEW_LINE);

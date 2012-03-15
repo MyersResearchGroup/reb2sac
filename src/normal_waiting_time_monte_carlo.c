@@ -478,6 +478,8 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
     REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
     KINETIC_LAW *law = NULL;
     BOOL change = FALSE;
+    char filename[512];
+    FILE *file = NULL;
 
     sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
@@ -591,6 +593,15 @@ static RET_VAL _InitializeSimulation( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *re
     if( IS_FAILED( ( ret = _UpdateAllReactionRateUpdateTimes( rec, 0 ) ) ) ) {
       return ret;
     }
+
+    sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
+    if( ( file = fopen( filename, "w" ) ) == NULL ) {
+    	return ErrorReport( FAILING, "_InitializeSimulation", "could not create a statistics file" );
+    }
+    if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
+    	return ret;
+    }
+    fclose( file );
 
     if (change)
       return CHANGE;
@@ -733,15 +744,6 @@ static RET_VAL _CleanRecord( NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec ) {
     }
     fclose( file );
 
-    sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
-    if( ( file = fopen( filename, "w" ) ) == NULL ) {
-        return ErrorReport( FAILING, "_CleanRecord", "could not create a statistics file" );
-    }
-    if( IS_FAILED( ( ret = _PrintStatistics( rec, file ) ) ) ) {
-        return ret;
-    }
-    fclose( file );
-
     if( rec->evaluator != NULL ) {
         FreeKineticLawEvaluater( &(rec->evaluator) );
     }
@@ -795,7 +797,7 @@ static RET_VAL _PrintStatistics(NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FIL
 		}
 	}
 
-	fprintf( file, "Reaction Rate Array:" NEW_LINE);
+	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
 
 	for (i = 0; i < reactionsSize; i++) {
 		reaction = reactionArray[i];
@@ -843,6 +845,15 @@ static RET_VAL _PrintStatistics(NORMAL_WAITING_TIME_MONTE_CARLO_RECORD *rec, FIL
 				}
 			}
 		}
+	}
+	fprintf( file, NEW_LINE);
+	fprintf( file, NEW_LINE);
+
+	fprintf( file, "Reaction Rate Equation Array:" NEW_LINE);
+
+	for (i = 0; i < reactionsSize; i++) {
+		reaction = reactionArray[i];
+		fprintf( file, "%s ", ToStringKineticLaw(GetKineticLawInReactionNode(reaction)));
 	}
 	fprintf( file, NEW_LINE);
 	fprintf( file, NEW_LINE);
