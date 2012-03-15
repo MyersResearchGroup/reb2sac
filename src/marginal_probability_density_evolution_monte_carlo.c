@@ -1907,6 +1907,7 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 
 	for (i = 0; i < speciesSize; i++) {
 		species = speciesArray[i];
+		SetAmountInSpeciesNode(species, GetInitialAmountInSpeciesNode(species));
 		fprintf( file, "%s = %f" NEW_LINE, *GetSpeciesNodeID(species), GetInitialAmountInSpeciesNode(species));
 	}
 	fprintf( file, NEW_LINE);
@@ -1919,6 +1920,13 @@ static RET_VAL _PrintStatistics(MPDE_MONTE_CARLO_RECORD *rec, FILE *file) {
 			gsl_matrix_set(delta_matrix, j, i, 0);
 			gsl_matrix_set(reactant_matrix, j, i, 0);
 		}
+	}
+
+	if (IS_FAILED((ret = _UpdateAllReactionRateUpdateTimes(rec, rec->time)))) {
+		return ret;
+	}
+	if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
+		return ret;
 	}
 
 	fprintf( file, "Initial Reaction Rate Array:" NEW_LINE);
