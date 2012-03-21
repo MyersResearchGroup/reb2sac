@@ -10,7 +10,7 @@ static BOOL _IsModelConditionSatisfied(IR *ir);
 static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir);
 static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum);
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend);
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file);
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file, FILE *tsdFile);
 
 static RET_VAL _CleanSimulation(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec);
@@ -22,7 +22,7 @@ static RET_VAL _FindNextReactionTime(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _FindNextReaction(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _Update(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _Print(MPDE_MONTE_CARLO_RECORD *rec);
-static RET_VAL _PrintBifurcationStatistics( double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file);
+static RET_VAL _PrintBifurcationStatistics( double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file, FILE *tsdFile);
 static RET_VAL _PrintStatistics( MPDE_MONTE_CARLO_RECORD *rec, FILE *file);
 static RET_VAL _UpdateNodeValues(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _UpdateSpeciesValues(MPDE_MONTE_CARLO_RECORD *rec);
@@ -752,7 +752,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 // On the other hand, if a bifurcation happened, the memory allocated for each array must
 // be freed to avoid memory leaks
 
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file) {
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file, FILE *tsdFile) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
@@ -1098,7 +1098,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->numberSecondCluster++;
     	}
     }
-    if( IS_FAILED( ( ret = _PrintBifurcationStatistics( rec->time, birec->numberFirstCluster, birec->numberSecondCluster, runs, file ) ) ) ) {
+    if( IS_FAILED( ( ret = _PrintBifurcationStatistics( rec->time, birec->numberFirstCluster, birec->numberSecondCluster, runs, file, tsdFile ) ) ) ) {
     	return ret;
     }
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
@@ -1177,6 +1177,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     REACTION **reactionArray = rec->reactionArray;
     int numberFirstCluster = 0;
     FILE *bifurFile = NULL;
+    FILE *bifurTSDFile = NULL;
     char filename[512];
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
@@ -1201,6 +1202,11 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     	if( ( bifurFile = fopen( filename, "w" ) ) == NULL ) {
     		return ErrorReport( FAILING, "_RunSimulation", "could not create a bifurcation statistics file" );
     	}
+    	sprintf( filename, "%s%cbifurcation.tsd", rec->outDir, FILE_SEPARATOR );
+    	if( ( bifurTSDFile = fopen( filename, "w" ) ) == NULL ) {
+    		return ErrorReport( FAILING, "_RunSimulation", "could not create a bifurcation tsd file" );
+    	}
+    	fprintf( bifurTSDFile, "((\"time\", \"Path1\", \"Path2\")");
     }
 
 //    if (useMP == 0) {
@@ -1325,7 +1331,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } else {
                 	n = (timeStep / smallProp);
                 }
-                printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
+                //printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
                 end = n + rec->time;
             } else {
                 end = rec->time + timeStep;
@@ -1373,7 +1379,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } else {
                     n = (timeStep / smallProp);
                 }
-                printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
+                //printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
                 if ((n + rec->time) > nextPrintTime) {
                     end = nextPrintTime;
                 } else {
@@ -1606,7 +1612,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         	FREE(birec->meanPathCluster1);
         	FREE(birec->meanPathCluster2);
         	FREE(birec->isBifurcated);
-        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec, numberFirstCluster, bifurFile);
+        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec, numberFirstCluster, bifurFile, bifurTSDFile);
         }
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
@@ -1782,6 +1788,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     	FREE(birec->isBifurcated);
     	FREE(birec);
     	fclose( bifurFile );
+    	fprintf( bifurTSDFile, ")");
+    	fclose( bifurTSDFile );
     }
 
     return ret;
@@ -1863,13 +1871,15 @@ static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec) {
     return ret;
 }
 
-static RET_VAL _PrintBifurcationStatistics(double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file) {
+static RET_VAL _PrintBifurcationStatistics(double time, double numberFirstCluster, double numberSecondCluster, UINT32 runs, FILE *file, FILE *tsdFile) {
 	RET_VAL ret = SUCCESS;
 
 	fprintf( file, "At time %f:" NEW_LINE, time);
 	fprintf( file, "%f (%d/%d) percent of the runs went to the first cluster." NEW_LINE, (numberFirstCluster / (double)runs) * 100, (int)numberFirstCluster, runs);
 	fprintf( file, "%f (%d/%d) percent of the runs went to the second cluster." NEW_LINE, (numberSecondCluster / (double)runs)  * 100, (int)numberSecondCluster, runs);
 	fprintf( file, NEW_LINE);
+
+	fprintf( tsdFile, ",(%f, %f, %f)", time, (numberFirstCluster / (double)runs), (numberSecondCluster / (double)runs));
 
 	return ret;
 }
