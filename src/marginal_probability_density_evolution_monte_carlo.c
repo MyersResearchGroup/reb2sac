@@ -1307,7 +1307,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     	if (IS_REAL_EQUAL(smallProp, 0.0)) {
                     		smallProp = prop;
                     	}
-                    	else if (smallProp > prop && !IS_REAL_EQUAL(prop, 0.0)) {
+                    	else if (smallProp < prop && !IS_REAL_EQUAL(prop, 0.0)) {
                     		smallProp = prop;
                     	}
                     }
@@ -1323,7 +1323,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 if (IS_REAL_EQUAL(smallProp, 0.0)) {
                 	n = timeStep;
                 } else {
-                	n = (1 / (timeStep * smallProp));
+                	n = (timeStep / smallProp);
                 }
                 printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
                 end = n + rec->time;
