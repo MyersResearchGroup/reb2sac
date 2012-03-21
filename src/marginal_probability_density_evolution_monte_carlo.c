@@ -1325,6 +1325,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } else {
                 	n = (timeStep / smallProp);
                 }
+                printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
                 end = n + rec->time;
             } else {
                 end = rec->time + timeStep;
@@ -1372,6 +1373,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } else {
                     n = (timeStep / smallProp);
                 }
+                printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
                 if ((n + rec->time) > nextPrintTime) {
                     end = nextPrintTime;
                 } else {
