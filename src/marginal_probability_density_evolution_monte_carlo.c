@@ -1206,7 +1206,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     	if( ( bifurTSDFile = fopen( filename, "w" ) ) == NULL ) {
     		return ErrorReport( FAILING, "_RunSimulation", "could not create a bifurcation tsd file" );
     	}
-    	fprintf( bifurTSDFile, "((\"time\",\"Path1\",\"Path2\")");
+    	fprintf( bifurTSDFile, "((\"time\",\"Path1\",\"Path2\"),(0, 0.5, 0.5)");
     }
 
 //    if (useMP == 0) {
