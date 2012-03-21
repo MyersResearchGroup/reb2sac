@@ -1153,6 +1153,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     SPECIES **speciesArray = rec->speciesArray;
     SPECIES **speciesOrder = NULL;
     double end;
+    double start;
     double newValue;
     int useMP = rec->useMP;
     BOOL useBifur = rec->useBifur;
@@ -1163,6 +1164,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double **mpRuns;
     double *mpTimes;
     double n;
+    double remainingEvents;
     int eventCounter = 0;
     int maxEvents = ceil(rec->timeStep);
     double minPrintInterval = rec->minPrintInterval;
@@ -1331,8 +1333,10 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } else {
                 	n = (timeStep / smallProp);
                 }
+                remainingEvents = timeStep;
                 //printf("Small-Prop = %f; Events = %f; Incre-Size = %f", smallProp, timeStep, n);
                 end = n + rec->time;
+                start = rec->time;
             } else {
                 end = rec->time + timeStep;
             }
@@ -1385,6 +1389,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 } else {
                     end = n + rec->time;
                 }
+                remainingEvents = timeStep;
+                start = rec->time;
             } else {
                 end = rec->time + timeStep;
             }
@@ -1533,7 +1539,38 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         break;
                     }
                 }
-
+                else if (useMP == 2) {
+                	remainingEvents = remainingEvents - (rec->time - start) * smallProp;
+                	if (reacSize > 0) {
+                		smallProp = GetReactionRate(reactionArray[0]);
+                		for (i = 1; i < reacSize; i++) {
+                			prop = GetReactionRate(reactionArray[i]);
+                			if (IS_REAL_EQUAL(smallProp, 0.0)) {
+                				smallProp = prop;
+                			}
+                			else if (smallProp > prop && !IS_REAL_EQUAL(prop, 0.0)) {
+                				smallProp = prop;
+                			}
+                		}
+                	}
+                	if (IS_REAL_EQUAL(smallProp, 0.0)) {
+                		n = remainingEvents;
+                	} else {
+                		n = (remainingEvents / smallProp);
+                	}
+                	if (minPrintInterval >= 0.0) {
+                		if ((n + rec->time) > nextPrintTime) {
+                			end = nextPrintTime;
+                		} else {
+                			end = n + rec->time;
+                		}
+                	}
+                	else {
+                		end = n + rec->time;
+                	}
+                	start = rec->time;
+                	rec->decider->timeLimit = end;
+                }
             }
 
             if (k == 1) {
