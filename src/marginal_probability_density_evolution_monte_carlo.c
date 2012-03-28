@@ -892,7 +892,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	birec->meansFirstCluster[i] = 0;
     	birec->meansSecondCluster[i] = 0;
     }
-    if (useMP == 3) {
+    if (useMP == 2 || useMP == 3) {
     	meanTimeFirstCluster = 0;
     	meanTimeSecondCluster = 0;
     }
@@ -902,7 +902,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     			birec->meansFirstCluster[i] += mpRuns[k][i];
     		}
     	}
-    	if (useMP == 3) {
+    	if (useMP == 2 || useMP == 3) {
     		meanTimeFirstCluster += mpTimes[k];
     	}
     }
@@ -911,7 +911,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->meansFirstCluster[i] /= half;
     	}
     }
-    if (useMP == 3) {
+    if (useMP == 2 || useMP == 3) {
     	meanTimeFirstCluster /= half;
     }
     half = runs - half;
@@ -921,7 +921,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     			birec->meansSecondCluster[i] += mpRuns[k][i];
     		}
     	}
-    	if (useMP == 3) {
+    	if (useMP == 2 || useMP == 3) {
     		meanTimeSecondCluster += mpTimes[k];
     	}
     }
@@ -930,7 +930,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->meansSecondCluster[i] /= half;
     	}
     }
-    if (useMP == 3) {
+    if (useMP == 2 || useMP == 3) {
     	meanTimeSecondCluster /= half;
     }
     iterations = 0;
@@ -952,7 +952,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     				newDistance2 += pow(mpRuns[k][i] - birec->meansSecondCluster[i], 2);
     			}
     		}
-    		if (useMP == 3) {
+    		if (useMP == 2 || useMP == 3) {
     			newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
     			newDistance2 += pow(mpTimes[k] - meanTimeSecondCluster, 2);
     		}
@@ -962,7 +962,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     					meanCluster1[i] += mpRuns[k][i];
     				}
     			}
-    			if (useMP == 3) {
+    			if (useMP == 2 || useMP == 3) {
     				newMeanTimeFirstCluster += mpTimes[k];
     			}
     			birec->numberFirstCluster++;
@@ -973,7 +973,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     					meanCluster2[i] += mpRuns[k][i];
     				}
     			}
-    			if (useMP == 3) {
+    			if (useMP == 2 || useMP == 3) {
     				newMeanTimeSecondCluster += mpTimes[k];
     			}
     			birec->numberSecondCluster++;
@@ -1070,7 +1070,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     			newDistance2 += pow(mpRuns[k][l] - birec->meansSecondCluster[l], 2);
     		}
     	}
-    	if (useMP == 3) {
+    	if (useMP == 2 || useMP == 3) {
     		newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
     		newDistance2 += pow(mpTimes[k] - meanTimeSecondCluster, 2);
     	}
@@ -1113,7 +1113,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		birec->meanPathCluster2[l] = mpRuns[index2][l];
     	}
     }
-    if (useMP == 3) {
+    if (useMP == 2 || useMP == 3) {
     	if (percentFirst > percentFirstToFirst) {
     		birec->timeFirstCluster = mpTimes[index2];
     		birec->timeSecondCluster = mpTimes[index1];
@@ -1427,7 +1427,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			    newValue = birec->meanPathCluster1[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
-            			if (useMP == 3) {
+            			if (useMP == 2 || useMP == 3) {
             				rec->time = birec->timeFirstCluster;
             			}
             		}
@@ -1437,7 +1437,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			    newValue = birec->meanPathCluster2[l];
             			    SetAmountInSpeciesNode(species, newValue);
             			}
-            			if (useMP == 3) {
+            			if (useMP == 2 || useMP == 3) {
             				rec->time = birec->timeSecondCluster;
             			}
             		}
@@ -1599,7 +1599,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     }
                 }
             }
-            if (useMP == 3) {
+            if (useMP == 2 || useMP == 3) {
                 mpTimes[k - 1] = rec->time;
             }
         }
@@ -1621,7 +1621,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                 for (l = 0; l < size; l++) {
                     newDistance += pow(mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
                 }
-                if (useMP == 3) {
+                if (useMP == 2 || useMP == 3) {
                     newDistance += pow(mpTimes[k] - time, 2);
                 }
                 if (distance == -1) {
@@ -1635,7 +1635,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             for (l = 0; l < size; l++) {
                 mpRun[l] = mpRuns[index][l];
             }
-            if (useMP == 3) {
+            if (useMP == 2 || useMP == 3) {
                 time = mpTimes[index];
                 rec->time = time;
             }
@@ -1703,7 +1703,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			species = speciesArray[l];
             		    SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
             		}
-            		if (useMP == 3) {
+            		if (useMP == 2 || useMP == 3) {
             			rec->time = birec->timeFirstCluster;
             		}
             		if (IS_FAILED((ret = mpPrinter1->PrintValues(mpPrinter1, rec->time)))) {
@@ -1713,7 +1713,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             			species = speciesArray[l];
             			SetAmountInSpeciesNode(species, birec->meanPathCluster2[l]);
             		}
-            		if (useMP == 3) {
+            		if (useMP == 2 || useMP == 3) {
             			rec->time = birec->timeSecondCluster;
             		}
             		if (IS_FAILED((ret = mpPrinter2->PrintValues(mpPrinter2, rec->time)))) {
