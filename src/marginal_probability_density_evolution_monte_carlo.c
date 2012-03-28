@@ -1765,7 +1765,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     			}
     		}
     	}
-    	else if (birec->isBifurcated == NULL) {
+    	else if (birec->isBifurcated != NULL) {
     		for (l = 0; l < size; l++) {
     			species = speciesArray[l];
     			SetAmountInSpeciesNode(species, birec->meanPathCluster1[l]);
