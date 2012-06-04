@@ -57,10 +57,13 @@ typedef struct {
     int startIndex;
     double *oldSpeciesMeans;
     double *oldSpeciesVariances;
+    double oldTimeMean;
     double *newSpeciesMeans;
     double *newSpeciesVariances;
+    double newTimeMean;
     double *speciesSD;
     int useMP;
+    BOOL useMedian;
     BOOL useBifur;
 } MPDE_MONTE_CARLO_RECORD;
 
