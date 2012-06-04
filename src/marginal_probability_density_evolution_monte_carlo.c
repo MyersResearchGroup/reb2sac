@@ -1127,6 +1127,28 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     return ret;
 }
 
+double Find_Median (double[] list) {
+	int len = sizeof(list)/sizeof(double);
+	int middle = len / 2;
+	int i, j;
+	double tmp;
+	for (i = 1; i < len; i++) {
+		j = i;
+		while (j > 0 && list[j - 1] > list[j]) {
+			tmp = list[j];
+			list[j] = list[j - 1];
+			list[j - 1] = tmp;
+			j--;
+		}
+	}
+	if (len % 2 == 0) {
+		return ((list[middle] + list[middle - 1]) / 2);
+	}
+	else {
+		return list[middle];
+	}
+}
+
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend) {
     RET_VAL ret = SUCCESS;
     int i = 0;
@@ -1156,6 +1178,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     double start;
     double newValue;
     int useMP = rec->useMP;
+    BOOL useMedian = rec->useMedian;
     BOOL useBifur = rec->useBifur;
     double mpRun[size];
     double distance;
@@ -1181,6 +1204,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
     FILE *bifurFile = NULL;
     FILE *bifurTSDFile = NULL;
     char filename[512];
+    double duplicate[rec->runs];
 
     mpRuns = (double**)MALLOC(rec->runs * sizeof(double*));
     for (i = 0 ; i < rec->runs; i ++) {
@@ -1582,6 +1606,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
+                rec->newTimeMean = rec->time;
                 printf("\n");
                 fflush(stdout);
             } else {
@@ -1598,6 +1623,8 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                         mpRuns[k - 1][l] = GetAmountInSpeciesNode(species);
                     }
                 }
+                double old = rec->newTimeMean;
+                rec->newTimeMean = old + ((rec->time - old) / k);
             }
             if (useMP == 2 || useMP == 3) {
                 mpTimes[k - 1] = rec->time;
@@ -1608,10 +1635,29 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             time = end;
         }
         for (l = 0; l < size; l++) {
-            species = speciesArray[l];
-            rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
-            rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
-            rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+        	if (useMedian) {
+        		for (i = 0; i < rec->runs; i ++) {
+        			duplicate[i] = mpRuns[i][l];
+        		}
+        		rec->oldSpeciesMeans[l] = Find_Median(duplicate);
+        		rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+        		rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+        	}
+        	else {
+        		species = speciesArray[l];
+        		rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
+        		rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+        		rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
+        	}
+        }
+        if (useMedian) {
+        	for (i = 0; i < rec->runs; i ++) {
+        		duplicate[i] = mpTimes[i];
+        	}
+        	rec->oldTimeMean = Find_Median(duplicate);
+        }
+        else {
+        	rec->oldTimeMean = rec->newTimeMean;
         }
         if (useMP != 0) {
             distance = -1;
@@ -1622,7 +1668,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     newDistance += pow(mpRuns[k][l] - rec->oldSpeciesMeans[l], 2);
                 }
                 if (useMP == 2 || useMP == 3) {
-                    newDistance += pow(mpTimes[k] - time, 2);
+                    newDistance += pow(mpTimes[k] - rec->oldTimeMean, 2);
                 }
                 if (distance == -1) {
                     distance = newDistance;
