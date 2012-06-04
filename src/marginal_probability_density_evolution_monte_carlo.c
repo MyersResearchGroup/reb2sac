@@ -1127,7 +1127,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     return ret;
 }
 
-double Find_Median (double[] list) {
+double Find_Median (double list[]) {
 	int len = sizeof(list)/sizeof(double);
 	int middle = len / 2;
 	int i, j;
