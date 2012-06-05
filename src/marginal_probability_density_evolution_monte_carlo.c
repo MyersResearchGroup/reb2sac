@@ -10,7 +10,7 @@ static BOOL _IsModelConditionSatisfied(IR *ir);
 static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend, IR *ir);
 static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum);
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend);
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file, FILE *tsdFile);
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file, FILE *tsdFile, BOOL useMedian);
 
 static RET_VAL _CleanSimulation(MPDE_MONTE_CARLO_RECORD *rec);
 static RET_VAL _CleanRecord(MPDE_MONTE_CARLO_RECORD *rec);
@@ -753,7 +753,7 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
 // On the other hand, if a bifurcation happened, the memory allocated for each array must
 // be freed to avoid memory leaks
 
-static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file, FILE *tsdFile) {
+static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, double *mpTimes, int useMP, BIFURCATION_RECORD *birec, int previousNumberFirstCluster, FILE *file, FILE *tsdFile, BOOL useMedian) {
     RET_VAL ret = SUCCESS;
     int i = 0;
     int k = 0;
@@ -981,8 +981,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		}
     	}
     	converge = true;
-    	newMeanTimeFirstCluster /= birec->numberFirstCluster++;
-    	newMeanTimeSecondCluster /= birec->numberSecondCluster++;
+    	newMeanTimeFirstCluster /= birec->numberFirstCluster;
+    	newMeanTimeSecondCluster /= birec->numberSecondCluster;
     	if (newMeanTimeFirstCluster != meanTimeFirstCluster || newMeanTimeSecondCluster != meanTimeSecondCluster) {
     		converge = false;
     	}
@@ -1694,7 +1694,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         	FREE(birec->meanPathCluster1);
         	FREE(birec->meanPathCluster2);
         	FREE(birec->isBifurcated);
-        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec, numberFirstCluster, bifurFile, bifurTSDFile);
+        	_CheckBifurcation(rec, mpRuns, mpTimes, useMP, birec, numberFirstCluster, bifurFile, bifurTSDFile, useMedian);
         }
         if (time >= nextPrintTime && time != timeLimit) {
             if (minPrintInterval >= 0.0) {
