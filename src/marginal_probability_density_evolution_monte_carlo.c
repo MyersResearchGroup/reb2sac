@@ -62,6 +62,7 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, I
 
     runs = rec.runs;
     rec.useMP = backend->useMP;
+    rec.useMedian = backend->useMedian;
     rec.useBifur = backend->useBifur;
     //for( i = 1; i <= runs; i++ ) {
     SeedRandomNumberGenerators(rec.seed);
@@ -1637,7 +1638,6 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
         for (l = 0; l < size; l++) {
         	species = speciesArray[l];
         	if (useMedian) {
-        		printf("Median!\n");
         		for (i = 0; i < rec->runs; i ++) {
         			duplicate[i] = mpRuns[i][l];
         		}
