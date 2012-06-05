@@ -1635,20 +1635,19 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
             time = end;
         }
         for (l = 0; l < size; l++) {
+        	species = speciesArray[l];
         	if (useMedian) {
+        		printf("Median!\n");
         		for (i = 0; i < rec->runs; i ++) {
         			duplicate[i] = mpRuns[i][l];
         		}
         		rec->oldSpeciesMeans[l] = Find_Median(duplicate);
-        		rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
-        		rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
         	}
         	else {
-        		species = speciesArray[l];
         		rec->oldSpeciesMeans[l] = rec->newSpeciesMeans[l];
-        		rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
-        		rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
         	}
+        	rec->oldSpeciesVariances[l] = rec->newSpeciesVariances[l];
+        	rec->speciesSD[l] = sqrt(rec->newSpeciesVariances[l]);
         }
         if (useMedian) {
         	for (i = 0; i < rec->runs; i ++) {
