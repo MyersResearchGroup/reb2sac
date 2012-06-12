@@ -1135,8 +1135,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
     if (useMedian) {
-    	printf("Got here!\n");
-    	fflush(stdout);
     	mpRunsCluster1 = (double**)MALLOC(birec->numberFirstCluster * sizeof(double*));
     	mpRunsCluster2 = (double**)MALLOC(birec->numberSecondCluster * sizeof(double*));
     	for (i = 0 ; i < birec->numberFirstCluster; i ++) {
@@ -1177,8 +1175,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         		secondCounter++;
         	}
         }
-        printf("And here!\n");
-        fflush(stdout);
         duplicate1 = (double*)MALLOC(firstCounter * sizeof(double));
         duplicate2 = (double*)MALLOC(secondCounter * sizeof(double));
         for (l = 0; l < size; l++) {
@@ -1221,26 +1217,18 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         		index2 = k;
         	}
         }
-        printf("Before freeing!\n");
-        fflush(stdout);
     	for (i = 0 ; i < birec->numberFirstCluster; i ++) {
     		FREE(mpRunsCluster1[i]);
     	}
     	for (i = 0 ; i < birec->numberSecondCluster; i ++) {
     		FREE(mpRunsCluster2[i]);
     	}
-    	printf("Started freeing!\n");
-    	fflush(stdout);
     	FREE(mpRunsCluster1);
-    	FREE(mpRunsCluster2);
-    	printf("Continued freeing!\n");
-    	fflush(stdout);
+    	FREE(mpRunsCluster2);;
     	FREE(mpTimesCluster1);
     	FREE(mpTimesCluster2);
     	FREE(duplicate1);
     	FREE(duplicate2);
-        printf("After freeing!\n");
-        fflush(stdout);
     }
     for (l = 0; l < size; l++) {
     	if (percentFirst > percentFirstToFirst) {
