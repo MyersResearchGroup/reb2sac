@@ -746,6 +746,28 @@ static RET_VAL _InitializeSimulation(MPDE_MONTE_CARLO_RECORD *rec, int runNum) {
     return ret;
 }
 
+double Find_Median (double list[]) {
+	int len = sizeof(list)/sizeof(double);
+	int middle = len / 2;
+	int i, j;
+	double tmp;
+	for (i = 1; i < len; i++) {
+		j = i;
+		while (j > 0 && list[j - 1] > list[j]) {
+			tmp = list[j];
+			list[j] = list[j - 1];
+			list[j - 1] = tmp;
+			j--;
+		}
+	}
+	if (len % 2 == 0) {
+		return ((list[middle] + list[middle - 1]) / 2);
+	}
+	else {
+		return list[middle];
+	}
+}
+
 // This function detects if at least one species bifurcated based on a specified threshold
 // value and returns the number of runs, the mean values and the mean paths that went to
 // bifurcated route. All this values are returned into the <birec> struct.
@@ -786,6 +808,14 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     int half = 0;
     BOOL converge = false;
     int iterations = 0;
+    double **mpRunsCluster1;
+    double **mpRunsCluster2;
+    double *mpTimesCluster1;
+    double *mpTimesCluster2;
+    int firstCounter;
+    int secondCounter;
+    double *duplicate1;
+    double *duplicate2;
 
     // Allocate memory for vector indicating which species bifurcated
 
@@ -1104,6 +1134,99 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     }
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
+    if (useMedian) {
+    	mpRunsCluster1 = (double**)MALLOC(birec->numberFirstCluster * sizeof(double*));
+    	mpRunsCluster2 = (double**)MALLOC(birec->numberSecondCluster * sizeof(double*));
+    	for (i = 0 ; i < rec->runs; i ++) {
+    		mpRunsCluster1[i] = (double*)MALLOC(size * sizeof(double));
+    		mpRunsCluster2[i] = (double*)MALLOC(size * sizeof(double));
+    	}
+    	mpTimesCluster1 = (double*)MALLOC(birec->numberFirstCluster * sizeof(double));
+    	mpTimesCluster2 = (double*)MALLOC(birec->numberSecondCluster * sizeof(double));
+    	firstCounter = 0;
+    	secondCounter = 0;
+        for (k = 0; k < runs; k++) {
+        	newDistance1 = 0;
+        	newDistance2 = 0;
+        	for (l = 0; l < size; l++) {
+        		if (IsPrintFlagSetInSpeciesNode(speciesArray[l])) {
+        			newDistance1 += pow(mpRuns[k][l] - birec->meansFirstCluster[l], 2);
+        			newDistance2 += pow(mpRuns[k][l] - birec->meansSecondCluster[l], 2);
+        		}
+        	}
+        	if (useMP == 2 || useMP == 3) {
+        		newDistance1 += pow(mpTimes[k] - meanTimeFirstCluster, 2);
+        		newDistance2 += pow(mpTimes[k] - meanTimeSecondCluster, 2);
+        	}
+        	if (newDistance1 <= newDistance2) {
+        		for (l = 0; l < size; l++) {
+        			mpRunsCluster1[firstCounter][l] = mpRuns[k][l];
+        		}
+        		mpTimesCluster1[firstCounter] = mpTimes[k];
+        		firstCounter++;
+        	}
+        	else {
+        		for (l = 0; l < size; l++) {
+        			mpRunsCluster2[secondCounter][l] = mpRuns[k][l];
+        		}
+        		mpTimesCluster2[secondCounter] = mpTimes[k];
+        		secondCounter++;
+        	}
+        }
+        duplicate1 = (double*)MALLOC(firstCounter * sizeof(double));
+        duplicate2 = (double*)MALLOC(secondCounter * sizeof(double));
+        for (l = 0; l < size; l++) {
+        	for (k = 0; k < firstCounter; k++) {
+        		duplicate1[k] = mpRunsCluster1[k][l];
+        	}
+        	meanCluster1[l] = Find_Median(duplicate1);
+        	for (k = 0; k < secondCounter; k++) {
+        		duplicate2[k] = mpRunsCluster2[k][l];
+        	}
+        	meanCluster2[l] = Find_Median(duplicate2);
+        }
+        newMeanTimeFirstCluster = Find_Median(mpTimesCluster1);
+        newMeanTimeSecondCluster = Find_Median(mpTimesCluster2);
+        for (k = 0; k < runs; k++) {
+        	newDistance1 = 0;
+        	newDistance2 = 0;
+        	for (l = 0; l < size; l++) {
+        		if (IsPrintFlagSetInSpeciesNode(speciesArray[l])) {
+        			newDistance1 += pow(mpRuns[k][l] - meanCluster1[l], 2);
+        			newDistance2 += pow(mpRuns[k][l] - meanCluster2[l], 2);
+        		}
+        	}
+        	if (useMP == 2 || useMP == 3) {
+        		newDistance1 += pow(mpTimes[k] - newMeanTimeFirstCluster, 2);
+        		newDistance2 += pow(mpTimes[k] - newMeanTimeSecondCluster, 2);
+        	}
+        	if (min_dist1 == -1) {
+        		min_dist1 = newDistance1;
+        		index1 = k;
+        	} else if (newDistance1 < min_dist1) {
+        		min_dist1 = newDistance1;
+        		index1 = k;
+        	}
+        	if (min_dist2 == -1) {
+        		min_dist2 = newDistance2;
+        		index2 = k;
+        	} else if (newDistance2 < min_dist2) {
+        		min_dist2 = newDistance2;
+        		index2 = k;
+        	}
+        }
+
+    	for (i = 0 ; i < rec->runs; i ++) {
+    		FREE(mpRunsCluster1[i]);
+    		FREE(mpRunsCluster2[i]);
+    	}
+    	FREE(mpRunsCluster1);
+    	FREE(mpRunsCluster2);
+    	FREE(mpTimesCluster1);
+    	FREE(mpTimesCluster2);
+    	FREE(duplicate1);
+    	FREE(duplicate2);
+    }
     for (l = 0; l < size; l++) {
     	if (percentFirst > percentFirstToFirst) {
     		birec->meanPathCluster1[l] = mpRuns[index2][l];
@@ -1126,28 +1249,6 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     }
 
     return ret;
-}
-
-double Find_Median (double list[]) {
-	int len = sizeof(list)/sizeof(double);
-	int middle = len / 2;
-	int i, j;
-	double tmp;
-	for (i = 1; i < len; i++) {
-		j = i;
-		while (j > 0 && list[j - 1] > list[j]) {
-			tmp = list[j];
-			list[j] = list[j - 1];
-			list[j - 1] = tmp;
-			j--;
-		}
-	}
-	if (len % 2 == 0) {
-		return ((list[middle] + list[middle - 1]) / 2);
-	}
-	else {
-		return list[middle];
-	}
 }
 
 static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *backend) {
