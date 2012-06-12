@@ -1224,6 +1224,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	for (i = 0 ; i < rec->runs; i ++) {
     		FREE(mpRunsCluster1[i]);
     		FREE(mpRunsCluster2[i]);
+    		printf("%d\n", i);
+    		fflush(stdout);
     	}
     	printf("Started freeing!\n");
     	fflush(stdout);
