@@ -1139,8 +1139,10 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	fflush(stdout);
     	mpRunsCluster1 = (double**)MALLOC(birec->numberFirstCluster * sizeof(double*));
     	mpRunsCluster2 = (double**)MALLOC(birec->numberSecondCluster * sizeof(double*));
-    	for (i = 0 ; i < rec->runs; i ++) {
+    	for (i = 0 ; i < birec->numberFirstCluster; i ++) {
     		mpRunsCluster1[i] = (double*)MALLOC(size * sizeof(double));
+    	}
+    	for (i = 0 ; i < birec->numberSecondCluster; i ++) {
     		mpRunsCluster2[i] = (double*)MALLOC(size * sizeof(double));
     	}
     	mpTimesCluster1 = (double*)MALLOC(birec->numberFirstCluster * sizeof(double));
@@ -1221,11 +1223,11 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         }
         printf("Before freeing!\n");
         fflush(stdout);
-    	for (i = 0 ; i < rec->runs; i ++) {
+    	for (i = 0 ; i < birec->numberFirstCluster; i ++) {
     		FREE(mpRunsCluster1[i]);
+    	}
+    	for (i = 0 ; i < birec->numberSecondCluster; i ++) {
     		FREE(mpRunsCluster2[i]);
-    		printf("%d\n", i);
-    		fflush(stdout);
     	}
     	printf("Started freeing!\n");
     	fflush(stdout);
