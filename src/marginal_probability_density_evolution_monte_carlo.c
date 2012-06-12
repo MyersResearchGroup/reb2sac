@@ -1135,6 +1135,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     percentFirst = ((double) previousNumberFirstCluster) / ((double) runs);
     percentFirstToFirst = ((double) firstToFirst) / ((double) birec->numberFirstCluster);
     if (useMedian) {
+    	printf("Got here!\n");
+    	fflush(stdout);
     	mpRunsCluster1 = (double**)MALLOC(birec->numberFirstCluster * sizeof(double*));
     	mpRunsCluster2 = (double**)MALLOC(birec->numberSecondCluster * sizeof(double*));
     	for (i = 0 ; i < rec->runs; i ++) {
@@ -1173,6 +1175,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         		secondCounter++;
         	}
         }
+        printf("And here!\n");
+        fflush(stdout);
         duplicate1 = (double*)MALLOC(firstCounter * sizeof(double));
         duplicate2 = (double*)MALLOC(secondCounter * sizeof(double));
         for (l = 0; l < size; l++) {
@@ -1215,7 +1219,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
         		index2 = k;
         	}
         }
-
+        printf("Before freeing!\n");
+        fflush(stdout);
     	for (i = 0 ; i < rec->runs; i ++) {
     		FREE(mpRunsCluster1[i]);
     		FREE(mpRunsCluster2[i]);
@@ -1226,6 +1231,8 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	FREE(mpTimesCluster2);
     	FREE(duplicate1);
     	FREE(duplicate2);
+        printf("After freeing!\n");
+        fflush(stdout);
     }
     for (l = 0; l < size; l++) {
     	if (percentFirst > percentFirstToFirst) {
@@ -1347,7 +1354,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
 //	    disp_mat(stoich_matrix);
 //	    printf("\n");
 //	    for (i = 0; i < size; i ++ ) {
-//	    	printf("%d ", GetSpeciesNodeID(speciesOrder[i]));reaction
+//	    	printf("%d ", GetSpeciesNodeID(speciesOrder[i]));
 //	    }
 //	    printf("\n\n");
 //        L_matrix = conservation(stoich_matrix, speciesOrder);
