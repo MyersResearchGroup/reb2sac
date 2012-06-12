@@ -247,7 +247,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->Close = CloseMPDEMonteCarloAnalyzer;
                 backend->useMP = 0;
             }
-            else if( strcmp( backend->encoding, "mp" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mean_path" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -257,7 +257,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useBifur = false;
                 backend->useMedian = false;
             }
-            else if( strcmp( backend->encoding, "mp-median" ) == 0 ) {
+            else if( strcmp( backend->encoding, "median_path" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -267,7 +267,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useBifur = false;
                 backend->useMedian = true;
             }
-            else if( strcmp( backend->encoding, "mp-adaptive" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mean_path-adaptive" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -277,7 +277,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useBifur = false;
                 backend->useMedian = false;
             }
-            else if( strcmp( backend->encoding, "mp-adaptive-median" ) == 0 ) {
+            else if( strcmp( backend->encoding, "median_path-adaptive" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -287,7 +287,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useBifur = false;
                 backend->useMedian = true;
             }
-            else if( strcmp( backend->encoding, "mp-event" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mean_path-event" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -297,7 +297,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useBifur = false;
                 backend->useMedian = false;
             }
-            else if( strcmp( backend->encoding, "mp-event-median" ) == 0 ) {
+            else if( strcmp( backend->encoding, "median_path-event" ) == 0 ) {
                 if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
                     return ret;
                 }
@@ -307,7 +307,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 backend->useBifur = false;
                 backend->useMedian = true;
             }
-            else if( strcmp( backend->encoding, "mp-bifurcation" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mean_path-bifurcation" ) == 0 ) {
             	if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
             		return ret;
             	}
@@ -317,7 +317,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
             	backend->useBifur = true;
             	backend->useMedian = false;
             }
-            else if( strcmp( backend->encoding, "mp-adaptive-bifurcation" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mean_path-adaptive-bifurcation" ) == 0 ) {
             	if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
             		return ret;
             	}
@@ -327,7 +327,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
             	backend->useBifur = true;
             	backend->useMedian = false;
             }
-            else if( strcmp( backend->encoding, "mp-event-bifurcation" ) == 0 ) {
+            else if( strcmp( backend->encoding, "mean_path-event-bifurcation" ) == 0 ) {
             	if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
             		return ret;
             	}
@@ -336,6 +336,36 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
             	backend->useMP = 3;
             	backend->useBifur = true;
             	backend->useMedian = false;
+            }
+            else if( strcmp( backend->encoding, "median_path-bifurcation" ) == 0 ) {
+            	if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
+            		return ret;
+            	}
+            	backend->Process = DoMPDEMonteCarloAnalysis;
+            	backend->Close = CloseMPDEMonteCarloAnalyzer;
+            	backend->useMP = 1;
+            	backend->useBifur = true;
+            	backend->useMedian = true;
+            }
+            else if( strcmp( backend->encoding, "median_path-adaptive-bifurcation" ) == 0 ) {
+            	if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
+            		return ret;
+            	}
+            	backend->Process = DoMPDEMonteCarloAnalysis;
+            	backend->Close = CloseMPDEMonteCarloAnalyzer;
+            	backend->useMP = 2;
+            	backend->useBifur = true;
+            	backend->useMedian = true;
+            }
+            else if( strcmp( backend->encoding, "median_path-event-bifurcation" ) == 0 ) {
+            	if( IS_FAILED( ( ret = _AddPostProcessingMethods( record, __MONTE_CARLO_POST_PROCESSING_METHODS ) ) ) ) {
+            		return ret;
+            	}
+            	backend->Process = DoMPDEMonteCarloAnalysis;
+            	backend->Close = CloseMPDEMonteCarloAnalyzer;
+            	backend->useMP = 3;
+            	backend->useBifur = true;
+            	backend->useMedian = true;
             }
             else {
                 fprintf( stderr, "target backend->encoding type %s is invalid", backend->encoding ); 
