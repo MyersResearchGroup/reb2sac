@@ -1225,8 +1225,12 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     		FREE(mpRunsCluster1[i]);
     		FREE(mpRunsCluster2[i]);
     	}
+    	printf("Started freeing!\n");
+    	fflush(stdout);
     	FREE(mpRunsCluster1);
     	FREE(mpRunsCluster2);
+    	printf("Continued freeing!\n");
+    	fflush(stdout);
     	FREE(mpTimesCluster1);
     	FREE(mpTimesCluster2);
     	FREE(duplicate1);
