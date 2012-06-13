@@ -965,7 +965,7 @@ static RET_VAL _CheckBifurcation(MPDE_MONTE_CARLO_RECORD *rec, double **mpRuns, 
     	meanTimeSecondCluster /= half;
     }
     iterations = 0;
-    while (!converge && iterations < 100) {
+    while (!converge && iterations < 1000) {
     	for (i = 0; i < size; i++) {
     		meanCluster1[i] = 0;
     		meanCluster2[i] = 0;
