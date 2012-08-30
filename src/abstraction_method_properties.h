@@ -45,6 +45,9 @@ typedef struct {
 #define REB2SAC_OPERATOR_MAX_CONCENTRATION_THRESHOLD_KEY "reb2sac.operator.max.concentration.threshold"
 #define DEFAULT_REB2SAC_OPERATOR_MAX_CONCENTRATION_THRESHOLD ((double)2.0)
 
+#define REB2SAC_DIFFUSION_STOICHIOMETRY_AMPLIFICATION_VALUE_KEY "reb2sac.diffusion.stoichiometry.amplification.value"
+#define REB2SAC_DIFFUSION_STOICHIOMETRY_AMPLIFICATION_VALUE ((double)2.0)
+
 
 #define REB2SAC_ABSOLUTE_ACTIVATION_INHIBITION_THRESHOLD_KEY_PREFIX "reb2sac.absolute.activation.inhibition.threshold."
 
