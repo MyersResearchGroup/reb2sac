@@ -792,7 +792,7 @@ BOOL IsConstantValueKineticLaw(KINETIC_LAW *law) {
     }
     if( law->valueType == KINETIC_LAW_VALUE_TYPE_SYMBOL ) {
         sym = law->value.symbol;
-        if( IsSymbolConstant( sym ) ) {
+        if( IsSymbolConstant( sym ) && GetInitialAssignmentInSymbol( sym ) == NULL) {
             END_FUNCTION("IsConstantValueKineticLaw", SUCCESS );        
             return TRUE;
         }
