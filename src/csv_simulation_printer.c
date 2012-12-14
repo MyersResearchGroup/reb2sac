@@ -123,7 +123,9 @@ static RET_VAL _PrintValues( SIMULATION_PRINTER *printer, double time ) {
     
     fprintf( out, "%.12g", time );
     for( i = 0; i < size; i++ ) {
-      fprintf( out, ", %.12g", GetAmountInSpeciesNode( speciesArray[i] ) );
+      if (IsPrintFlagSetInSpeciesNode(speciesArray[i])) {
+	fprintf( out, ", %.12g", GetAmountInSpeciesNode( speciesArray[i] ) );
+      }
     }
     for( i = 0; i < compSize; i++ ) {
       if (PrintCompartment( compartmentArray[i] )) {

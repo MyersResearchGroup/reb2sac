@@ -61,6 +61,7 @@
 #include "sbml/FunctionDefinition.h"
 #include "sbml/math/FormulaFormatter.h"
 #include "sbml/xml/XMLNode.h"
+#include "sbml/packages/comp/extension/CompModelPlugin.h"
 
 BEGIN_C_NAMESPACE
 

@@ -118,9 +118,8 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
     BOOL error = FALSE;
     SBMLDocument_t *doc = NULL;
     COMPILER_RECORD_T *record = NULL;
-#ifdef DEBUG
     Model_t *model = NULL;
-#endif
+    //    CompModelPlugin *sbmlCompModel = NULL;
     
     START_FUNCTION("_ParseSBML");
 
@@ -158,6 +157,8 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
         END_FUNCTION("_ParseSBML", FAILING );
         return ErrorReport( FAILING, "_ParseSBML", "input file error" );                                             
     }
+    model = SBMLDocument_getModel( doc );
+    //sbmlCompModel = (CompModelPlugin_t)Model_getPlugin(model, "comp");
     frontend->_internal1 = (CADDR_T)doc;                
     
 #ifdef DEBUG
