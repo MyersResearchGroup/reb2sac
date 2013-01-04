@@ -754,6 +754,8 @@ static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *mod
 	    SetAlgebraicInSpeciesNode( speciesNode, TRUE );
 	  }
 	} else if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
+	  if ((strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"time")==0) ||
+	      (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0)) continue;
 	  if (!IsSymbolConstant( symbol )) {
 	    SetSymbolAlgebraic( symbol, TRUE );
 	  }

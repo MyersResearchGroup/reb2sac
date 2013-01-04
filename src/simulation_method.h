@@ -88,6 +88,15 @@
 #define MONTE_CARLO_SIMULATION_START_INDEX  "monte.carlo.simulation.start.index"
 #define DEFAULT_MONTE_CARLO_SIMULATION_START_INDEX  1
 
+#define ISSA_NUMBER_PATHS  "reb2sac.iSSA.number.paths"
+#define DEFAULT_ISSA_NUMBER_PATHS 1
+
+#define ISSA_TYPE  "reb2sac.iSSA.type"
+#define DEFAULT_ISSA_TYPE "meanPath"
+
+#define ISSA_ADAPTIVE  "reb2sac.iSSA.adaptive"
+#define DEFAULT_ISSA_ADAPTIVE "true"
+
 #define UNIFORM_RANDOM_BASE 1000000
 
 BEGIN_C_NAMESPACE
