@@ -49,6 +49,7 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, I
     char *namePrefix = NULL;
     static MPDE_MONTE_CARLO_RECORD rec;
     UINT timeout = 0;
+    char *valueString = NULL;
 
     START_FUNCTION("DoMPDEMonteCarloAnalysis");
 
@@ -61,9 +62,6 @@ DLLSCOPE RET_VAL STDCALL DoMPDEMonteCarloAnalysis(BACK_END_PROCESSOR *backend, I
     }
 
     runs = rec.runs;
-    rec.useMP = backend->useMP;
-    rec.useMedian = backend->useMedian;
-    rec.useBifur = backend->useBifur;
     //for( i = 1; i <= runs; i++ ) {
     SeedRandomNumberGenerators(rec.seed);
     rec.seed = GetNextUniformRandomNumber(0, RAND_MAX);
@@ -378,6 +376,35 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
             rec->timeStep = DEFAULT_MONTE_CARLO_SIMULATION_TIME_STEP;
         }
     }
+    if ((valueString = properties->GetProperty(properties, ISSA_NUMBER_PATHS)) == NULL) {
+      rec->useBifur = DEFAULT_ISSA_NUMBER_PATHS;
+    } else {
+      rec->useBifur = (strcmp(valueString,"2")==0);
+    }
+    if ((valueString = properties->GetProperty(properties, ISSA_TYPE)) == NULL) {
+      rec->useMP = 1;
+      rec->useMedian = true;
+    } else {
+      if (strcmp(valueString,"mpde")==0) {
+	rec->useMP = 0;
+	rec->useMedian = false;
+      } else if (strcmp(valueString,"meanPath")==0) {
+	rec->useMP = 1;
+	rec->useMedian = false;
+      } else {
+	rec->useMP = 1;
+	rec->useMedian = true;
+      }
+    }
+    if ((valueString = properties->GetProperty(properties, ISSA_ADAPTIVE)) == NULL) {
+      if (rec->useMP == 1) {
+	rec->useMP = 2;
+      }
+    } else {
+      if (strcmp(valueString,"true")==0) {
+	rec->useMP = 2;
+      }
+    }
 
     rec->minPrintInterval = -1.0;
     if ((valueString = properties->GetProperty(properties, MONTE_CARLO_SIMULATION_PRINT_INTERVAL)) == NULL) {
@@ -450,12 +477,12 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
             rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
         return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation sd printer");
     }
-    if (backend->useMP != 0) {
+    if (rec->useMP != 0) {
         if ((rec->mpPrinter1 = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
                 rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
             return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
         }
-        if (backend->useBifur) {
+        if (rec->useBifur) {
         	if ((rec->mpPrinter2 = CreateSimulationPrinter(backend, compartmentArray, rec->compartmentsSize, speciesArray,
         			rec->speciesSize, symbolArray, rec->symbolsSize)) == NULL) {
         		return ErrorReport(FAILING, "_InitializeRecord", "could not create simulation mp printer");
@@ -465,6 +492,7 @@ static RET_VAL _InitializeRecord(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSO
         rec->mpPrinter1 = NULL;
         rec->mpPrinter2 = NULL;
     }
+    printf("mp = %d median = %d bifurcation = %d\n",rec->useMP, rec->useMedian, rec->useBifur);
 
     if ((constraintManager = ir->GetConstraintManager(ir)) == NULL) {
         return ErrorReport(FAILING, "_InitializeRecord", "could not get the constraint manager");
@@ -1712,7 +1740,7 @@ static RET_VAL _RunSimulation(MPDE_MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *
                     }
                 }
                 rec->newTimeMean = rec->time;
-                printf("\n");
+                //printf("\n");
                 fflush(stdout);
             } else {
                 for (l = 0; l < size; l++) {
