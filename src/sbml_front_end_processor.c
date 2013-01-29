@@ -1833,6 +1833,8 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     char * funcId = NULL;
     FUNCTION_MANAGER *functionManager = NULL;
     FUNCTION_DEFINITION *functionDef = NULL; 
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMTAB *symtab = NULL;
     
     START_FUNCTION("_TransformFunctionKineticLaw");
     
@@ -2127,7 +2129,12 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
-	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_DELAY, children[0], children[1] ) ) == NULL ) {
+	  symtab = (REB2SAC_SYMTAB*)(frontend->_internal3);
+	  if( ( symbol = symtab->Lookup( symtab, "t" ) ) == NULL ) {
+            END_FUNCTION("_TransformSymKineticLaw", FAILING );
+            return NULL;
+	  }
+	  if( ( law = CreateDelayKineticLaw( KINETIC_LAW_OP_DELAY, children[0], children[1], symbol ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }

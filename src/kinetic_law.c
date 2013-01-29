@@ -314,6 +314,36 @@ KINETIC_LAW *CreatePWKineticLaw( BYTE opType, LINKED_LIST *children ) {
     return law;
 }
 
+KINETIC_LAW *CreateDelayKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right, REB2SAC_SYMBOL *time ) {
+    KINETIC_LAW *law = NULL;
+    
+    START_FUNCTION("CreateOpKineticLaw");
+
+    if( ( left == NULL ) || ( right == NULL ) ) {
+        TRACE_0("the input children kinetic laws are NULL" );
+        return NULL;
+    }
+    
+    if( ( law = (KINETIC_LAW*)CALLOC( 1, sizeof( KINETIC_LAW ) ) ) == NULL ) {
+        END_FUNCTION("CreatOpKineticLaw", FAILING );        
+        return NULL;
+    }
+    
+    law->valueType = KINETIC_LAW_VALUE_TYPE_OP;
+    law->value.op.opType = opType;
+    law->value.op.left = left;
+    law->value.op.right = right;
+    law->value.op.time = time;
+    law->value.op.values = CreateLinkedList();
+    law->AcceptPostOrder = _AcceptPostOrderForOpKineticLaw;
+    law->AcceptPreOrder = _AcceptPreOrderForOpKineticLaw;
+    law->AcceptInOrder = _AcceptInOrderForOpKineticLaw;
+    law->Accept = _AcceptForOpKineticLaw;
+    
+    END_FUNCTION("CreateOpKineticLaw", SUCCESS );        
+    return law;
+}
+
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right ) {
     KINETIC_LAW *law = NULL;
     
@@ -333,6 +363,8 @@ KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *ri
     law->value.op.opType = opType;
     law->value.op.left = left;
     law->value.op.right = right;
+    law->value.op.time = NULL;
+    law->value.op.values = NULL;
     law->AcceptPostOrder = _AcceptPostOrderForOpKineticLaw;
     law->AcceptPreOrder = _AcceptPreOrderForOpKineticLaw;
     law->AcceptInOrder = _AcceptInOrderForOpKineticLaw;
@@ -434,6 +466,8 @@ KINETIC_LAW *CloneKineticLaw( KINETIC_LAW *law ) {
             return NULL;
         }                        
         clone->value.op.opType = law->value.op.opType;
+	clone->value.op.time = law->value.op.time;
+	clone->value.op.values = law->value.op.values;
         clone->AcceptPostOrder = _AcceptPostOrderForOpKineticLaw;
         clone->AcceptPreOrder = _AcceptPreOrderForOpKineticLaw;
         clone->AcceptInOrder = _AcceptInOrderForOpKineticLaw;
@@ -984,6 +1018,49 @@ BYTE GetPWTypeFromKineticLaw(KINETIC_LAW *law) {
     
     END_FUNCTION("GetPWTypeFromKineticLaw", SUCCESS );        
     return law->value.pw.opType;
+}
+
+REB2SAC_SYMBOL *GetTimeFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetOpTypeFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+        
+    if( law->valueType != KINETIC_LAW_VALUE_TYPE_OP ) {
+        END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+    
+    END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
+    return law->value.op.time;
+}
+
+LINKED_LIST *GetValuesFromKineticLaw(KINETIC_LAW *law) {
+    START_FUNCTION("GetOpTypeFromKineticLaw");
+    
+    if( law == NULL ) {
+        END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+        
+    if( law->valueType != KINETIC_LAW_VALUE_TYPE_OP ) {
+        END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
+        return 0;
+    }
+    
+    END_FUNCTION("GetOpTypeFromKineticLaw", SUCCESS );        
+    return law->value.op.values;
+}
+
+RET_VAL SetValuesKineticLaw(KINETIC_LAW *law, LINKED_LIST *list) {
+    START_FUNCTION("SetValuesKineticLaw");
+
+    law->value.op.values = list;
+    
+    END_FUNCTION("SetValuesKineticLaw", SUCCESS );        
+    return SUCCESS;
 }
 
 BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law) {

@@ -547,10 +547,11 @@ RET_VAL DeleteLinkedList( LINKED_LIST **list )
 	}
 	
 	list_element = (*list)->head;
-	while( list_element != NULL ) {
+	while( list_element != NULL && (*list)->size > 0) {
 		target = list_element;
 		list_element = list_element->next;
 		FREE(target);
+		(*list)->size--;
 	}
 	FREE(*list);
 	END_FUNCTION("DeleteLinkedList", ret );

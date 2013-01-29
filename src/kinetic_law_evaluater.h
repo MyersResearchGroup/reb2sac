@@ -32,6 +32,11 @@ typedef struct {
     double value;
 } KINETIC_LAW_EVALUATION_ELEMENT;
 
+typedef struct {
+  double time;
+  double value;
+} TIME_STAMP;
+
 
 struct _KINETIC_LAW_EVALUATER;
 typedef struct _KINETIC_LAW_EVALUATER KINETIC_LAW_EVALUATER;
@@ -47,6 +52,7 @@ struct _KINETIC_LAW_EVALUATER {
     double (*EvaluateWithCurrentAmountsDeter)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentConcentrations)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
     double (*EvaluateWithCurrentConcentrationsDeter)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
+    double (*EvaluateAtNegativeTime)( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 };
 
 KINETIC_LAW_EVALUATER *CreateKineticLawEvaluater();
