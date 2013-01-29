@@ -21,6 +21,7 @@
 #include "species_node.h"
 #include "reaction_node.h"
 #include "kinetic_law.h"
+#include "kinetic_law_evaluater.h"
 #include <math.h>
 
 static char * _GetKineticLawConstantsSimplifierMethodID( ABSTRACTION_METHOD *method );
@@ -518,48 +519,50 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
     REB2SAC_SYMBOL *sym = NULL;    
     SPECIES *species = NULL;
     COMPARTMENT *compartment = NULL;
+    KINETIC_LAW_EVALUATER *evaluator = NULL;
  
     START_FUNCTION("_VisitOpToSimplifyKineticLaw");
     
     left = GetOpLeftFromKineticLaw( kineticLaw );
-    if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
+    if ( GetOpTypeFromKineticLaw( kineticLaw ) != KINETIC_LAW_OP_DELAY ) {
+      if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
         END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
         return ret;
-    }
-    
-    right = GetOpRightFromKineticLaw( kineticLaw );
-    if( IS_FAILED( ( ret = right->Accept( right, visitor ) ) ) ) {
-        END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
-        return ret;
-    }
-    
-    if( IsRealValueKineticLaw( left ) ) {
+      }
+      if( IsRealValueKineticLaw( left ) ) {
         leftValue = GetRealValueFromKineticLaw( left );
-    }
-    else if( IsSymbolKineticLaw( left ) ) {
+      }
+      else if( IsSymbolKineticLaw( left ) ) {
 #if 1
-        sym = GetSymbolFromKineticLaw( left );
+	sym = GetSymbolFromKineticLaw( left );
         if( !IsRealValueSymbol( sym ) ) {
             END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
             return ret;
         }
         leftValue = GetRealValueInSymbol( sym );
 #endif
-    }
-    else if( IsIntValueKineticLaw( left ) ) {
+      }
+      else if( IsIntValueKineticLaw( left ) ) {
         leftValue = (double)GetIntValueFromKineticLaw( left );
-    }
-    else if( IsSpeciesKineticLaw( left ) ) {
-      species = GetSpeciesFromKineticLaw( left );
-      if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
-	leftValue = GetInitialAmountInSpeciesNode( species );
-      } else {
-	leftValue = GetInitialConcentrationInSpeciesNode( species );
+      }
+      else if( IsSpeciesKineticLaw( left ) ) {
+	species = GetSpeciesFromKineticLaw( left );
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  leftValue = GetInitialAmountInSpeciesNode( species );
+	} else {
+	  leftValue = GetInitialConcentrationInSpeciesNode( species );
+	}
+      }
+      else if( IsCompartmentKineticLaw( left ) ) {
+	compartment = GetCompartmentFromKineticLaw( left );
+	leftValue = GetSizeInCompartment( compartment );
       }
     }
-    else if( IsCompartmentKineticLaw( left ) ) {
-      compartment = GetCompartmentFromKineticLaw( left );
-      leftValue = GetSizeInCompartment( compartment );
+    
+    right = GetOpRightFromKineticLaw( kineticLaw );
+    if( IS_FAILED( ( ret = right->Accept( right, visitor ) ) ) ) {
+        END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
+        return ret;
     }
     
     if( IsRealValueKineticLaw( right ) ) {
@@ -617,7 +620,19 @@ static RET_VAL _VisitOpToSimplifyInitial( KINETIC_LAW_VISITOR *visitor, KINETIC_
         break;
 
         case KINETIC_LAW_OP_DELAY:
-	  result = leftValue;
+	  if (rightValue > 0) {
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), (-1) * rightValue );
+	    if( ( evaluator = CreateKineticLawEvaluater() ) == NULL ) {
+	      return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
+	    }
+	    result = evaluator->EvaluateAtNegativeTime( evaluator, left );
+	    if( evaluator != NULL ) {
+	      FreeKineticLawEvaluater( &(evaluator) );
+	    }
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), 0.0 );
+	  } else {
+	    result = leftValue;
+	  }
         break;        
         
         case KINETIC_LAW_OP_ROOT:
@@ -1268,48 +1283,19 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
     KINETIC_LAW *left = NULL;    
     KINETIC_LAW *right = NULL;
     REB2SAC_SYMBOL *sym = NULL;    
+    KINETIC_LAW_EVALUATER *evaluator = NULL;
         
     START_FUNCTION("_VisitOpToSimplifyKineticLaw");
-    
-    left = GetOpLeftFromKineticLaw( kineticLaw );
-    if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
-        END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
-        return ret;
-    }
     
     right = GetOpRightFromKineticLaw( kineticLaw );
     if( IS_FAILED( ( ret = right->Accept( right, visitor ) ) ) ) {
         END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
         return ret;
     }
-    
-    
-    if( !IsConstantValueKineticLaw( left ) ) {
-        END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
-        return ret;
-    }
     if( !IsConstantValueKineticLaw( right ) ) {
         END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
         return ret;
     }
-    
-    if( IsRealValueKineticLaw( left ) ) {
-        leftValue = GetRealValueFromKineticLaw( left );
-    }
-    else if( IsSymbolKineticLaw( left ) ) {
-#if 1
-        sym = GetSymbolFromKineticLaw( left );
-        if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
-            return ret;
-        }
-        leftValue = GetRealValueInSymbol( sym );
-#endif
-    }
-    else if( IsIntValueKineticLaw( left ) ) {
-        leftValue = (double)GetIntValueFromKineticLaw( left );
-    }
-    
     if( IsRealValueKineticLaw( right ) ) {
         rightValue = GetRealValueFromKineticLaw( right );
     }
@@ -1326,6 +1312,37 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
     else if( IsIntValueKineticLaw( right ) ) {
         rightValue = (double)GetIntValueFromKineticLaw( right );
     }
+    
+    left = GetOpLeftFromKineticLaw( kineticLaw );
+    if ( GetOpTypeFromKineticLaw( kineticLaw ) != KINETIC_LAW_OP_DELAY ) {
+      if( IS_FAILED( ( ret = left->Accept( left, visitor ) ) ) ) {
+        END_FUNCTION("_VisitIntToSimplifyKineticLaw", ret );
+        return ret;
+      }
+
+      if( !IsConstantValueKineticLaw( left ) ) {
+        END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+        return ret;
+      }
+    
+      if( IsRealValueKineticLaw( left ) ) {
+        leftValue = GetRealValueFromKineticLaw( left );
+      }
+      else if( IsSymbolKineticLaw( left ) ) {
+#if 1
+        sym = GetSymbolFromKineticLaw( left );
+        if( !IsRealValueSymbol( sym ) ) {
+            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            return ret;
+        }
+        leftValue = GetRealValueInSymbol( sym );
+#endif
+      }
+      else if( IsIntValueKineticLaw( left ) ) {
+        leftValue = (double)GetIntValueFromKineticLaw( left );
+      }
+    }
+    
         
     switch( GetOpTypeFromKineticLaw( kineticLaw ) ) {
         case KINETIC_LAW_OP_PLUS:
@@ -1353,7 +1370,19 @@ static RET_VAL _VisitOpToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
         break;
         
         case KINETIC_LAW_OP_DELAY:
-	  result = leftValue;
+	  if (rightValue > 0) {
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), (-1) * rightValue );
+	    if( ( evaluator = CreateKineticLawEvaluater() ) == NULL ) {
+	      return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
+	    }
+	    result = evaluator->EvaluateAtNegativeTime( evaluator, left );
+	    if( evaluator != NULL ) {
+	      FreeKineticLawEvaluater( &(evaluator) );
+	    }
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), 0.0 );
+	  } else {
+	    result = leftValue;
+	  }
         break;        
 
         case KINETIC_LAW_OP_ROOT:

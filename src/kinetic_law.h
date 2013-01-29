@@ -148,6 +148,8 @@ struct _KINETIC_LAW_OP {
     BYTE opType;
     struct _KINETIC_LAW *left;
     struct _KINETIC_LAW *right;
+    REB2SAC_SYMBOL *time;
+    LINKED_LIST *values;
 };
 
 struct _KINETIC_LAW_UNARY_OP {
@@ -199,6 +201,7 @@ KINETIC_LAW *CreateSpeciesKineticLaw( SPECIES *species );
 KINETIC_LAW *CreateSymbolKineticLaw( REB2SAC_SYMBOL *symbol );
 KINETIC_LAW *CreateFunctionKineticLaw( char * funcId, KINETIC_LAW *functionDef, LINKED_LIST *arguments, KINETIC_LAW **children, int num );
 KINETIC_LAW *CreatePWKineticLaw( BYTE opType, LINKED_LIST *children );
+KINETIC_LAW *CreateDelayKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right, REB2SAC_SYMBOL *time );
 KINETIC_LAW *CreateOpKineticLaw( BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
 KINETIC_LAW *CreateUnaryOpKineticLaw( BYTE opType, KINETIC_LAW *child );
 KINETIC_LAW *CreateFunctionSymbolKineticLaw( char *funcSymbol );
@@ -215,6 +218,7 @@ RET_VAL SetFunctionSymbolKineticLaw( KINETIC_LAW *law, char *funcSymbol );
 RET_VAL SetPWKineticLaw( KINETIC_LAW *law, BYTE opType, LINKED_LIST *children );
 RET_VAL SetOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *left, KINETIC_LAW *right );
 RET_VAL SetUnaryOpKineticLaw( KINETIC_LAW *law, BYTE opType, KINETIC_LAW *child );
+RET_VAL SetValuesKineticLaw(KINETIC_LAW *law, LINKED_LIST *list);
 
 BOOL IsIntValueKineticLaw(KINETIC_LAW *law);
 BOOL IsRealValueKineticLaw(KINETIC_LAW *law);
@@ -234,6 +238,8 @@ SPECIES *GetSpeciesFromKineticLaw(KINETIC_LAW *law);
 REB2SAC_SYMBOL *GetSymbolFromKineticLaw(KINETIC_LAW *law);
 char *GetFunctionSymbolFromKineticLaw(KINETIC_LAW *law);
 BYTE GetPWTypeFromKineticLaw(KINETIC_LAW *law);
+REB2SAC_SYMBOL *GetTimeFromKineticLaw(KINETIC_LAW *law);
+LINKED_LIST *GetValuesFromKineticLaw(KINETIC_LAW *law);
 BYTE GetOpTypeFromKineticLaw(KINETIC_LAW *law);
 BYTE GetUnaryOpTypeFromKineticLaw(KINETIC_LAW *law);
 LINKED_LIST *GetPWChildrenFromKineticLaw(KINETIC_LAW *law);

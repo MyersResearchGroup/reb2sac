@@ -33,6 +33,7 @@ static double _EvaluateWithCurrentAmounts( KINETIC_LAW_EVALUATER *evaluater, KIN
 static double _EvaluateWithCurrentAmountsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentConcentrations( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 static double _EvaluateWithCurrentConcentrationsDeter( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
+static double _EvaluateAtNegativeTime( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw );       
 
 static double _GetValue( KINETIC_LAW_EVALUATER *evaluater, SPECIES *species );       
 
@@ -42,8 +43,11 @@ static RET_VAL _VisitUnaryOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 static RET_VAL _VisitIntToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitRealToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSpeciesToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitSpeciesToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitCompartmentToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitCompartmentToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
+static RET_VAL _VisitSymbolToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitFunctionSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
 static RET_VAL _VisitUnaryOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw );
@@ -76,6 +80,7 @@ KINETIC_LAW_EVALUATER *CreateKineticLawEvaluater() {
     evaluater->EvaluateWithCurrentAmountsDeter = _EvaluateWithCurrentAmountsDeter;
     evaluater->EvaluateWithCurrentConcentrations = _EvaluateWithCurrentConcentrations;    
     evaluater->EvaluateWithCurrentConcentrationsDeter = _EvaluateWithCurrentConcentrationsDeter;    
+    evaluater->EvaluateAtNegativeTime = _EvaluateAtNegativeTime;    
     
     END_FUNCTION("FreeKineticLawEvaluater", SUCCESS );        
     return evaluater;
@@ -100,6 +105,17 @@ RET_VAL FreeKineticLawEvaluater( KINETIC_LAW_EVALUATER **evaluater ) {
     return ret;
 }
 
+TIME_STAMP *CreateTimeStamp(double time, double value) {
+    TIME_STAMP *time_stamp = NULL;
+
+    if( ( time_stamp = (TIME_STAMP*)MALLOC( sizeof(TIME_STAMP) ) ) == NULL ) {
+      return NULL;
+    } 
+    time_stamp->time = time;
+    time_stamp->value = value;
+                
+    return time_stamp;
+}
 
 static RET_VAL _SetSpeciesValue( KINETIC_LAW_EVALUATER *evaluater, SPECIES *species, double value ) {
     RET_VAL ret = SUCCESS;
@@ -257,6 +273,41 @@ static double _EvaluateWithCurrentAmountsDeter( KINETIC_LAW_EVALUATER *evaluater
         visitor.VisitSpecies = _VisitSpeciesToEvaluateWithCurrentAmounts;
         visitor.VisitCompartment = _VisitCompartmentToEvaluateWithCurrentSize;
         visitor.VisitSymbol = _VisitSymbolToEvaluate;
+	visitor.VisitFunctionSymbol = _VisitFunctionSymbolToEvaluate;
+    }
+    
+    visitor._internal1 = (CADDR_T)evaluater;
+    visitor._internal2 = (CADDR_T)(&result);
+    
+    if( IS_FAILED( kineticLaw->Accept( kineticLaw, &visitor ) ) ) {
+        END_FUNCTION("_Evaluate", FAILING );
+        return -1.0;
+    } 
+        
+    END_FUNCTION("_Evaluate", SUCCESS );        
+    return result;
+}     
+
+static double _EvaluateAtNegativeTime( KINETIC_LAW_EVALUATER *evaluater, KINETIC_LAW *kineticLaw ) {
+    static KINETIC_LAW_VISITOR visitor;
+    RET_VAL ret = SUCCESS;
+    double result = 0.0;
+    
+    START_FUNCTION("_Evaluate");
+    
+    KINETIC_LAW *massActionRatio = NULL;
+    
+    START_FUNCTION("_Evaluate");
+    
+    if( visitor.VisitOp == NULL ) {
+        visitor.VisitPW = _VisitPWToEvaluate;
+        visitor.VisitOp = _VisitOpToEvaluateDeter;
+        visitor.VisitUnaryOp = _VisitUnaryOpToEvaluateDeter;
+        visitor.VisitInt = _VisitIntToEvaluate;
+        visitor.VisitReal = _VisitRealToEvaluate;
+        visitor.VisitSpecies = _VisitSpeciesToEvaluateAtNegativeTime;
+        visitor.VisitCompartment = _VisitCompartmentToEvaluateAtNegativeTime;
+        visitor.VisitSymbol = _VisitSymbolToEvaluateAtNegativeTime;
 	visitor.VisitFunctionSymbol = _VisitFunctionSymbolToEvaluate;
     }
     
@@ -471,6 +522,11 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
     double *result = NULL;
     KINETIC_LAW *left = NULL;
     KINETIC_LAW *right = NULL;
+    double time = 0.0;
+    LINKED_LIST *values = NULL;
+    TIME_STAMP *time_stamp = NULL;
+    TIME_STAMP *last_time_stamp = NULL;
+    KINETIC_LAW_EVALUATER *evaluator = NULL;
     
     START_FUNCTION("_VisitOpToEvaluate");
     
@@ -517,7 +573,48 @@ static RET_VAL _VisitOpToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
         break;
 
         case KINETIC_LAW_OP_DELAY:
-	  *result = leftValue;
+	  time = GetCurrentRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ) );
+	  values = GetValuesFromKineticLaw( kineticLaw );
+	  if (time == 0.0 && values != NULL && GetLinkedListSize(values) > 0) {
+	    DeleteLinkedList( values );
+	    values = CreateLinkedList();
+	    SetValuesKineticLaw( kineticLaw, values );
+	  } 
+	  ResetCurrentElement( values );
+	  if ( ( time_stamp = (TIME_STAMP*)GetNextFromLinkedList( values ) ) != NULL ) {
+	    if (time - time_stamp->time > 0.0) {
+	      time_stamp = CreateTimeStamp(time,leftValue);
+	      InsertHeadInLinkedList( (CADDR_T)time_stamp, values );
+	    } 
+	  } else {
+	    time_stamp = CreateTimeStamp(time,leftValue);
+	    InsertHeadInLinkedList( (CADDR_T)time_stamp, values );
+	  }
+	  if (time - rightValue < 0) {
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), time - rightValue );
+	    if( ( evaluator = CreateKineticLawEvaluater() ) == NULL ) {
+	      return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
+	    }
+	    *result = evaluator->EvaluateAtNegativeTime( evaluator, left );
+	    if( evaluator != NULL ) {
+	      FreeKineticLawEvaluater( &(evaluator) );
+	    }
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), time );
+	  } else {
+	    *result = 0;
+	    ResetCurrentElement( values );
+	    while( ( time_stamp = (TIME_STAMP*)GetNextFromLinkedList( values ) ) != NULL ) {
+	      if (time_stamp->time <= time - rightValue) {
+		*result = time_stamp->value;
+		if ((time_stamp->time != time - rightValue) && (last_time_stamp!=NULL)) {
+		  *result = time_stamp->value + (last_time_stamp->value - time_stamp->value) *
+		    (((time - rightValue) - time_stamp->time) / (last_time_stamp->time - time_stamp->time));
+		}
+		break;
+	      }
+	      last_time_stamp = time_stamp;
+	    }
+	  }
         break;        
         
         case KINETIC_LAW_OP_ROOT:
@@ -802,6 +899,11 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
     double *result = NULL;
     KINETIC_LAW *left = NULL;
     KINETIC_LAW *right = NULL;
+    double time = 0.0;
+    LINKED_LIST *values = NULL;
+    TIME_STAMP *time_stamp = NULL;
+    TIME_STAMP *last_time_stamp = NULL;
+    KINETIC_LAW_EVALUATER *evaluator = NULL;
     
     START_FUNCTION("_VisitOpToEvaluate");
     
@@ -848,7 +950,49 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
         break;
         
         case KINETIC_LAW_OP_DELAY:
-	  *result = leftValue;
+	  time = GetCurrentRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ) );
+	  values = GetValuesFromKineticLaw( kineticLaw );
+	  if (time == 0.0 && values != NULL && GetLinkedListSize(values) > 0) {
+	    DeleteLinkedList( values );
+	    values = CreateLinkedList();
+	    SetValuesKineticLaw( kineticLaw, values );
+	    printf("NEW\n");
+	  } 
+	  ResetCurrentElement( values );
+	  if ( ( time_stamp = (TIME_STAMP*)GetNextFromLinkedList( values ) ) != NULL ) {
+	    if (time - time_stamp->time > 0.0) {
+	      time_stamp = CreateTimeStamp(time,leftValue);
+	      InsertHeadInLinkedList( (CADDR_T)time_stamp, values );
+	    } 
+	  } else {
+	    time_stamp = CreateTimeStamp(time,leftValue);
+	    InsertHeadInLinkedList( (CADDR_T)time_stamp, values );
+	  }
+	  if (time - rightValue < 0) {
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), time - rightValue );
+	    if( ( evaluator = CreateKineticLawEvaluater() ) == NULL ) {
+	      return ErrorReport( FAILING, "_InitializeRecord", "could not create evaluator" );
+	    }
+	    *result = evaluator->EvaluateAtNegativeTime( evaluator, left );
+	    if( evaluator != NULL ) {
+	      FreeKineticLawEvaluater( &(evaluator) );
+	    }
+	    SetRealValueInSymbol( GetTimeFromKineticLaw( kineticLaw ), time );
+	  } else {
+	    *result = 0;
+	    ResetCurrentElement( values );
+	    while( ( time_stamp = (TIME_STAMP*)GetNextFromLinkedList( values ) ) != NULL ) {
+	      if (time_stamp->time <= time - rightValue) {
+		*result = time_stamp->value;
+		if ((time_stamp->time != time - rightValue) && (last_time_stamp!=NULL)) {
+		  *result = time_stamp->value + (last_time_stamp->value - time_stamp->value) *
+		    (((time - rightValue) - time_stamp->time) / (last_time_stamp->time - time_stamp->time));
+		}
+		break;
+	      }
+	      last_time_stamp = time_stamp;
+	    }
+	  }
         break;        
 
         case KINETIC_LAW_OP_ROOT:
@@ -1153,13 +1297,50 @@ static RET_VAL _VisitSymbolToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     if( !IsSymbolConstant( sym ) ) {
         return ErrorReport( FAILING, "_VisitSymbolToEvaluate", "symbol %s is not a constant real", GetCharArrayOfString( GetSymbolID( sym ) ) );
     }
-    */
     if( !IsRealValueSymbol( sym ) ) {
         return ErrorReport( FAILING, "_VisitSymbolToEvaluate", "symbol %s is not a constant real", GetCharArrayOfString( GetSymbolID( sym ) ) );
     } 
+    */
     
     result = (double*)(visitor->_internal2);
     value = GetCurrentRealValueInSymbol( sym );
+    
+    *result = value; 
+
+    END_FUNCTION("_VisitSymbolToEvaluate", SUCCESS );
+    return SUCCESS;
+}
+
+static RET_VAL _VisitSymbolToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    double *result = NULL;
+    double value = 0.0;
+    REB2SAC_SYMBOL *sym = NULL;
+    KINETIC_LAW *law = NULL;
+    RET_VAL ret = SUCCESS;
+
+    START_FUNCTION("_VisitSymbolToEvaluate");
+    
+    sym = GetSymbolFromKineticLaw( kineticLaw );
+
+    /*
+    if( !IsSymbolConstant( sym ) ) {
+        return ErrorReport( FAILING, "_VisitSymbolToEvaluate", "symbol %s is not a constant real", GetCharArrayOfString( GetSymbolID( sym ) ) );
+    }
+    if( !IsRealValueSymbol( sym ) ) {
+        return ErrorReport( FAILING, "_VisitSymbolToEvaluate", "symbol %s is not a constant real", GetCharArrayOfString( GetSymbolID( sym ) ) );
+    } 
+    */
+
+    result = (double*)(visitor->_internal2);
+    if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( sym )) == NULL ) {
+      value = GetRealValueInSymbol( sym );
+    } else {
+      visitor->_internal2 = (CADDR_T)(&value);
+      if( IS_FAILED( ( ret = law->Accept( law, visitor ) ) ) ) {
+        END_FUNCTION("_VisitOpToEvaluate", ret );
+        return ret;
+      }   
+    }
     
     *result = value; 
 
@@ -1188,6 +1369,40 @@ static RET_VAL _VisitSpeciesToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
     species = GetSpeciesFromKineticLaw( kineticLaw );
     
     value = _GetValue( evaluater, species );
+    *result = value; 
+            
+    END_FUNCTION("_VisitSpeciesToEvaluate", SUCCESS );
+    return SUCCESS;
+}
+
+static RET_VAL _VisitSpeciesToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    double *result = NULL;
+    double value = 0.0;
+    SPECIES *species = NULL;    
+    KINETIC_LAW_EVALUATER *evaluater = NULL;
+    KINETIC_LAW *law = NULL;
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("_VisitSpeciesToEvaluate");
+    
+    evaluater = (KINETIC_LAW_EVALUATER*)(visitor->_internal1);
+    result = (double*)(visitor->_internal2);
+    species = GetSpeciesFromKineticLaw( kineticLaw );
+    
+    result = (double*)(visitor->_internal2);
+    if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSpeciesNode( species )) == NULL ) {
+      if( HasOnlySubstanceUnitsInSpeciesNode( species ) ) {
+	value = GetInitialAmountInSpeciesNode( species );
+      } else {
+	value = GetInitialConcentrationInSpeciesNode( species );
+      }
+    } else {
+      visitor->_internal2 = (CADDR_T)(&value);
+      if( IS_FAILED( ( ret = law->Accept( law, visitor ) ) ) ) {
+        END_FUNCTION("_VisitOpToEvaluate", ret );
+        return ret;
+      }   
+    }
     *result = value; 
             
     END_FUNCTION("_VisitSpeciesToEvaluate", SUCCESS );
@@ -1245,6 +1460,31 @@ static RET_VAL _VisitCompartmentToEvaluateWithCurrentSize( KINETIC_LAW_VISITOR *
     compartment = GetCompartmentFromKineticLaw( kineticLaw );
     
     value = GetCurrentSizeInCompartment( compartment );
+    *result = value; 
+    
+    return SUCCESS;
+}
+
+static RET_VAL _VisitCompartmentToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *kineticLaw ) {
+    double *result = NULL;
+    double value = 0.0;
+    COMPARTMENT *compartment = NULL;    
+    KINETIC_LAW_EVALUATER *evaluater = NULL;
+    KINETIC_LAW *law = NULL;
+    RET_VAL ret = SUCCESS;
+    
+    evaluater = (KINETIC_LAW_EVALUATER*)(visitor->_internal1);
+    result = (double*)(visitor->_internal2);
+    compartment = GetCompartmentFromKineticLaw( kineticLaw );
+    if ( (law = (KINETIC_LAW*)GetInitialAssignmentInCompartment( compartment )) == NULL ) {
+      value = GetSizeInCompartment( compartment );
+    } else {
+      visitor->_internal2 = (CADDR_T)(&value);
+      if( IS_FAILED( ( ret = law->Accept( law, visitor ) ) ) ) {
+        END_FUNCTION("_VisitOpToEvaluate", ret );
+        return ret;
+      }   
+    }
     *result = value; 
     
     return SUCCESS;
