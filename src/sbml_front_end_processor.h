@@ -62,6 +62,8 @@
 #include "sbml/math/FormulaFormatter.h"
 #include "sbml/xml/XMLNode.h"
 #include "sbml/packages/comp/extension/CompModelPlugin.h"
+#include "sbml/conversion/ConversionOption.h"
+#include "sbml/conversion/ConversionProperties.h"
 
 BEGIN_C_NAMESPACE
 
