@@ -697,6 +697,12 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	  maxTime = maxTime + timeStep;
 	}
 	nextEventTime = fireEvents( rec, rec->time );
+	if (rec->algebraicRulesSize > 0) {
+	  EvaluateAlgebraicRules( rec );
+	}
+	if (rec->numberFastSpecies > 0) {
+	  ExecuteFastReactions( rec );
+	}
 	if (decider->IsTerminationConditionMet( decider, reaction, rec->time )) break;
 	if (nextEventTime==-2.0) {
 	  return FAILING;

@@ -48,7 +48,6 @@ double GetRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
         END_FUNCTION("GetRealValueInSymbol", FAILING );
         return 0.0/0.0;
     }
-        
     END_FUNCTION("GetRealValueInSymbol", SUCCESS );
     return sym->value;
 }
@@ -72,7 +71,6 @@ double GetCurrentRealValueInSymbol( REB2SAC_SYMBOL *sym ) {
         END_FUNCTION("GetRealValueInSymbol", FAILING );
         return 0.0/0.0;
     }
-        
     END_FUNCTION("GetRealValueInSymbol", SUCCESS );
     return sym->currentRealValue;
 }

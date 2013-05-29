@@ -665,6 +665,12 @@ static RET_VAL _RunSimulation( EULER_SIMULATION_RECORD *rec ) {
     if (nextEventTime==-2.0) {
       return FAILING;
     }
+    if (rec->algebraicRulesSize > 0) {
+      EvaluateAlgebraicRules( rec );
+    }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
+    }
     while( !(decider->IsTerminationConditionMet( decider, NULL, rec->time )) ) {
         if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
             return ret;
