@@ -737,7 +737,7 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
 	  param = GetRealValueInSymbol( symbol );
-	  if (isnan(param)) param = 0;
+	  //if (isnan(param)) param = 0;
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
@@ -847,6 +847,12 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, NULL, time )) ) {
       nextEventTime = fireEvents( rec, time );
+      if (rec->algebraicRulesSize > 0) {
+	EvaluateAlgebraicRules( rec );
+      }
+      if (rec->numberFastSpecies > 0) {
+	ExecuteFastReactions( rec );
+      }
       if (decider->IsTerminationConditionMet( decider, NULL, time )) break;
       if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
 	return ret;

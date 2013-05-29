@@ -1036,7 +1036,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     }
 
     if( ( manager = GetSymtabManagerInstance( frontend->record ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleConstraint", "error on getting symtab manager" ); 
+        return ErrorReport( FAILING, "_HandleEvent", "error on getting symtab manager" ); 
     }
     table = (HASH_TABLE*)frontend->_internal2;    
 
@@ -1072,7 +1072,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
         return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
       }
       if( IS_FAILED( ( ret = AddTriggerInEvent( eventDef, law ) ) ) ) {
-	END_FUNCTION("_HandleConstraintDefinition", ret );
+	END_FUNCTION("_HandleEvent", ret );
 	return ret;
       }
     }
@@ -1085,14 +1085,14 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
 	    return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
 	  }
 	  if( IS_FAILED( ( ret = AddDelayInEvent( eventDef, law ) ) ) ) {
-	    END_FUNCTION("_HandleConstraintDefinition", ret );
+	    END_FUNCTION("_HandleEvent", ret );
 	    return ret;
 	  }
 	  if( ( law = _TransformKineticLaw( frontend, ASTNode_getRightChild( node ), manager, table ) ) == NULL ) {
 	    return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
 	  }
 	  if( IS_FAILED( ( ret = AddPriorityInEvent( eventDef, law ) ) ) ) {
-	    END_FUNCTION("_HandleConstraintDefinition", ret );
+	    END_FUNCTION("_HandleEvent", ret );
 	    return ret;
 	  }
       } else {
@@ -1100,7 +1100,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
 	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
 	}
 	if( IS_FAILED( ( ret = AddDelayInEvent( eventDef, law ) ) ) ) {
-	  END_FUNCTION("_HandleConstraintDefinition", ret );
+	  END_FUNCTION("_HandleEvent", ret );
 	  return ret;
 	}
       }
@@ -1114,7 +1114,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
 	return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
       }
       if( IS_FAILED( ( ret = AddPriorityInEvent( eventDef, law ) ) ) ) {
-	END_FUNCTION("_HandleConstraintDefinition", ret );
+	END_FUNCTION("_HandleEvent", ret );
 	return ret;
       }
     }
