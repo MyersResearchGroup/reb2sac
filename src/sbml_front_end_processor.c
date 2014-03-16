@@ -603,7 +603,6 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
     if( ( unitDef = unitManager->CreateUnitDefinition( unitManager, id, FALSE ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleUnitDefinition", "could not allocate unit def %s", id );
     }
-    
     num = UnitDefinition_getNumUnits( source );
     for( i = 0; i < num; i++ ) {
         unit = UnitDefinition_getUnit( source, i );
@@ -614,7 +613,7 @@ static RET_VAL _HandleUnitDefinition( FRONT_END_PROCESSOR *frontend, Model_t *mo
         multiplier = Unit_getMultiplier( unit );
 	//multiplier = 1.0;
         //printf( "adding unit %s (exponent=%g, scale=%d, multiplier=%g) in %s\n", kind, exponent, scale, multiplier, id );           
-        TRACE_5( "adding unit %s (exponent=%i, scale=%i, multiplier=%f) in %s", kind, exponent, scale, multiplier, id );           
+        //TRACE_5( "adding unit %s (exponent=%i, scale=%i, multiplier=%f) in %s", kind, exponent, scale, multiplier, id );           
         if( IS_FAILED( ( ret = AddUnitInUnitDefinition( unitDef, kind, exponent, scale, multiplier ) ) ) ) {
             END_FUNCTION("_HandleUnitDefinition", ret );
             return ret;

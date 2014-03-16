@@ -1191,7 +1191,7 @@ static int _Update( double t, const double y[], double f[], IMPLICIT_GEAR1_SIMUL
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                (stoichiometry * rate));
         }
-        TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), change );
+        //TRACE_2( "change of %s is %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ), change );
     }
     return GSL_SUCCESS;
 }
