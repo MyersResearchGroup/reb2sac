@@ -218,7 +218,6 @@ static REB2SAC_PROPERTIES *_CreateReb2sacProperties( COMPILER_RECORD_T *record )
     }
     else {
     }
-    
     END_FUNCTION("_CreateReb2sacProperties", FAILING );
     return NULL;
 }
