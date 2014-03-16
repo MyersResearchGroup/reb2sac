@@ -189,7 +189,7 @@ DESCRIPTION:	define all the type used
 
 
 /**************************************/
-#	define MALLOC(size) ((size==0)?NULL:malloc(size))
+#	define MALLOC(size) ((size==0)?NULL:calloc(1,size))
 #	define CALLOC(n,size) (((size==0)||(n==0))?NULL:calloc(n,size))
 #	define REALLOC(ptr,size) (((size==0)&&(ptr==NULL))?NULL:realloc(ptr,size))
 
