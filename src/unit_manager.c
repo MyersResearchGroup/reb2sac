@@ -155,7 +155,6 @@ RET_VAL AddUnitInUnitDefinition( UNIT_DEFINITION *unitDef, char *kind, double ex
     UNIT *unit = NULL;    
     
     START_FUNCTION("AddUnitsInUnitDefinition");
-            
     if( ( unit = (UNIT*)MALLOC( sizeof( UNIT ) ) ) == NULL ) {
         return ErrorReport( FAILING, "AddUnitsInUnitDefinition", "allocatation failed for unit %s", kind ); 
     }

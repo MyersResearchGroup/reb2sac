@@ -39,7 +39,7 @@ REB2SAC_PROPERTIES * DefaultReb2sacPropertiesConstructor( COMPILER_RECORD_T *rec
         END_FUNCTION("DefaultReb2sacPropertiesConstructor", FAILING );
         return NULL;
     }
-   
+
     if( instance->record == NULL ) {
         instance->record = record;
         instance->Init = _Init;
@@ -48,7 +48,6 @@ REB2SAC_PROPERTIES * DefaultReb2sacPropertiesConstructor( COMPILER_RECORD_T *rec
         instance->GetProperty = _GetProperty;
         instance->Free = _Free;
     }
-            
     END_FUNCTION("DefaultReb2sacPropertiesConstructor", SUCCESS );
     return instance;
 }
