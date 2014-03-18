@@ -133,34 +133,6 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
       doc = readSBML( GetCharArrayOfString( record->inputPath ) );
     }
 
-    /* if there are errors do not try to flatten */	
-    if (SBMLDocument_getNumErrorsWithSeverity(doc, LIBSBML_SEV_ERROR) > 0) {
-      SBMLDocument_printErrors(doc, stderr);
-      error = TRUE;
-    } else {
-      /* need new variables ... */
-      ConversionProperties_t* props;
-      ConversionOption_t* option1;
-      ConversionOption_t* option2;
-
-      /* create a new conversion properties structure */
-      props = ConversionProperties_create();
-
-      /* add an option that we want to flatten comp */
-      option1 = ConversionOption_create("flatten comp");
-      ConversionOption_setType(option1, CNV_TYPE_BOOL);
-      ConversionOption_setValue(option1, "true");
-      ConversionOption_setDescription(option1, "flatten comp");
-      ConversionProperties_addOption(props, option1);
-
-      /* perform the conversion */				\
-      if (SBMLDocument_convert(doc, props) != LIBSBML_OPERATION_SUCCESS) {
-    	printf ("conversion failed ... ");
-    	SBMLDocument_printErrors(doc, stderr);
-    	error = TRUE;
-      }
-    }
-
 //     SBMLDocument_checkConsistency( doc );
 //     errorNum = SBMLDocument_getNumWarnings( doc );
 //     if( errorNum > 0 ) {
@@ -182,6 +154,35 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
 //         SBMLDocument_printFatals( doc, stderr );
 //         error = TRUE;
 //     }
+
+    /* if there are errors do not try to flatten */	
+    if (SBMLDocument_getNumErrorsWithSeverity(doc, LIBSBML_SEV_ERROR) > 0) {
+      SBMLDocument_printErrors(doc, stderr);
+      error = TRUE;
+    } else {
+      /* need new variables ... */
+      ConversionProperties_t* props;
+      ConversionOption_t* option1;
+      ConversionOption_t* option2;
+
+      /* create a new conversion properties structure */
+      props = ConversionProperties_create();
+
+      /* add an option that we want to flatten comp */
+      option1 = ConversionOption_create("flatten comp");
+      ConversionOption_setType(option1, CNV_TYPE_BOOL);
+      ConversionOption_setValue(option1, "true");
+      ConversionOption_setDescription(option1, "flatten comp");
+      ConversionProperties_addOption(props, option1);
+
+      /* perform the conversion */
+      if (SBMLDocument_convert(doc, props) != LIBSBML_OPERATION_SUCCESS) {
+    	printf ("Errors found during flattening ... \n");
+    	//SBMLDocument_printErrors(doc, stderr);
+    	//error = TRUE;
+      }
+    }
+
     if( !doc || error ) {
         END_FUNCTION("_ParseSBML", FAILING );
         return ErrorReport( FAILING, "_ParseSBML", "input file error" );                                             
