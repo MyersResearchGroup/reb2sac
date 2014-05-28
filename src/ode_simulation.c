@@ -843,18 +843,24 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     control = gsl_odeiv_control_y_new( rec->absoluteError, ODE_SIMULATION_LOCAL_ERROR );
     evolve = gsl_odeiv_evolve_alloc( size );
 
+    /* This is a hack as it should be done in InitializeSimulation, not sure why it does not stick */
+    if (rec->algebraicRulesSize > 0) {
+      EvaluateAlgebraicRules( rec );
+    }
+    if (rec->numberFastSpecies > 0) {
+      ExecuteFastReactions( rec );
+    }
+
     printer = rec->printer;
     decider = rec->decider;
     while( !(decider->IsTerminationConditionMet( decider, NULL, time )) ) {
       nextEventTime = fireEvents( rec, time );
-      /*
       if (rec->algebraicRulesSize > 0) {
 	EvaluateAlgebraicRules( rec );
       }
       if (rec->numberFastSpecies > 0) {
 	ExecuteFastReactions( rec );
       }
-      */
       if (decider->IsTerminationConditionMet( decider, NULL, time )) break;
       if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
 	return ret;
