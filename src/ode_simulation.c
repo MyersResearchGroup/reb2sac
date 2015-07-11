@@ -2075,10 +2075,12 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     if (rec->algebraicRulesSize > 0) {
       EvaluateAlgebraicRules( rec );
     }
+    /*
     if ((rec->timeStep != 0.00001) && (canTriggerEvent( rec, t ))) {
       rec->timeStep = 0.00001;
       return GSL_ETOL;
     }
+    */
 
     /* Update rates using rate rules */
     for (i = 0; i < rec->rulesSize; i++) {
