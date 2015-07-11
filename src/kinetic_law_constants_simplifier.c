@@ -106,7 +106,7 @@ RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
     STRING *kineticLawString = NULL;
 #endif        
 
-    START_FUNCTION("_SimplifyKineticLaw");
+    START_FUNCTION("_SimplifyInitialAssignment");
 
     if( visitor.VisitOp == NULL ) {
         visitor.VisitPW = _VisitPWToSimplifyInitial;
@@ -120,7 +120,7 @@ RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
     }    
 
     if( IS_FAILED( ( ret = kineticLaw->Accept( kineticLaw, &visitor ) ) ) ) {    
-        END_FUNCTION("_SimplifyKineticLaw", ret );
+        END_FUNCTION("_SimplifyInitialAssignment", ret );
         return ret;
     }     
 #ifdef DEBUG
@@ -128,7 +128,7 @@ RET_VAL SimplifyInitialAssignment( KINETIC_LAW *kineticLaw ) {
     printf("initial assignment is: %s" NEW_LINE, GetCharArrayOfString( kineticLawString ) );
     FreeString( &kineticLawString );
 #endif        
-    END_FUNCTION("_SimplifyKineticLaw", SUCCESS );
+    END_FUNCTION("_SimplifyInitialAssignment", SUCCESS );
     return ret;
 }
 
@@ -155,11 +155,12 @@ static RET_VAL _SimplifyKineticLaw( ABSTRACTION_METHOD *method, IR *ir, REACTION
     }    
 
     kineticLaw = GetKineticLawInReactionNode( reaction );
-    
+    /*
     if( IS_FAILED( ( ret = kineticLaw->Accept( kineticLaw, &visitor ) ) ) ) {    
         END_FUNCTION("_SimplifyKineticLaw", ret );
         return ret;
-    }     
+    } 
+    */    
 #ifdef DEBUG
     kineticLawString = ToStringKineticLaw( kineticLaw );
     printf("kinetic law of %s is: %s" NEW_LINE, GetCharArrayOfString( GetReactionNodeName( reaction ) ), GetCharArrayOfString( kineticLawString ) );
@@ -941,7 +942,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
     UINT i = 0;
 
     START_FUNCTION("_VisitPWToSimplifyKineticLaw");
-    
+
     children = GetPWChildrenFromKineticLaw( kineticLaw );
     num = GetLinkedListSize( children );
     switch( GetPWTypeFromKineticLaw( kineticLaw ) ) {
@@ -949,7 +950,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
 	if( !IsConstantValueKineticLaw( child ) ) {
-	  END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+	  END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
 	  return ret;
 	}
       }
@@ -966,7 +967,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
@@ -1000,7 +1001,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	    sym = GetSymbolFromKineticLaw( child );
 	    if( !IsRealValueSymbol( sym ) ) {
-	      END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+	      END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
 	      return ret;
 	    }
 	    childValue = GetRealValueInSymbol( sym );
@@ -1038,7 +1039,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-	    END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+	    END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
 	    return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
@@ -1063,6 +1064,13 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       break;
     case KINETIC_LAW_OP_XOR:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( !IsConstantValueKineticLaw( child ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+      }
       result = 0;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -1078,7 +1086,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
@@ -1103,6 +1111,13 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       break;
     case KINETIC_LAW_OP_OR:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( !IsConstantValueKineticLaw( child ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+      }
       result = 0;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -1118,7 +1133,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
@@ -1143,6 +1158,13 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       break;
     case KINETIC_LAW_OP_AND:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( !IsConstantValueKineticLaw( child ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+      }
       result = 1;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -1158,7 +1180,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
@@ -1183,6 +1205,13 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       break;
     case KINETIC_LAW_OP_PLUS:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( !IsConstantValueKineticLaw( child ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+      }
       result = 0;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -1198,7 +1227,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
@@ -1223,6 +1252,13 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
       }
       break;
     case KINETIC_LAW_OP_TIMES:
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	if( !IsConstantValueKineticLaw( child ) ) {
+	  END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
+	  return ret;
+	}
+      }
       result = 1;
       for ( i = 0; i < num; i++ ) {
 	child = (KINETIC_LAW*)GetElementByIndex( i,children );
@@ -1238,7 +1274,7 @@ static RET_VAL _VisitPWToSimplifyKineticLaw( KINETIC_LAW_VISITOR *visitor, KINET
 #if 1
 	  sym = GetSymbolFromKineticLaw( child );
 	  if( !IsRealValueSymbol( sym ) ) {
-            END_FUNCTION("_VisitOpToSimplifyKineticLaw", SUCCESS );
+            END_FUNCTION("_VisitPWToSimplifyKineticLaw", SUCCESS );
             return ret;
 	  }
 	  childValue = GetRealValueInSymbol( sym );
