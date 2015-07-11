@@ -1097,6 +1097,8 @@ static RET_VAL _CalculatePropensity( MONTE_CARLO_RECORD *rec, REACTION *reaction
 
     evaluator = rec->evaluator;
     law = GetKineticLawInReactionNode( reaction );
+    //STRING* string = ToStringKineticLaw( law );
+    //printf( "Law=%s" NEW_LINE, GetCharArrayOfString( string ) );
     propensity = evaluator->EvaluateWithCurrentAmountsDeter( evaluator, law );
     if( propensity <= 0.0 ) {
         if( IS_FAILED( ( ret = SetReactionRate( reaction, 0.0 ) ) ) ) {
