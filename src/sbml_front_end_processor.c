@@ -1664,7 +1664,7 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
             return NULL;
 	  }                 
         } else {
-	  if ( ( ( ASTNode_getType( source ) != AST_PLUS) && ( ASTNode_getType( source ) != AST_TIMES) ) ||
+	  if ( ( ( ASTNode_getType( source ) != AST_PLUS) && ( ASTNode_getType( source ) != AST_TIMES) ) &&
 	       ( ( ASTNode_getNumChildren( source ) ) == 2 ) ) {
 	    if( ( law = _TransformOpKineticLaw( frontend, source, manager, table ) ) == NULL ) {
 	      END_FUNCTION("_TransformKineticLaw", FAILING );
