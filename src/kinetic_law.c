@@ -301,7 +301,6 @@ KINETIC_LAW *CreatePWKineticLaw( BYTE opType, LINKED_LIST *children ) {
         END_FUNCTION("CreatPWKineticLaw", FAILING );        
         return NULL;
     }
-    
     law->valueType = KINETIC_LAW_VALUE_TYPE_PW;
     law->value.pw.opType = opType;
     law->value.pw.children = children;

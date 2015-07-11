@@ -1337,7 +1337,7 @@ static RET_VAL _VisitSymbolToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visito
     } else {
       visitor->_internal2 = (CADDR_T)(&value);
       if( IS_FAILED( ( ret = law->Accept( law, visitor ) ) ) ) {
-        END_FUNCTION("_VisitOpToEvaluate", ret );
+        END_FUNCTION("_VisitSymbolToEvaluate", ret );
         return ret;
       }   
     }
@@ -1399,7 +1399,7 @@ static RET_VAL _VisitSpeciesToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *visit
     } else {
       visitor->_internal2 = (CADDR_T)(&value);
       if( IS_FAILED( ( ret = law->Accept( law, visitor ) ) ) ) {
-        END_FUNCTION("_VisitOpToEvaluate", ret );
+        END_FUNCTION("_VisitSpeciesToEvaluate", ret );
         return ret;
       }   
     }
@@ -1481,7 +1481,7 @@ static RET_VAL _VisitCompartmentToEvaluateAtNegativeTime( KINETIC_LAW_VISITOR *v
     } else {
       visitor->_internal2 = (CADDR_T)(&value);
       if( IS_FAILED( ( ret = law->Accept( law, visitor ) ) ) ) {
-        END_FUNCTION("_VisitOpToEvaluate", ret );
+        END_FUNCTION("_VisitCompartmentToEvaluate", ret );
         return ret;
       }   
     }

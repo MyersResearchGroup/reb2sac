@@ -1149,7 +1149,6 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     BOOL first = TRUE;
 
     START_FUNCTION("_VisitPWToPrintInXHTML");
-
     file = (FILE*)(visitor->_internal1);
     tabCount = (int*)(visitor->_internal2);
     
