@@ -737,7 +737,7 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
 	  param = GetRealValueInSymbol( symbol );
-	  if (isnan(param)) param = 0;
+	  //if (isnan(param)) param = 0;
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
