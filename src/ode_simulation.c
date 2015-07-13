@@ -737,7 +737,9 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
 	  param = GetRealValueInSymbol( symbol );
-	  //if (isnan(param)) param = 0;
+	  if (IsSymbolAlgebraic( symbol )) {
+	    if (isnan(param)) param = 0;
+	  }
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
@@ -2005,6 +2007,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j = 0;
+    UINT32 k = 0;
     UINT32 speciesSize = rec->speciesSize;
     UINT32 compartmentsSize = rec->compartmentsSize;
     double stoichiometry = 0.0;
@@ -2099,6 +2102,26 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	} else {
 	  f[speciesSize + compartmentsSize + j] = rate;
 	}
+      }
+    }
+    /* Adjust if species rate if compartment size is also changing */
+    for (i = 0; i < rec->rulesSize; i++) {
+      if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
+	varType = GetRuleVarType( rec->ruleArray[i] );
+	j = GetRuleIndex( rec->ruleArray[i] );
+	if ( varType == SPECIES_RULE ) {
+	  if (!HasOnlySubstanceUnitsInSpeciesNode( speciesArray[j] )) {
+	    size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( speciesArray[j] ) );
+	    concentration = GetConcentrationInSpeciesNode( speciesArray[j] );
+	    for( k = 0; k < compartmentsSize; k++ ) {
+	      compartment = compartmentsArray[k];
+	      if (compartment == GetCompartmentInSpeciesNode( speciesArray[j] )) {
+		f[j] = f[j] + concentration * f[speciesSize+k];
+		break;
+	      }
+	    }
+	  }
+	} 
       }
     }
 

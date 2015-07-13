@@ -2663,6 +2663,15 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_RELATIONAL_EQ:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_EQ, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
@@ -2671,10 +2680,20 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
+	  */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_RELATIONAL_NEQ:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_NEQ, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
@@ -2683,10 +2702,20 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
+	  */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_RELATIONAL_GEQ:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_GEQ, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
@@ -2695,10 +2724,20 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
+	  */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_RELATIONAL_GT:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_GT, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
@@ -2707,10 +2746,20 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
+	  */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_RELATIONAL_LEQ:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_LEQ, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
@@ -2719,10 +2768,20 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
+	  */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
         case AST_RELATIONAL_LT:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_LT, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  /*
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
@@ -2731,6 +2790,7 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
+	  */
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;

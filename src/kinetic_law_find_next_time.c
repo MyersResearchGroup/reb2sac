@@ -311,8 +311,10 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     RET_VAL ret = SUCCESS;
     BYTE opType = 0x00;
     double childValue = 0.0;
+    double childValue2 = 0.0;
     double *result = NULL;
     KINETIC_LAW *child = NULL;
+    KINETIC_LAW *child2 = NULL;
     LINKED_LIST *children = NULL;
     UINT num = 0;
     UINT i = 0;
@@ -419,6 +421,36 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	}
 	if (childValue > *result) 
 	  *result = childValue;
+      }
+      break;
+    case KINETIC_LAW_OP_LT:
+    case KINETIC_LAW_OP_GT:
+    case KINETIC_LAW_OP_LEQ:
+    case KINETIC_LAW_OP_GEQ:
+    case KINETIC_LAW_OP_EQ:
+    case KINETIC_LAW_OP_NEQ:
+      *result = DBL_MAX;
+      if (num==2) {
+	child = (KINETIC_LAW*)GetElementByIndex( 0, children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child2 = (KINETIC_LAW*)GetElementByIndex( 1, children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child2->Accept( child2, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	if (childValue < childValue2) {
+	  if ( child->valueType == KINETIC_LAW_VALUE_TYPE_SYMBOL ) {
+	    if ((strcmp(GetCharArrayOfString( GetSymbolID( GetSymbolFromKineticLaw( child ) ) ), "t") == 0) ||
+		(strcmp(GetCharArrayOfString( GetSymbolID( GetSymbolFromKineticLaw( child ) ) ), "time") == 0)) {
+	      *result = (childValue2 - childValue);
+	    }
+	  }
+	} 
       }
       break;
     default:
