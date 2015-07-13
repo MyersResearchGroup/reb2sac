@@ -400,6 +400,7 @@ static RET_VAL _VisitPWToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
     RET_VAL ret = SUCCESS;
     BYTE opType = 0x00;
     double childValue = 0.0;
+    double childValue2 = 0.0;
     double *result = NULL;
     KINETIC_LAW *child = NULL;
     LINKED_LIST *children = NULL;
@@ -503,7 +504,115 @@ static RET_VAL _VisitPWToEvaluate( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW *ki
 	*result = *result * childValue;
       }
       break;
-    default:
+    case KINETIC_LAW_OP_EQ:
+      *result = 1;
+      for ( i = 1; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && (childValue==childValue2);
+      }
+      break;
+    case KINETIC_LAW_OP_NEQ:
+      *result = 1;
+      for ( i = 1; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && (childValue!=childValue2);
+      }
+      break;
+    case KINETIC_LAW_OP_LEQ:
+      *result = 1;
+      for ( i = 1; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && (childValue<=childValue2);
+      }
+      break;
+    case KINETIC_LAW_OP_LT:
+      *result = 1;
+      for ( i = 1; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && (childValue<childValue2);
+      }
+      break;
+     case KINETIC_LAW_OP_GEQ:
+      *result = 1;
+      for ( i = 1; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && (childValue>=childValue2);
+      }
+      break;
+    case KINETIC_LAW_OP_GT:
+      *result = 1;
+      for ( i = 1; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i-1,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue2);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result && (childValue>childValue2);
+      }
+      break;
+   default:
       END_FUNCTION("_VisitUnaryOpToFindNextTime", E_WRONGDATA );
       return E_WRONGDATA;
     }
@@ -956,7 +1065,6 @@ static RET_VAL _VisitOpToEvaluateDeter( KINETIC_LAW_VISITOR *visitor, KINETIC_LA
 	    DeleteLinkedList( values );
 	    values = CreateLinkedList();
 	    SetValuesKineticLaw( kineticLaw, values );
-	    printf("NEW\n");
 	  } 
 	  ResetCurrentElement( values );
 	  if ( ( time_stamp = (TIME_STAMP*)GetNextFromLinkedList( values ) ) != NULL ) {
