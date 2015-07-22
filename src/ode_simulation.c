@@ -2104,6 +2104,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	}
       }
     }
+
     /* Adjust if species rate if compartment size is also changing */
     for (i = 0; i < rec->rulesSize; i++) {
       if (GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
