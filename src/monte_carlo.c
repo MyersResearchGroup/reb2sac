@@ -707,7 +707,7 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
 	if (nextEventTime==-2.0) {
 	  return FAILING;
 	}
-	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+	if ((nextEventTime != -1) && (nextEventTime < maxTime) && (nextEventTime >= rec->time)) {
 	  maxTime = nextEventTime;
 	}
 
