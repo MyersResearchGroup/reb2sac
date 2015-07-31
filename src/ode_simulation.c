@@ -892,7 +892,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	if (nextEventTime==-2.0) {
 	  return FAILING;
 	}
-	if ((nextEventTime != -1) && (nextEventTime < maxTime)) {
+	if ((nextEventTime != -1) && (nextEventTime < maxTime) && (nextEventTime >= time)) {
 	  maxTime = nextEventTime;
 	}
 	if (rec->numberFastSpecies > 0) {
