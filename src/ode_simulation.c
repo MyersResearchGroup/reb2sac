@@ -892,7 +892,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	if (nextEventTime==-2.0) {
 	  return FAILING;
 	}
-	if ((nextEventTime != -1) && (nextEventTime < maxTime) && (nextEventTime >= time)) {
+	if ((nextEventTime != -1) && (nextEventTime < maxTime) /*&& (nextEventTime >= time)*/) {
 	  maxTime = nextEventTime;
 	}
 	if (rec->numberFastSpecies > 0) {
@@ -1219,9 +1219,11 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
 	  }
 	}
 	/* Try to find time to next event trigger */
-	nextEventTime = time + 
+	nextEventTime = /*time +*/ 
 	  rec->findNextTime->FindNextTimeWithCurrentAmounts( rec->findNextTime,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ));
+	if (nextEventTime >= 0) 
+	  nextEventTime = time + nextEventTime;
 	if ((firstEventTime == -1.0) || (nextEventTime < firstEventTime)) {
 	  firstEventTime = nextEventTime;
 	}
