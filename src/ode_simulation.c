@@ -1274,10 +1274,10 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
       //printf("eventToFire = %d\n",eventToFire);
       /* Fire event */
       if (eventToFire >= 0) {
+	rec->time = time;
 	if (!GetUseValuesFromTriggerTime( rec->eventArray[eventToFire] )) {
 	  SetEventAssignmentsNextValues( rec->eventArray[eventToFire], rec ); 
 	}
-	rec->time = time;
 	fireEvent( rec->eventArray[eventToFire], rec );
 	SetNextEventTimeInEvent( rec->eventArray[eventToFire], -1.0 );
 	eventFired = TRUE;
@@ -1309,7 +1309,7 @@ static BOOL canTriggerEvent( ODE_SIMULATION_RECORD *rec, double time ) {
       nextEventTime = GetNextEventTimeInEvent( rec->eventArray[i] );
       triggerEnabled = GetTriggerEnabledInEvent( rec->eventArray[i] );
       if (nextEventTime != -1.0) {
-	if  (time >= nextEventTime) {
+	if  (time > nextEventTime) {
 	  /*
 	  if (!GetUseValuesFromTriggerTime( rec->eventArray[i] )) {
 	    SetEventAssignmentsNextValues( rec->eventArray[i], rec ); 
@@ -1339,6 +1339,7 @@ static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
+    //printf("Adding: time=%g conc=%g\n",rec->time,concentration);
     SetEventAssignmentNextValueTime( eventAssignment, concentration, rec->time );
   }
 }
@@ -1375,6 +1376,7 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
     varType = GetEventAssignmentVarType( eventAssignment );
     j = GetEventAssignmentIndex( eventAssignment );
     concentration = GetEventAssignmentNextValueTime( eventAssignment, rec->time );
+    //printf("Fetching: time=%g conc=%g\n",rec->time,concentration);
     //printf("Firing event assignment to %s at time %g varType = %d j = %d conc = %g\n",
     //	   GetCharArrayOfString(eventAssignment->var),rec->time,varType,j,concentration);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
@@ -1389,6 +1391,7 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
       SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
       rec->concentrations[rec->speciesSize + j] = concentration;
     } else {
+      //printf("j=%d conc=%g\n",j,concentration);
       SetCurrentRealValueInSymbol( rec->symbolArray[j], concentration );
       rec->concentrations[rec->speciesSize + rec->compartmentsSize + j] = concentration;
     }
