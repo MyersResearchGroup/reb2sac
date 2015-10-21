@@ -1158,6 +1158,14 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     switch( GetPWTypeFromKineticLaw( kineticLaw ) ) {
     case KINETIC_LAW_OP_PLUS:
     case KINETIC_LAW_OP_TIMES:
+    case KINETIC_LAW_OP_GEQ:
+    case KINETIC_LAW_OP_LEQ:
+    case KINETIC_LAW_OP_GT:
+    case KINETIC_LAW_OP_LT:
+    case KINETIC_LAW_OP_EQ:
+    case KINETIC_LAW_OP_NEQ:
+    case KINETIC_LAW_OP_AND:
+    case KINETIC_LAW_OP_OR:
       (*tabCount)++;
       _PrintTab( file, *tabCount );
       fprintf( file, REB2SAC_XHTML_MATHML_START_SUBGROUP_FORMAT );             
@@ -1175,8 +1183,24 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	} else {
 	  if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_PLUS) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_PLUS_FORMAT ); 
-	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_TIMES)  {
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_TIMES) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_TIMES_FORMAT ); 
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_GEQ) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_GEQ_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_LEQ) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_LEQ_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_GT) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_GT_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_LT) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_LT_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_EQ) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_EQ_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_NEQ) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_NEQ_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_AND) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_AND_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_OR) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_OR_FORMAT );
 	  } 
 	}
 	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
@@ -1201,32 +1225,8 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     case KINETIC_LAW_OP_PW:
       fprintf( file, REB2SAC_XHTML_MATHML_OP_PW_FORMAT );
       break;
-    case KINETIC_LAW_OP_AND:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_AND_FORMAT );
-      break;
-    case KINETIC_LAW_OP_OR:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_OR_FORMAT );
-      break;
     case KINETIC_LAW_OP_XOR:
       fprintf( file, REB2SAC_XHTML_MATHML_OP_XOR_FORMAT );
-      break;
-    case KINETIC_LAW_OP_EQ:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_EQ_FORMAT );
-      break;
-    case KINETIC_LAW_OP_NEQ:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_NEQ_FORMAT );
-      break;
-    case KINETIC_LAW_OP_LT:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_LT_FORMAT );
-      break;
-    case KINETIC_LAW_OP_LEQ:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_LEQ_FORMAT );
-      break;
-    case KINETIC_LAW_OP_GT:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_GT_FORMAT );
-      break;
-    case KINETIC_LAW_OP_GEQ:
-      fprintf( file, REB2SAC_XHTML_MATHML_OP_GEQ_FORMAT );
       break;
     }
 
