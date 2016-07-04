@@ -880,7 +880,7 @@ static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, 
     ResetCurrentElement( list );
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         if( GetSpeciesInIREdge( edge ) == reactant ) {
-            edge->stoichiometry = stoichiometry;
+            edge->stoichiometry += stoichiometry;
 	    edge->constant = constant;
             END_FUNCTION("_AddReactantEdge", SUCCESS );
             return ret;    
@@ -988,7 +988,7 @@ static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, do
     ResetCurrentElement( list );
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
         if( GetSpeciesInIREdge( edge ) == product ) {
-            edge->stoichiometry = stoichiometry;
+            edge->stoichiometry += stoichiometry;
 	    edge->constant = constant;
             END_FUNCTION("_AddProductEdge", SUCCESS );
             return ret;    

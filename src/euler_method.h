@@ -57,6 +57,8 @@ typedef struct {
     double minPrintInterval;
     double nextPrintTime;    
     double timeLimit;
+    double initialTime;
+    double outputStartTime;
     KINETIC_LAW_EVALUATER *evaluator;
     KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
     UINT32 seed;

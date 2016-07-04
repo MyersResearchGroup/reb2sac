@@ -26,7 +26,7 @@
 BEGIN_C_NAMESPACE
 
 //#define ODE_SIMULATION_ABSOLUTE_ERROR 1.0e-9
-#define ODE_SIMULATION_LOCAL_ERROR 0.0
+//#define ODE_SIMULATION_LOCAL_ERROR 0.0
 #define ODE_SIMULATION_H 1.0e-9
 
 DLLSCOPE RET_VAL STDCALL DoODESimulation( BACK_END_PROCESSOR *backend, IR *ir );
@@ -60,12 +60,15 @@ typedef struct {
     double time;
     UINT32 numberSteps;
     double minPrintInterval;
-    double nextPrintTime;    
+    double nextPrintTime;
+    double initialTime;
+    double outputStartTime;
     double timeLimit;
     double minTimeStep;
     double timeStep;
     double originalTimeStep;
     double absoluteError;
+    double relativeError;
     KINETIC_LAW_EVALUATER *evaluator;
     KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
     UINT32 seed;

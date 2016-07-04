@@ -433,6 +433,16 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
       }
     }
 
+    properties = compRec->properties;
+    if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_RELATIVE_ERROR ) ) == NULL ) {
+      rec->relativeError = DEFAULT_ODE_SIMULATION_RELATIVE_ERROR;
+    }
+    else {
+      if( IS_FAILED( ( ret = StrToFloat( &(rec->relativeError), valueString ) ) ) ) {
+	rec->relativeError = DEFAULT_ODE_SIMULATION_RELATIVE_ERROR;
+      }
+    }
+
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_STEP ) ) == NULL ) {
         rec->timeStep = DEFAULT_ODE_SIMULATION_TIME_STEP;
     }
@@ -452,6 +462,24 @@ static RET_VAL _InitializeRecord( ODE_SIMULATION_RECORD *rec, BACK_END_PROCESSOR
       if( IS_FAILED( ( ret = StrToFloat( &(rec->minTimeStep), valueString ) ) ) ) {
 	rec->minTimeStep = DEFAULT_ODE_SIMULATION_MIN_TIME_STEP;
       }
+    }
+
+    if( ( valueString = properties->GetProperty( properties, SIMULATION_OUTPUT_START_TIME ) ) == NULL ) {
+        rec->outputStartTime = DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->outputStartTime), valueString ) ) ) ) {
+            rec->outputStartTime = DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE;
+        }
+    }
+
+    if( ( valueString = properties->GetProperty( properties, SIMULATION_INITIAL_TIME ) ) == NULL ) {
+        rec->initialTime = DEFAULT_SIMULATION_INITIAL_TIME_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->initialTime), valueString ) ) ) ) {
+            rec->initialTime = DEFAULT_SIMULATION_INITIAL_TIME_VALUE;
+        }
     }
 
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
@@ -649,8 +677,8 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
     if( IS_FAILED( (  ret = printer->PrintHeader( printer ) ) ) ) {
         return ret;
     }
-    rec->time = 0.0;
-    rec->nextPrintTime = 0.0;
+    rec->time = rec->initialTime;
+    rec->nextPrintTime = rec->outputStartTime;
     size = rec->compartmentsSize;
     for( i = 0; i < size; i++ ) {
         compartment = compartmentArray[i];
@@ -739,6 +767,10 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
 	  param = GetRealValueInSymbol( symbol );
 	  if (IsSymbolAlgebraic( symbol )) {
 	    if (isnan(param)) param = 0;
+	  }
+	  if ((strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"time")==0) ||
+	      (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0)) {
+	    param = rec->time;
 	  }
 	} else {
 	  law = CloneKineticLaw( law );
@@ -842,7 +874,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     } 
  
     step = gsl_odeiv_step_alloc( stepType, size );
-    control = gsl_odeiv_control_y_new( rec->absoluteError, ODE_SIMULATION_LOCAL_ERROR );
+    control = gsl_odeiv_control_y_new( rec->absoluteError, rec->relativeError );
     evolve = gsl_odeiv_evolve_alloc( size );
 
     /* This is a hack as it should be done in InitializeSimulation, not sure why it does not stick */
@@ -864,16 +896,22 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	ExecuteFastReactions( rec );
       }
       if (decider->IsTerminationConditionMet( decider, NULL, time )) break;
-      if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
-	return ret;
+      if (time >= rec->outputStartTime) {
+	if( IS_FAILED( ( ret = _Print( rec, time ) ) ) ) {
+	  return ret;
+	}
       }
-      curStep++;
-      if (minPrintInterval == -1.0) {
-	nextPrintTime = (curStep/numberSteps) * timeLimit;
+      if (time >= rec->outputStartTime) {
+        curStep++;
+	if (minPrintInterval == -1.0) {
+	  nextPrintTime = rec->outputStartTime + ((curStep/numberSteps) * (timeLimit - rec->outputStartTime));
+	} else {
+	  nextPrintTime = time + minPrintInterval;
+	  if (nextPrintTime > timeLimit) 
+	    nextPrintTime = timeLimit;
+	}
       } else {
-	nextPrintTime = time + minPrintInterval;
-	if (nextPrintTime > timeLimit) 
-	  nextPrintTime = timeLimit;
+	nextPrintTime = rec->outputStartTime;
       }
       while( time < nextPrintTime ) {
 	if ((rec->timeStep == DBL_MAX) || (maxTime + rec->timeStep > nextPrintTime)) {

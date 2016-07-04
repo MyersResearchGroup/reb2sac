@@ -30,8 +30,17 @@
 #include "simulation_printer.h"
 #include "simulation_run_termination_decider.h"
 
+#define SIMULATION_INITIAL_TIME "simulation.initial.time"
+#define DEFAULT_SIMULATION_INITIAL_TIME_VALUE 0.0
+
+#define SIMULATION_OUTPUT_START_TIME "simulation.output.start.time"
+#define DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE 0.0
+
 #define ODE_SIMULATION_ABSOLUTE_ERROR "ode.simulation.absolute.error"
 #define DEFAULT_ODE_SIMULATION_ABSOLUTE_ERROR 1.0e-9
+
+#define ODE_SIMULATION_RELATIVE_ERROR "ode.simulation.relative.error"
+#define DEFAULT_ODE_SIMULATION_RELATIVE_ERROR 0.0
 
 #define ODE_SIMULATION_TIME_LIMIT "ode.simulation.time.limit"
 #define DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE 30000.0
