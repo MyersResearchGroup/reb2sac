@@ -46,6 +46,8 @@ typedef struct {
     UINT32 currentStep;
     UINT32 numberSteps;
     double nextPrintTime;
+    double initialTime;
+    double outputStartTime;
     double timeLimit;
     double timeStep;
     KINETIC_LAW_EVALUATER *evaluator;

@@ -350,6 +350,24 @@ static RET_VAL _InitializeRecord( MONTE_CARLO_RECORD *rec, BACK_END_PROCESSOR *b
         }
     }
 
+    if( ( valueString = properties->GetProperty( properties, SIMULATION_OUTPUT_START_TIME ) ) == NULL ) {
+        rec->outputStartTime = DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->outputStartTime), valueString ) ) ) ) {
+            rec->outputStartTime = DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE;
+        }
+    }
+
+    if( ( valueString = properties->GetProperty( properties, SIMULATION_INITIAL_TIME ) ) == NULL ) {
+        rec->initialTime = DEFAULT_SIMULATION_INITIAL_TIME_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->initialTime), valueString ) ) ) ) {
+            rec->initialTime = DEFAULT_SIMULATION_INITIAL_TIME_VALUE;
+        }
+    }
+
     if( ( valueString = properties->GetProperty( properties, MONTE_CARLO_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_MONTE_CARLO_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -543,8 +561,8 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
     if( IS_FAILED( (  ret = printer->PrintHeader( printer ) ) ) ) {
         return ret;
     }
-    rec->time = 0.0;
-    rec->nextPrintTime = 0.0;
+    rec->time = rec->initialTime;
+    rec->nextPrintTime = rec->outputStartTime;
     rec->currentStep = 0;
     size = rec->compartmentsSize;
     for( i = 0; i < size; i++ ) {
@@ -610,6 +628,10 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
 	  param = GetRealValueInSymbol( symbol );
+	  if ((strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"time")==0) ||
+	      (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0)) {
+	    param = rec->time;
+	  }
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
@@ -680,7 +702,7 @@ static RET_VAL _RunSimulation( MONTE_CARLO_RECORD *rec ) {
     double timeLimit = rec->timeLimit;
     double timeStep = rec->timeStep;
     double maxTime = 0.0;
-    double nextPrintTime = 0.0;
+    double nextPrintTime = rec->time;
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = NULL;
     SIMULATION_RUN_TERMINATION_DECIDER *decider = NULL;
@@ -1221,6 +1243,7 @@ static RET_VAL _Print( MONTE_CARLO_RECORD *rec ) {
     REACTION *reaction = NULL;
     SIMULATION_PRINTER *printer = rec->printer;
     
+    if (time < rec->outputStartTime) return ret; 
     if (rec->minPrintInterval == -1.0) {
       while(( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )){
 	if (nextPrintTime > 0) {
@@ -1231,11 +1254,11 @@ static RET_VAL _Print( MONTE_CARLO_RECORD *rec ) {
 	  return ret;
 	}
 	rec->currentStep++;
-	nextPrintTime = (rec->currentStep * rec->timeLimit)/numberSteps;
+	nextPrintTime = rec->outputStartTime + (((rec->currentStep * (rec->timeLimit-rec->outputStartTime))/numberSteps));
       }
     } else {
       if (( nextPrintTime < time ) && ( nextPrintTime < rec->timeLimit )) {
-	if (nextPrintTime > 0) {
+	if (nextPrintTime > rec->initialTime) {
 	  printf("Time = %g\n",nextPrintTime);
 	  fflush(stdout);
 	}

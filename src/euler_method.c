@@ -59,7 +59,6 @@ DLLSCOPE RET_VAL STDCALL DoEulerSimulation( BACK_END_PROCESSOR *backend, IR *ir 
     UINT timeout = 0;
 
     START_FUNCTION("DoEulerSimulation");
-
     if( !_IsModelConditionSatisfied( ir ) ) {
         return ErrorReport( FAILING, "DoEulerSimulation", "euler method cannot be applied to the model" );
     }
@@ -330,6 +329,25 @@ static RET_VAL _InitializeRecord( EULER_SIMULATION_RECORD *rec, BACK_END_PROCESS
     }
 
     properties = compRec->properties;
+
+    if( ( valueString = properties->GetProperty( properties, SIMULATION_OUTPUT_START_TIME ) ) == NULL ) {
+        rec->outputStartTime = DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->outputStartTime), valueString ) ) ) ) {
+            rec->outputStartTime = DEFAULT_SIMULATION_OUTPUT_START_TIME_VALUE;
+        }
+    }
+
+    if( ( valueString = properties->GetProperty( properties, SIMULATION_INITIAL_TIME ) ) == NULL ) {
+        rec->initialTime = DEFAULT_SIMULATION_INITIAL_TIME_VALUE;
+    }
+    else {
+        if( IS_FAILED( ( ret = StrToFloat( &(rec->initialTime), valueString ) ) ) ) {
+            rec->initialTime = DEFAULT_SIMULATION_INITIAL_TIME_VALUE;
+        }
+    }
+
     if( ( valueString = properties->GetProperty( properties, ODE_SIMULATION_TIME_LIMIT ) ) == NULL ) {
         rec->timeLimit = DEFAULT_ODE_SIMULATION_TIME_LIMIT_VALUE;
     }
@@ -532,8 +550,8 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
     if( IS_FAILED( (  ret = printer->PrintHeader( printer ) ) ) ) {
         return ret;
     }
-    rec->time = 0.0;
-    rec->nextPrintTime = 0.0;
+    rec->time = rec->initialTime;
+    rec->nextPrintTime = rec->outputStartTime;
     rec->currentStep = 0;
     size = rec->compartmentsSize;
     for( i = 0; i < size; i++ ) {
@@ -600,6 +618,10 @@ static RET_VAL _InitializeSimulation( EULER_SIMULATION_RECORD *rec, int runNum )
         symbol = symbolArray[i];
 	if ( (law = (KINETIC_LAW*)GetInitialAssignmentInSymbol( symbol )) == NULL ) {
 	  param = GetRealValueInSymbol( symbol );
+	  if ((strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"time")==0) ||
+	      (strcmp(GetCharArrayOfString( GetSymbolID(symbol) ),"t")==0)) {
+	    param = rec->time;
+	  }
 	} else {
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
@@ -917,6 +939,7 @@ static RET_VAL _Print( EULER_SIMULATION_RECORD *rec ) {
     double time = rec->time;
     SIMULATION_PRINTER *printer = rec->printer;
 
+    if (time < rec->outputStartTime) return ret; 
     if (rec->minPrintInterval == -1.0) {
       while( nextPrintTime <= time ) {
 	if (nextPrintTime > 0.0) {
@@ -927,7 +950,7 @@ static RET_VAL _Print( EULER_SIMULATION_RECORD *rec ) {
 	  return ret;
 	}
 	rec->currentStep++;
-	nextPrintTime = (rec->currentStep/numberSteps) * rec->timeLimit;
+	nextPrintTime = rec->outputStartTime + (((rec->currentStep * (rec->timeLimit-rec->outputStartTime))/numberSteps));
       }
     } else {
       if ( nextPrintTime <= time ) {
