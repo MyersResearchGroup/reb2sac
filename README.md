@@ -13,7 +13,8 @@ Before compiling reb2sac, make sure you have the necessary dependencies:
 ### Compiling reb2sac
 If you want to compile GeneNet from source, simply run:
 
-```./configure
+```
+./configure
 make
 make install
 ```
