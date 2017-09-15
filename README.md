@@ -18,3 +18,6 @@ If you want to compile reb2sac from source, simply run:
 make
 make install
 ```
+
+### [Optional] Installing a GUI
+The GUI for reb2sac is iBioSim. For more information about installation, see [iBioSim](https://github.com/MyersResearchGroup/iBioSim).
