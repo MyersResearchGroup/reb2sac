@@ -51,6 +51,8 @@ static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *
 static void SetEventAssignmentsNextValuesTime( EVENT *event, ODE_SIMULATION_RECORD *rec, double time );
 static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec );
 static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec );
+static RET_VAL ExecuteRateRules( ODE_SIMULATION_RECORD *rec );
+static RET_VAL DetermineSpeciesRates( ODE_SIMULATION_RECORD *rec );
 
 DLLSCOPE RET_VAL STDCALL DoODESimulation( BACK_END_PROCESSOR *backend, IR *ir ) {
     RET_VAL ret = SUCCESS;
@@ -677,6 +679,12 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
     if( IS_FAILED( (  ret = printer->PrintHeader( printer ) ) ) ) {
         return ret;
     }
+
+    if (rec->rulesSize > 0) {
+      ExecuteRateRules( rec );
+    }
+    DetermineSpeciesRates( rec );
+
     rec->time = rec->initialTime;
     rec->nextPrintTime = rec->outputStartTime;
     size = rec->compartmentsSize;
@@ -794,8 +802,8 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
 	concentrations[rec->compartmentsSize + rec->speciesSize + i] = param;
     }
     for (i = 0; i < rec->eventsSize; i++) {
-      /* SetTriggerEnabledInEvent( rec->eventArray[i], FALSE ); */
       /* Use the line below to support true SBML semantics, i.e., nothing can be trigger at t=0 */
+      /* SetTriggerEnabledInEvent( rec->eventArray[i], FALSE ); */
       if (rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
 							     (KINETIC_LAW*)GetTriggerInEvent( rec->eventArray[i] ) )) {
 	if (GetTriggerInitialValue( rec->eventArray[i] )) {
@@ -840,7 +848,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     double time = rec->time;
     double timeLimit = rec->timeLimit;
     double nextEventTime;
-    double maxTime;
+    double maxTime = 0;
     double minTimeStep = rec->minTimeStep;
     int curStep = 0;
     double numberSteps = rec->numberSteps;
@@ -884,6 +892,10 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
     if (rec->numberFastSpecies > 0) {
       ExecuteFastReactions( rec );
     }
+    if (rec->rulesSize > 0) {
+      ExecuteRateRules( rec );
+    }
+    DetermineSpeciesRates( rec );
 
     printer = rec->printer;
     decider = rec->decider;
@@ -894,6 +906,9 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
       }
       if (rec->numberFastSpecies > 0) {
 	ExecuteFastReactions( rec );
+      }
+      if (rec->rulesSize > 0) {
+	ExecuteRateRules( rec );
       }
       if (decider->IsTerminationConditionMet( decider, NULL, time )) break;
       if (time >= rec->outputStartTime) {
@@ -927,6 +942,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	  }
 	}
 	nextEventTime = fireEvents( rec, time );
+	//printf("time = %g nextEventTime = %g\n",time,nextEventTime);
 	if (nextEventTime==-2.0) {
 	  return FAILING;
 	}
@@ -935,6 +951,9 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	}
 	if (rec->numberFastSpecies > 0) {
 	  ExecuteFastReactions( rec );
+	}
+	if (rec->rulesSize > 0) {
+	  ExecuteRateRules( rec );
 	}
 	if (time > maxTime) {
 	  maxTime = time;
@@ -946,7 +965,7 @@ static RET_VAL _RunSimulation( ODE_SIMULATION_RECORD *rec ) {
 	  //if (h < ODE_SIMULATION_H) h = ODE_SIMULATION_H;
 	} else {
 	  h = minTimeStep;
-	  if (time + h > maxTime) {
+	  if (time + h > maxTime && maxTime - time > 0) {
 	    h = maxTime - time;
 	  }
 	  status = gsl_odeiv_step_apply( step, time, h, y, y_err, NULL, NULL, &system );
@@ -1330,6 +1349,9 @@ static double fireEvents( ODE_SIMULATION_RECORD *rec, double time ) {
 	if (rec->numberFastSpecies > 0) {
 	  ExecuteFastReactions( rec );
 	}
+	if (rec->rulesSize > 0) {
+	  ExecuteRateRules( rec );
+	}
       }
       /* Repeat as long as events are firing */
     } while (eventFired);
@@ -1372,12 +1394,20 @@ static void SetEventAssignmentsNextValues( EVENT *event, ODE_SIMULATION_RECORD *
   double concentration = 0.0;
   UINT j;
   BYTE varType;
+  double size = 1.0;
 
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
-    //printf("Adding: time=%g conc=%g\n",rec->time,concentration);
+    varType = GetEventAssignmentVarType( eventAssignment );
+    j = GetEventAssignmentIndex( eventAssignment );
+    if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
+	if (!HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
+	  size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( rec->speciesArray[j] ) );
+	  concentration = concentration * size;
+	}
+    }
     SetEventAssignmentNextValueTime( eventAssignment, concentration, rec->time );
   }
 }
@@ -1388,6 +1418,7 @@ static void SetEventAssignmentsNextValuesTime( EVENT *event, ODE_SIMULATION_RECO
   double concentration = 0.0;
   UINT j;
   BYTE varType;
+  double size = 1.0;
 
   list = GetEventAssignments( event );
   ResetCurrentElement( list );
@@ -1395,6 +1426,14 @@ static void SetEventAssignmentsNextValuesTime( EVENT *event, ODE_SIMULATION_RECO
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     concentration = rec->evaluator->EvaluateWithCurrentConcentrations( rec->evaluator, eventAssignment->assignment );
     //printf("event = %d time = %g concentration = %g\n",GetEventAssignmentIndex(eventAssignment),time,concentration);
+    varType = GetEventAssignmentVarType( eventAssignment );
+    j = GetEventAssignmentIndex( eventAssignment );
+    if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
+	if (!HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
+	  size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( rec->speciesArray[j] ) );
+	  concentration = concentration * size;
+	}
+    }
     SetEventAssignmentNextValueTime( eventAssignment, concentration, time );
   }
 }
@@ -1408,7 +1447,7 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
 
   rec->timeStep = rec->originalTimeStep;
   list = GetEventAssignments( event );
-  //printf("Firing event %s\n",GetCharArrayOfString( GetEventId( event ) ));
+  //printf("Firing event %s at %g\n",GetCharArrayOfString( GetEventId( event ) ), rec->time );
   ResetCurrentElement( list );
   while( ( eventAssignment = (EVENT_ASSIGNMENT*)GetNextFromLinkedList( list ) ) != NULL ) {
     varType = GetEventAssignmentVarType( eventAssignment );
@@ -1418,13 +1457,8 @@ static void fireEvent( EVENT *event, ODE_SIMULATION_RECORD *rec ) {
     //printf("Firing event assignment to %s at time %g varType = %d j = %d conc = %g\n",
     //	   GetCharArrayOfString(eventAssignment->var),rec->time,varType,j,concentration);
     if ( varType == SPECIES_EVENT_ASSIGNMENT ) {
-	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[j] )) {
-	  SetAmountInSpeciesNode( rec->speciesArray[j], concentration );
-	  rec->concentrations[j] = concentration;
-	} else {
-	  SetConcentrationInSpeciesNode( rec->speciesArray[j], concentration );
-	  rec->concentrations[j] = GetAmountInSpeciesNode(rec->speciesArray[j]);
-	}
+      SetAmountInSpeciesNode( rec->speciesArray[j], concentration );
+      rec->concentrations[j] = concentration;
     } else if ( varType == COMPARTMENT_EVENT_ASSIGNMENT ) {
       SetCurrentSizeInCompartment( rec->compartmentArray[j], concentration );
       rec->concentrations[rec->speciesSize + j] = concentration;
@@ -1542,15 +1576,25 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
   REB2SAC_SYMBOL *symbol = NULL;
      
   int status;
-  size_t i, j, iter = 0;
+  size_t i, j, k, iter = 0;
   double amount;
+  double error = 0;
 
   const size_t n = rec->algebraicRulesSize;
 
   gsl_multiroot_function f = {&ODEalgebraicRules, n, rec};
 
   gsl_vector *x = gsl_vector_alloc (n);
-  
+
+  if (n==1) {
+    for (i = 0; i < rec->rulesSize; i++) {
+      if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_ALGEBRAIC ) {
+	error = rec->evaluator->EvaluateWithCurrentConcentrationsDeter( rec->evaluator,
+									 (KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      } 
+    }
+  }
+     
   j = 0;
   for( i = 0; i < rec->speciesSize; i++ ) {
     species = rec->speciesArray[i];
@@ -1560,6 +1604,7 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
       } else {
 	amount = GetConcentrationInSpeciesNode( species );
       }
+      if (!isnan(error) && error>1e8) amount=error;
       gsl_vector_set (x, j, amount);
       j++;
     } 
@@ -1568,6 +1613,7 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
     compartment = rec->compartmentArray[i];
     if (IsCompartmentAlgebraic( compartment )) {
       amount = GetCurrentSizeInCompartment( compartment );
+      if (!isnan(error) && error>1e8) amount=error;
       gsl_vector_set (x, j, amount);
       j++;
     }
@@ -1576,6 +1622,10 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
     symbol = rec->symbolArray[i];
     if (IsSymbolAlgebraic( symbol )) {
       amount = GetCurrentRealValueInSymbol( symbol );
+      if (!isnan(error) && error>1e8) {
+	//printf("amount=%g error=%g\n",amount,error);
+	amount=error;
+      }
       gsl_vector_set (x, j, amount);
       j++;
     }
@@ -1585,13 +1635,13 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
   s = gsl_multiroot_fsolver_alloc (T, n);
   gsl_multiroot_fsolver_set (s, &f, x);
      
-  // ODE_print_state (iter, s, n);
+  //ODE_print_state (iter, s, n);
      
   do {
       iter++;
       status = gsl_multiroot_fsolver_iterate (s);
       
-      // ODE_print_state (iter, s, n);
+      //ODE_print_state (iter, s, n);
       
       if (status)   /* check if solver is stuck */
 	break;
@@ -1599,7 +1649,7 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
       status = gsl_multiroot_test_residual (s->f, 1e-7);
   } while (status == GSL_CONTINUE && iter < 1000);
      
-  // printf ("status = %s\n", gsl_strerror (status));
+  //printf ("status = %s\n", gsl_strerror (status));
      
   gsl_multiroot_fsolver_free (s);
   gsl_vector_free (x);
@@ -1809,6 +1859,117 @@ int ODEfastReactions(const gsl_vector * x, void *params, gsl_vector * f) {
   return GSL_SUCCESS;
 }
 
+static RET_VAL DetermineSpeciesRates( ODE_SIMULATION_RECORD *rec ) {
+    RET_VAL ret = SUCCESS;
+    UINT32 i = 0;
+    UINT32 j = 0;
+    UINT32 k = 0;
+    UINT32 speciesSize = rec->speciesSize;
+    UINT32 compartmentsSize = rec->compartmentsSize;
+    double stoichiometry = 0.0;
+    double concentration = 0.0;
+    double size = 0.0;
+    double deltaTime = 0.0;
+    double rate = 0.0;
+    IR_EDGE *edge = NULL;
+    REACTION *reaction = NULL;
+    COMPARTMENT *compartment = NULL;
+    COMPARTMENT **compartmentsArray = rec->compartmentArray;
+    UINT32 symbolsSize = rec->symbolsSize;
+    REB2SAC_SYMBOL *symbol = NULL;
+    REB2SAC_SYMBOL **symbolArray = rec->symbolArray;
+    SPECIES *species = NULL;
+    SPECIES **speciesArray = rec->speciesArray;
+    LINKED_LIST *edges = NULL;
+    KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
+    double nextEventTime;
+    BOOL triggerEnabled;
+    BYTE varType;
+    REB2SAC_SYMBOL *speciesRef = NULL;
+    REB2SAC_SYMBOL *convFactor = NULL;
+    double change = 0;
+
+    /* Update rates using kinetic laws from the reactions */
+    if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
+      return GSL_FAILURE;
+    }
+    for( i = 0; i < speciesSize; i++ ) {
+      change = 0;
+      species = speciesArray[i];
+      if (HasBoundaryConditionInSpeciesNode(species)) continue;
+      /* size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) ); */
+      TRACE_2( "%s changes from %g", GetCharArrayOfString( GetSpeciesNodeName( species ) ),
+	       concentration );
+      edges = GetReactantEdges( (IR_NODE*)species );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
+	reaction = GetReactionInIREdge( edge );
+	if (IsReactionFastInReactionNode( reaction )) continue;
+	rate = GetReactionRate( reaction );
+	change -= (stoichiometry * rate);
+	TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+		 -(stoichiometry * rate));
+      }
+      edges = GetProductEdges( (IR_NODE*)species );
+      ResetCurrentElement( edges );
+      while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+	speciesRef = GetSpeciesRefInIREdge( edge );
+	if (speciesRef) {
+	  stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
+	} else {
+	  stoichiometry = GetStoichiometryInIREdge( edge );
+	}
+	reaction = GetReactionInIREdge( edge );
+	if (IsReactionFastInReactionNode( reaction )) continue;
+	rate = GetReactionRate( reaction );
+	change += (stoichiometry * rate);
+	TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
+		 (stoichiometry * rate));
+      }
+      if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	change *= GetCurrentRealValueInSymbol( convFactor );
+      }
+      if (change != 0) {
+	if (HasOnlySubstanceUnitsInSpeciesNode( rec->speciesArray[i] )) {
+	  SetRateInSpeciesNode( rec->speciesArray[i], change );
+	} else {
+	  size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( rec->speciesArray[i] ) );
+	  SetRateInSpeciesNode( rec->speciesArray[i], change / size );
+	}
+      }
+      TRACE_2( "change of %s is %g\n", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
+    }
+}
+
+static RET_VAL ExecuteRateRules( ODE_SIMULATION_RECORD *rec ) {
+  int i,j;
+  double change = 0;
+  BYTE varType;
+  double size = 1.0;
+
+  for (i = 0; i < rec->rulesSize; i++) {
+    if ( GetRuleType( rec->ruleArray[i] ) == RULE_TYPE_RATE_ASSIGNMENT ) {
+      change = rec->evaluator->EvaluateWithCurrentAmountsDeter( rec->evaluator,
+								(KINETIC_LAW*)GetMathInRule( rec->ruleArray[i] ) );
+      varType = GetRuleVarType( rec->ruleArray[i] );
+      j = GetRuleIndex( rec->ruleArray[i] );
+      if ( varType == SPECIES_RULE ) {
+	SetRateInSpeciesNode( rec->speciesArray[j], change );
+      } else if ( varType == COMPARTMENT_RULE ) {
+	SetCurrentRateInCompartment( rec->compartmentArray[j], change );
+      } else {
+	SetCurrentRateInSymbol( rec->symbolArray[j], change );
+      }
+    }
+  }
+}
+
 static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
   const gsl_multiroot_fsolver_type *T;
   gsl_multiroot_fsolver *s;
@@ -2016,12 +2177,49 @@ static RET_VAL ExecuteFastReactions( ODE_SIMULATION_RECORD *rec ) {
       
       //ODE_print_state (iter, s, n);
       
-      if (status)   /* check if solver is stuck */
+      if (status) {   /* check if solver is stuck */
+	//ODE_print_state (iter, s, n);
+	//printf ("status = %s\n", gsl_strerror (status));
 	break;
+      }
       
       status = gsl_multiroot_test_residual (s->f, 1e-7);
   } while (status == GSL_CONTINUE && iter < 1000);
-     
+    
+  // Did not converge, try again starting from initial state
+  if (status) {
+    j = 0;
+    for( i = 0; i < rec->speciesSize; i++ ) {
+      species = rec->speciesArray[i];
+      //if (!HasBoundaryConditionInSpeciesNode( species ) && IsSpeciesNodeFast( species )) {
+      if (IsSpeciesNodeFast( species )) {
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  amount = GetInitialAmountInSpeciesNode( species );
+	} else {
+	  amount = GetInitialConcentrationInSpeciesNode( species );
+	}
+	gsl_vector_set (x, j, amount);
+	j++;
+      } 
+    }
+    T = gsl_multiroot_fsolver_hybrids;
+    s = gsl_multiroot_fsolver_alloc (T, n);
+    gsl_multiroot_fsolver_set (s, &f, x);
+    do {
+      iter++;
+      status = gsl_multiroot_fsolver_iterate (s);
+      
+      //ODE_print_state (iter, s, n);
+      
+      if (status) {   /* check if solver is stuck */
+	//ODE_print_state (iter, s, n);
+	//printf ("status = %s\n", gsl_strerror (status));
+	break;
+      }
+      
+      status = gsl_multiroot_test_residual (s->f, 1e-7);
+    } while (status == GSL_CONTINUE && iter < 1000);
+  }
   //printf ("status = %s\n", gsl_strerror (status));
 
   j = 0;
@@ -2071,6 +2269,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
     KINETIC_LAW_EVALUATER *evaluator = rec->evaluator;
     double nextEventTime;
     BOOL triggerEnabled;
+    BOOL updatedByReaction;
     BYTE varType;
     REB2SAC_SYMBOL *speciesRef = NULL;
     REB2SAC_SYMBOL *convFactor = NULL;
@@ -2083,8 +2282,11 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	    return GSL_FAILURE;
 	  }
 	}
-	if( IS_FAILED( ( ret = SetRateInSpeciesNode( species, f[i] ) ) ) ) {
-	  return GSL_FAILURE;
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  SetRateInSpeciesNode( species, f[i] );
+	} else {
+	  size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	  SetRateInSpeciesNode( species, f[i] / size );
 	}
 	f[i] = 0.0;
     }
@@ -2140,10 +2342,13 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	    size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( speciesArray[j] ) );
 	    f[j] = rate * size;
 	  }
+	  SetRateInSpeciesNode( species, f[j] );
 	} else if ( varType == COMPARTMENT_RULE ) {
 	  f[speciesSize + j] = rate;
+	  SetCurrentRateInCompartment( compartment, f[speciesSize + i] );
 	} else {
 	  f[speciesSize + compartmentsSize + j] = rate;
+	  SetCurrentRateInSymbol( symbol, f[speciesSize + compartmentsSize + i] );
 	}
       }
     }
@@ -2168,12 +2373,17 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
 	} 
       }
     }
+    if (rec->rulesSize > 0) {
+      ExecuteRateRules( rec );
+      ExecuteAssignments( rec );
+    }
 
     /* Update rates using kinetic laws from the reactions */
     if( IS_FAILED( ( ret = _CalculateReactionRates( rec ) ) ) ) {
         return GSL_FAILURE;
     }
     for( i = 0; i < speciesSize; i++ ) {
+        updatedByReaction = FALSE;
         species = speciesArray[i];
 	if (HasBoundaryConditionInSpeciesNode(species)) continue;
 	/* size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) ); */
@@ -2182,6 +2392,7 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
         edges = GetReactantEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
+  	    updatedByReaction = TRUE;
 	    speciesRef = GetSpeciesRefInIREdge( edge );
 	    if (speciesRef) {
 	      stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
@@ -2198,7 +2409,8 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
         edges = GetProductEdges( (IR_NODE*)species );
         ResetCurrentElement( edges );
         while( ( edge = GetNextEdge( edges ) ) != NULL ) {
-	    speciesRef = GetSpeciesRefInIREdge( edge );
+	    updatedByReaction = TRUE;
+   	    speciesRef = GetSpeciesRefInIREdge( edge );
 	    if (speciesRef) {
 	      stoichiometry = GetCurrentRealValueInSymbol( speciesRef );
 	    } else {
@@ -2211,10 +2423,18 @@ static int _Update( double t, const double y[], double f[], ODE_SIMULATION_RECOR
             TRACE_2( "\tchanges from %s is %g", GetCharArrayOfString( GetReactionNodeName( reaction ) ),
                (stoichiometry * rate));
         }
-	if (( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
+	if (updatedByReaction && ( convFactor = GetConversionFactorInSpeciesNode( species ) )!=NULL) {
 	  f[i] *= GetCurrentRealValueInSymbol( convFactor );
+	}
+	if (HasOnlySubstanceUnitsInSpeciesNode( species )) {
+	  SetRateInSpeciesNode( species, f[i] );
+	} else {
+	  size = GetCurrentSizeInCompartment( GetCompartmentInSpeciesNode( species ) );
+	  SetRateInSpeciesNode( species, f[i] / size );
 	}
         TRACE_2( "change of %s is %g\n", GetCharArrayOfString( GetSpeciesNodeName( species ) ), f[i] );
     }
+    ExecuteAssignments( rec );
+    ExecuteAssignments( rec );
     return GSL_SUCCESS;
 }

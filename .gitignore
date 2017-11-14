@@ -27,7 +27,19 @@
 *.i*86
 *.x86_64
 *.hex
+src/reb2sac
 
 # Debug files
 *.dSYM/
 *.su
+
+# Other files
+Makefile
+config.h
+config.log
+config.status
+libtool
+src/.deps/
+src/Makefile
+src/analysis_def_parser.output
+stamp-h1

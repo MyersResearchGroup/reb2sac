@@ -20,6 +20,7 @@
 #if !defined(HAVE_KINETIC_LAW_EVALUATER)
 #define HAVE_KINETIC_LAW_EVALUATER
 
+#include "float.h"
 #include "common.h"
 #include "hash_table.h"
 #include "species_node.h"

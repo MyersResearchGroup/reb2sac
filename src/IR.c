@@ -879,7 +879,8 @@ static RET_VAL _AddReactantEdge( IR *ir, REACTION *reaction, SPECIES *reactant, 
     list = GetReactantEdges( (IR_NODE*)reaction );
     ResetCurrentElement( list );
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
-        if( GetSpeciesInIREdge( edge ) == reactant ) {
+      if( (speciesRef != NULL && GetSpeciesRefInIREdge( edge ) == speciesRef ) ||
+	  (speciesRef == NULL && GetSpeciesInIREdge( edge ) == reactant ) ) {
             edge->stoichiometry += stoichiometry;
 	    edge->constant = constant;
             END_FUNCTION("_AddReactantEdge", SUCCESS );
@@ -987,7 +988,8 @@ static RET_VAL _AddProductEdge( IR *ir, REACTION *reaction, SPECIES *product, do
     list = GetProductsInReactionNode( reaction );
     ResetCurrentElement( list );
     while( ( edge = (IR_EDGE*)GetNextFromLinkedList( list ) ) != NULL ) {
-        if( GetSpeciesInIREdge( edge ) == product ) {
+      if( (speciesRef != NULL && GetSpeciesRefInIREdge( edge ) == speciesRef ) ||
+	  (speciesRef == NULL && GetSpeciesInIREdge( edge ) == product ) ) {
             edge->stoichiometry += stoichiometry;
 	    edge->constant = constant;
             END_FUNCTION("_AddProductEdge", SUCCESS );
@@ -2405,6 +2407,18 @@ static RET_VAL _PrintOpKineticLawForSBML( KINETIC_LAW *kineticLaw, FILE *file, U
         break;
         case KINETIC_LAW_OP_NEQ:
             fprintf( file, "<neq/>%s", NEW_LINE );
+        break;
+        case KINETIC_LAW_OP_IMPLIES:
+            fprintf( file, "<implies/>%s", NEW_LINE );
+        break;
+        case KINETIC_LAW_OP_MIN:
+            fprintf( file, "<min/>%s", NEW_LINE );
+        break;
+        case KINETIC_LAW_OP_MAX:
+            fprintf( file, "<max/>%s", NEW_LINE );
+        break;
+        case KINETIC_LAW_OP_QUOTIENT:
+            fprintf( file, "<quotient/>%s", NEW_LINE );
         break;
         case KINETIC_LAW_OP_AND:
             fprintf( file, "<and/>%s", NEW_LINE );

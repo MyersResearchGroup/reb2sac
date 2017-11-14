@@ -553,6 +553,7 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
     BOOL change = FALSE;
     char filename[512];
     FILE *file = NULL;
+    STRING *kineticLawString = NULL;
 
     sprintf( filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1) );
     if( IS_FAILED( (  ret = printer->PrintStart( printer, filenameStem ) ) ) ) {
@@ -633,6 +634,10 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
 	    param = rec->time;
 	  }
 	} else {
+	  printf("Symbol = %s\n",GetCharArrayOfString( GetSymbolID(symbol) ));
+	  kineticLawString = ToStringKineticLaw( law );
+	  printf( "\tcreate kinetic law: %s%s", GetCharArrayOfString( kineticLawString ), NEW_LINE );
+	  FreeString( &kineticLawString );
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {

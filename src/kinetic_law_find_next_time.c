@@ -423,6 +423,30 @@ static RET_VAL _VisitPWToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	  *result = childValue;
       }
       break;
+    case KINETIC_LAW_OP_MIN:
+      *result = DBL_MAX;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result > childValue ? childValue : *result; 
+      }
+      break;
+    case KINETIC_LAW_OP_MAX:
+      *result = (-1) * DBL_MAX;
+      for ( i = 0; i < num; i++ ) {
+	child = (KINETIC_LAW*)GetElementByIndex( i,children );
+	visitor->_internal2 = (CADDR_T)(&childValue);
+	if( IS_FAILED( ( ret = child->Accept( child, visitor ) ) ) ) {
+	  END_FUNCTION("_VisitPWToEvaluate", ret );
+	  return ret;
+	}
+	*result = *result < childValue ? childValue : *result; 
+      }
+      break;
     case KINETIC_LAW_OP_LT:
     case KINETIC_LAW_OP_GT:
     case KINETIC_LAW_OP_LEQ:
@@ -507,6 +531,14 @@ static RET_VAL _VisitOpToFindNextTime( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
         
         case KINETIC_LAW_OP_DIVIDE:
             *result = leftValue / rightValue;
+        break;
+
+        case KINETIC_LAW_OP_QUOTIENT:
+	  *result = floor(leftValue / rightValue);
+        break;
+                
+        case KINETIC_LAW_OP_IMPLIES:
+	  *result = leftValue ? rightValue : 1;
         break;
         
         case KINETIC_LAW_OP_POW:
@@ -884,6 +916,14 @@ static RET_VAL _VisitOpToFindNextTimeDeter( KINETIC_LAW_VISITOR *visitor, KINETI
             *result = leftValue / rightValue;
         break;
         
+        case KINETIC_LAW_OP_QUOTIENT:
+	  *result = floor(leftValue / rightValue);
+        break;
+                
+        case KINETIC_LAW_OP_IMPLIES:
+	  *result = leftValue ? rightValue : 1;
+        break;
+
         case KINETIC_LAW_OP_POW:
             *result = pow( leftValue, rightValue );
         break;

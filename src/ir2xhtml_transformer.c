@@ -1164,6 +1164,10 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
     case KINETIC_LAW_OP_LT:
     case KINETIC_LAW_OP_EQ:
     case KINETIC_LAW_OP_NEQ:
+    case KINETIC_LAW_OP_IMPLIES:
+    case KINETIC_LAW_OP_MIN:
+    case KINETIC_LAW_OP_MAX:
+    case KINETIC_LAW_OP_QUOTIENT:
     case KINETIC_LAW_OP_AND:
     case KINETIC_LAW_OP_OR:
       (*tabCount)++;
@@ -1197,6 +1201,14 @@ static RET_VAL _VisitPWToPrintInXHTML( KINETIC_LAW_VISITOR *visitor, KINETIC_LAW
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_EQ_FORMAT );
 	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_NEQ) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_NEQ_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_IMPLIES) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_IMPLIES_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_MIN) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_MIN_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_MAX) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_MAX_FORMAT );
+	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_QUOTIENT) {
+	    fprintf( file, REB2SAC_XHTML_MATHML_OP_QUOTIENT_FORMAT );
 	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_AND) {
 	    fprintf( file, REB2SAC_XHTML_MATHML_OP_AND_FORMAT );
 	  } else if (GetPWTypeFromKineticLaw( kineticLaw )==KINETIC_LAW_OP_OR) {
@@ -2194,6 +2206,10 @@ static BOOL _NeedParenForLeft( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_BIT ) ||
 	( parentOpType == KINETIC_LAW_OP_PLUS ) ||
 	( parentOpType == KINETIC_LAW_OP_TIMES ) ||
+	( parentOpType == KINETIC_LAW_OP_IMPLIES ) ||
+	( parentOpType == KINETIC_LAW_OP_MIN ) ||
+	( parentOpType == KINETIC_LAW_OP_MAX ) ||
+	( parentOpType == KINETIC_LAW_OP_QUOTIENT ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2257,6 +2273,10 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	( parentOpType == KINETIC_LAW_OP_BIT ) ||
 	( parentOpType == KINETIC_LAW_OP_PLUS ) ||
 	( parentOpType == KINETIC_LAW_OP_TIMES ) ||
+	( parentOpType == KINETIC_LAW_OP_IMPLIES ) ||
+	( parentOpType == KINETIC_LAW_OP_MIN ) ||
+	( parentOpType == KINETIC_LAW_OP_MAX ) ||
+	( parentOpType == KINETIC_LAW_OP_QUOTIENT ) ||
 	( parentOpType == KINETIC_LAW_OP_AND ) ||
 	( parentOpType == KINETIC_LAW_OP_XOR ) ||
 	( parentOpType == KINETIC_LAW_OP_OR ) ) {
@@ -2286,6 +2306,10 @@ static BOOL _NeedParenForRight( KINETIC_LAW *parent, KINETIC_LAW *child ) {
 	    ( childOpType == KINETIC_LAW_OP_BIT ) ||
 	    ( childOpType == KINETIC_LAW_OP_PLUS ) ||
 	    ( childOpType == KINETIC_LAW_OP_TIMES ) ||
+	    ( childOpType == KINETIC_LAW_OP_IMPLIES ) ||
+	    ( childOpType == KINETIC_LAW_OP_MIN ) ||
+	    ( childOpType == KINETIC_LAW_OP_MAX ) ||
+	    ( childOpType == KINETIC_LAW_OP_QUOTIENT ) ||
 	    ( childOpType == KINETIC_LAW_OP_AND ) ||
 	    ( childOpType == KINETIC_LAW_OP_XOR ) ||
 	    ( childOpType == KINETIC_LAW_OP_OR ) ) {

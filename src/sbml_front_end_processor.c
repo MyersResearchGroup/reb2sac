@@ -127,7 +127,7 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
     record = frontend->record;
     
     doc = readSBML( GetCharArrayOfString( record->inputPath ) );
-    if (( SBMLDocument_getLevel( doc ) != 3) || ( SBMLDocument_getVersion( doc ) != 1)) {
+    if (( SBMLDocument_getLevel( doc ) != 3) /*|| ( SBMLDocument_getVersion( doc ) != 1)*/) {
       SBMLDocument_setLevelAndVersion( doc, 3, 1);
       writeSBML( doc, GetCharArrayOfString( record->inputPath ) );
       doc = readSBML( GetCharArrayOfString( record->inputPath ) );
@@ -175,10 +175,16 @@ static RET_VAL _ParseSBML( FRONT_END_PROCESSOR *frontend ) {
       ConversionOption_setDescription(option1, "flatten comp");
       ConversionProperties_addOption(props, option1);
 
+      /* option2 = ConversionOption_create("abortIfUnflattenable"); */
+      /* ConversionOption_setType(option2, CNV_TYPE_STRING); */
+      /* ConversionOption_setValue(option2, "none"); */
+      /* ConversionOption_setDescription(option2, "abortIfUnflattenable"); */
+      /* ConversionProperties_addOption(props, option2); */
+
       /* perform the conversion */
       if (SBMLDocument_convert(doc, props) != LIBSBML_OPERATION_SUCCESS) {
     	printf ("Errors found during flattening ... \n");
-    	//SBMLDocument_printErrors(doc, stderr);
+    	SBMLDocument_printErrors(doc, stderr);
     	//error = TRUE;
       }
     }
@@ -378,6 +384,18 @@ static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *
     ListOf_t *list = NULL;
     UINT size = 0;
     UINT i = 0;
+    UINT j = 0;
+    Reaction_t *reaction;
+    char *var = NULL;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    UINT num = 0;
+    double stoichiometry = 0;
+    ListOf_t *reactants = NULL;
+    ListOf_t *products = NULL;
+    SpeciesReference_t *speciesRef = NULL;
+    char* speciesRefId = NULL;
+    REB2SAC_SYMBOL *SpeciesRef = NULL;
+    BOOL constant;
 
     START_FUNCTION("_HandleGlobalParameters");
 
@@ -387,8 +405,47 @@ static RET_VAL _HandleGlobalParameters( FRONT_END_PROCESSOR *frontend, Model_t *
     list = Model_getListOfParameters( model );
     if( IS_FAILED( ( ret = manager->SetGlobal( manager, list ) ) ) ) {
         return ErrorReport( FAILING, "_HandleGlobalParameters", "error on setting global" ); 
-    }     
-    
+    } 
+    // TODO
+    list = Model_getListOfReactions( model );
+    size = Model_getNumReactions( model );
+    for( i = 0; i < size; i++ ) {
+      reaction = (Reaction_t*)ListOf_get( list, i );
+      var = (char *)Reaction_getId( reaction );
+      if( ( symtab->AddRealValueSymbol( symtab, var, 0, FALSE ) ) == NULL ) {
+      	return ErrorReport( FAILING, "_HandleGlobalParameters",
+      			    "failed to put reaction id in global symtab" );
+      }
+      reactants = Reaction_getListOfReactants( reaction );
+      num = Reaction_getNumReactants( reaction );
+      for( j = 0; j < num; j++ ) {
+        speciesRef = (SpeciesReference_t*)ListOf_get( reactants, j );
+    	if (SpeciesReference_isSetId( speciesRef )) {
+    	  speciesRefId = (char*)SpeciesReference_getId( speciesRef );
+    	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
+    	  constant = SpeciesReference_getConstant( speciesRef );
+    	  if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) {
+    	    return ErrorReport( FAILING, "_HandleGlobalParameters",
+    				"failed to put parameter in global symtab" );
+    	  }
+    	}
+      }
+      products = Reaction_getListOfProducts( reaction );
+      num = Reaction_getNumProducts( reaction );
+      for( j = 0; j < num; j++ ) {
+        speciesRef = (SpeciesReference_t*)ListOf_get( products, j );
+    	if (SpeciesReference_isSetId( speciesRef )) {
+    	  speciesRefId = (char*)SpeciesReference_getId( speciesRef );
+    	  stoichiometry = SpeciesReference_getStoichiometry( speciesRef );
+    	  constant = SpeciesReference_getConstant( speciesRef );
+    	  if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) {
+    	    return ErrorReport( FAILING, "_HandleGlobalParameters",
+    				"failed to put parameter in global symtab" );
+    	  }
+    	}
+      }
+    }
+
     END_FUNCTION("_HandleGlobalParameters", SUCCESS );
     return ret;
 }
@@ -439,6 +496,7 @@ static RET_VAL _HandleInitialAssignments( FRONT_END_PROCESSOR *frontend, Model_t
       initialAssignment = (InitialAssignment_t*)ListOf_get( list, i );
       id = (char *)InitialAssignment_getSymbol(initialAssignment);
       node = (ASTNode_t *)InitialAssignment_getMath( initialAssignment );
+      if (node == NULL) continue;
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	return ErrorReport( FAILING, "_HandleInitialAssignments", "failed to create initial assignment for %s", id );        
       }
@@ -511,6 +569,7 @@ static RET_VAL _HandleRuleAssignments( FRONT_END_PROCESSOR *frontend, Model_t *m
       if (Rule_isAssignment( rule )) {
 	id = (char *)Rule_getVariable( rule );
 	node = (ASTNode_t *)Rule_getMath( rule );
+	if (node == NULL) continue;
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleRuleAssignments", "failed to create initial assignment for rule %s", id );        
 	}
@@ -640,6 +699,7 @@ static RET_VAL _HandleFunctionDefinitions( FRONT_END_PROCESSOR *frontend, Model_
     size = Model_getNumFunctionDefinitions( model );
     for( i = 0; i < size; i++ ) {
         functionDef = (FunctionDefinition_t*)ListOf_get( list, i );
+	if (FunctionDefinition_getMath( functionDef ) == NULL) continue;
         if( IS_FAILED( ( ret = _HandleFunctionDefinition( frontend, model, functionDef ) ) ) ) {
             END_FUNCTION("_HandleFunctionDefinitions", ret );
             return ret;
@@ -716,7 +776,7 @@ static RET_VAL _HandleAlgebraicRules( FRONT_END_PROCESSOR *frontend, Model_t *mo
     size = Model_getNumRules( model );
     for( i = 0; i < size; i++ ) {
         ruleDef = (Rule_t*)ListOf_get( list, i );
-	if (Rule_isAlgebraic( ruleDef )) {
+	if (Rule_isAlgebraic( ruleDef ) && Rule_getMath( ruleDef )!=NULL) {
 	  if( IS_FAILED( ( ret = _HandleAlgebraicRule( frontend, model, ruleDef ) ) ) ) {
             END_FUNCTION("_HandleAlgebraicRules", ret );
             return ret;
@@ -746,7 +806,6 @@ static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *mod
     LINKED_LIST *supportList = NULL;
     STRING *sym;
     char *var;
-
     START_FUNCTION("_HandleAlgebraicRule");
     
     kineticLawSupport = CreateKineticLawSupport();
@@ -758,7 +817,7 @@ static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *mod
         return FAILING;
     }
     table = (HASH_TABLE*)frontend->_internal2;
-    TRACE_1("creating rule on %s", var );
+    TRACE_0("creating algebraic rule");
     if( ( ruleDef = ruleManager->CreateRule( ruleManager, RULE_TYPE_ALGEBRAIC, NULL ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleRule", "could not allocate algebraic rule");
     }
@@ -767,7 +826,7 @@ static RET_VAL _HandleAlgebraicRule( FRONT_END_PROCESSOR *frontend, Model_t *mod
         return ErrorReport( FAILING, "_HandleRule", "error on getting symtab manager" ); 
     }
     if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleRule", "failed to create rule on %s", var );        
+        return ErrorReport( FAILING, "_HandleRule", "failed to create algebraic rule");        
     }
     if( IS_FAILED( ( ret = AddMathInRule( ruleDef, law ) ) ) ) {
       END_FUNCTION("_HandleRuleDefinition", ret );
@@ -814,7 +873,7 @@ static RET_VAL _HandleRules( FRONT_END_PROCESSOR *frontend, Model_t *model ) {
     size = Model_getNumRules( model );
     for( i = 0; i < size; i++ ) {
         ruleDef = (Rule_t*)ListOf_get( list, i );
-	if (!Rule_isAlgebraic( ruleDef )) {
+	if (!Rule_isAlgebraic( ruleDef ) && Rule_getMath( ruleDef )!=NULL) {
 	  if( IS_FAILED( ( ret = _HandleRule( frontend, model, ruleDef ) ) ) ) {
             END_FUNCTION("_HandleRules", ret );
             return ret;
@@ -914,6 +973,7 @@ static RET_VAL _HandleConstraints( FRONT_END_PROCESSOR *frontend, Model_t *model
     size = Model_getNumConstraints( model );
     for( i = 0; i < size; i++ ) {
         constraintDef = (Constraint_t*)ListOf_get( list, i );
+	if (Constraint_getMath( constraintDef ) == NULL) continue;
         if( IS_FAILED( ( ret = _HandleConstraint( frontend, model, constraintDef ) ) ) ) {
             END_FUNCTION("_HandleConstraints", ret );
             return ret;
@@ -1030,6 +1090,10 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
         END_FUNCTION("_HandleEvent", FAILING );
         return FAILING;
     }
+    if (!Event_isSetTrigger( source ) || Trigger_getMath( Event_getTrigger( source ) ) == NULL) {
+      END_FUNCTION("_HandleEvent", SUCCESS );
+      return ret;
+    }
     id = (char *)Event_getId( source );
     if( ( eventDef = eventManager->CreateEvent( eventManager, id ) ) == NULL ) {
         return ErrorReport( FAILING, "_HandleEvent", "could not allocate event %s", id );
@@ -1041,7 +1105,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     table = (HASH_TABLE*)frontend->_internal2;    
 
     SetUseValuesFromTriggerTime( eventDef, Event_getUseValuesFromTriggerTime( source ) );
-    if (Event_isSetTrigger( source ) ) {
+    if (Event_isSetTrigger( source )) {
       trigger = Event_getTrigger( source );
       annotation = SBase_getAnnotationString( trigger );
       if (annotation != NULL && strstr(annotation,"TriggerCanBeDisabled") != NULL) {
@@ -1066,19 +1130,28 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
       } else {
 	SetTriggerInitialValue( eventDef, FALSE );
       }
-
       node  = (ASTNode_t *)Trigger_getMath( trigger );
-      if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
-        return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+      if (Trigger_getMath( trigger ) == NULL) { 
+	law = CreateRealValueKineticLaw( 0.0 );
+      } else {
+	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
+	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
+	}
       }
+      if( IS_FAILED( ( ret = AddTriggerInEvent( eventDef, law ) ) ) ) {
+	END_FUNCTION("_HandleEvent", ret );
+	return ret;
+      }
+    } else {
+      law = CreateRealValueKineticLaw( 0.0 );
       if( IS_FAILED( ( ret = AddTriggerInEvent( eventDef, law ) ) ) ) {
 	END_FUNCTION("_HandleEvent", ret );
 	return ret;
       }
     }
 
-    if (Event_isSetDelay( source ) ) {
-      delay = Event_getDelay( source );
+    delay = Event_getDelay( source );
+    if (Event_isSetDelay( source ) && Delay_getMath( delay ) != NULL) {
       node  = (ASTNode_t *)Delay_getMath( delay );
       if ((ASTNode_getType( node )== AST_FUNCTION) && (strcmp(ASTNode_getName( node ),"priority")==0)) {
 	  if( ( law = _TransformKineticLaw( frontend, ASTNode_getLeftChild( node ), manager, table ) ) == NULL ) {
@@ -1107,8 +1180,8 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     }
 
     /* new libsbml */
-    if (Event_isSetPriority( source ) ) {
-      priority = Event_getPriority( source );
+    priority = Event_getPriority( source );
+    if (Event_isSetPriority( source ) && Priority_getMath( priority ) != NULL) {
       node  = (ASTNode_t *)Priority_getMath( priority );
       if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
@@ -1124,6 +1197,7 @@ static RET_VAL _HandleEvent( FRONT_END_PROCESSOR *frontend, Model_t *model, Even
     for( i = 0; i < size; i++ ) {
         eventAssignmentDef = (EventAssignment_t*)ListOf_get( list, i );
 	node  = (ASTNode_t *)EventAssignment_getMath( eventAssignmentDef );
+	if (EventAssignment_getMath( eventAssignmentDef ) == NULL) continue;
 	if( ( law = _TransformKineticLaw( frontend, node, manager, table ) ) == NULL ) {
 	  return ErrorReport( FAILING, "_HandleEvent", "failed to create event %s", id );        
 	}
@@ -1516,7 +1590,6 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
 
     START_FUNCTION("_CreateReactionNode");
             
-            
     if( ( manager = GetReactionLawManagerInstance( frontend->record ) ) == NULL ) {
         return ErrorReport( FAILING, "_CreateReactionNode", "could not get an instance of reactionLaw manager" );
     }
@@ -1543,14 +1616,14 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
     }
 
     if( Reaction_getFast( reaction ) ) {
-        TRACE_0("\tsetting reversible true");
+        TRACE_0("\tsetting fast true");
         if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, TRUE ) ) ) ) {
             END_FUNCTION("_CreateReactionNode", ret );
             return ret;
         }
     }
     else {
-        TRACE_0("\tsetting reversible false");
+        TRACE_0("\tsetting fast false");
         if( IS_FAILED( ( ret = SetReactionFastInReactionNode( reactionNode, FALSE ) ) ) ) {
             END_FUNCTION("_CreateReactionNode", ret );
             return ret;
@@ -1596,6 +1669,12 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
     ListOf_t *list = NULL;
     HASH_TABLE *table = NULL;
     KINETIC_LAW *law = NULL;
+    KINETIC_LAW *lawClone = NULL;
+    RULE_MANAGER *ruleManager = NULL;
+    REB2SAC_SYMTAB *symtab = (REB2SAC_SYMTAB*)frontend->_internal3;
+    char *var = NULL;
+    RULE *ruleDef = NULL; 
+    REB2SAC_SYMBOL *symbol = NULL;
 #ifdef DEBUG
     STRING *kineticLawString = NULL;
 #endif        
@@ -1635,7 +1714,27 @@ static RET_VAL _CreateKineticLaw( FRONT_END_PROCESSOR *frontend, REACTION *react
     if( IS_FAILED( ( ret = SetKineticLawInReactionLaw( reactionLaw, law ) ) ) ) {
         END_FUNCTION("_CreateKineticLaw", ret );
         return ret;   
-    }   
+    } 
+
+    // TODO:
+    if( ( ruleManager = GetRuleManagerInstance( frontend->record ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CreateReactionRule", "could not get an instance of rule manager" );
+    }
+    var = (char *)Reaction_getId( reaction );
+    TRACE_1("creating reaction rule on %s", var );
+    if( ( ruleDef = ruleManager->CreateRule( ruleManager, RULE_TYPE_ASSIGNMENT, var ) ) == NULL ) {
+        return ErrorReport( FAILING, "_CreateReactionRule", "could not allocate rule on %s", var );
+    }
+    lawClone = CloneKineticLaw( law );
+    if( IS_FAILED( ( ret = AddMathInRule( ruleDef, lawClone ) ) ) ) {
+      END_FUNCTION("_CreateReactionRuleDefinition", ret );
+      return ret;
+    }
+    if( ( symbol = symtab->Lookup( symtab, var ) ) != NULL ) {
+      SetSymbolAlgebraic( symbol, FALSE );
+      SetInitialAssignmentInSymbol( symbol, (struct KINETIC_LAW*)lawClone );
+    }
+
     if( IS_FAILED( ( ret = manager->SetLocal( manager, NULL ) ) ) ) {
         return ErrorReport( FAILING, "_CreateKineticLaw", "error on setting local" ); 
     }     
@@ -1705,7 +1804,8 @@ static KINETIC_LAW *_TransformKineticLaw( FRONT_END_PROCESSOR *frontend, ASTNode
         END_FUNCTION("_TransformKineticLaw", SUCCESS );
         return law;
     }    
-    else if(  ASTNode_isFunction( source ) || ASTNode_isLogical( source ) || ASTNode_isRelational( source ) || (ASTNode_getType( source ) == AST_FUNCTION_DELAY)) {
+    else if( ASTNode_isFunction( source ) || ASTNode_isLogical( source ) || ASTNode_isRelational( source ) || 
+	      (ASTNode_getType( source ) == AST_FUNCTION_DELAY)) {
         if( ( law = _TransformFunctionKineticLaw( frontend, source, manager, table ) ) == NULL ) {
             END_FUNCTION("_TransformKineticLaw", FAILING );
             return NULL;
@@ -1866,7 +1966,6 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
     REB2SAC_SYMTAB *symtab = NULL;
     
     START_FUNCTION("_TransformFunctionKineticLaw");
-    
     num = ASTNode_getNumChildren( source );
     if (num > 0) {
       if( ( children = (KINETIC_LAW**)CALLOC( num, sizeof(KINETIC_LAW*) ) ) == NULL ) {
@@ -2153,6 +2252,54 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
+        case AST_FUNCTION_QUOTIENT:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_QUOTIENT, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_REM:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_MOD, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_LOGICAL_IMPLIES:
+	  if( num != 2 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_IMPLIES, children[0], children[1] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_RATE_OF:
+	  if( num != 1 ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_RATE, children[0] ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
         case AST_FUNCTION_DELAY:                    
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
@@ -2212,6 +2359,30 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
 	  }
 	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_TIMES, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_MIN:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_MIN, childrenLL ) ) == NULL ) {
+	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+	    return NULL;
+	  }
+	  FREE( children );
+	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+	  return law;
+        case AST_FUNCTION_MAX:
+	  childrenLL = CreateLinkedList();
+	  for (i = 0; i < num; i++) {
+	    AddElementInLinkedList( (CADDR_T)children[i], childrenLL );
+	  }
+	  if( ( law = CreatePWKineticLaw( KINETIC_LAW_OP_MAX, childrenLL ) ) == NULL ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
 	    return NULL;
 	  }
@@ -3052,10 +3223,11 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  Species = Model_getSpeciesById( model, species ); 
 	  if (SpeciesReference_isSetId( speciesRef )) {
 	    speciesRefId = (char*)SpeciesReference_getId( speciesRef );
-	    if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) {
-	      return ErrorReport( FAILING, "_ResolveNodeLinks", 
-				  "failed to put parameter time in global symtab" );
-	    }     
+	    SpeciesRef = symtab->Lookup( symtab, speciesRefId );
+	    /* if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) { */
+	    /*   return ErrorReport( FAILING, "_ResolveNodeLinks",  */
+	    /* 			  "failed to put parameter in global symtab" ); */
+	    /* }      */
 	  }
 	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
@@ -3100,10 +3272,11 @@ static RET_VAL _ResolveNodeLinks( FRONT_END_PROCESSOR *frontend, IR *ir, REACTIO
 	  Species = Model_getSpeciesById( model, species ); 
 	  if (SpeciesReference_isSetId( speciesRef )) {
 	    speciesRefId = (char*)SpeciesReference_getId( speciesRef );
-	    if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) {
-	      return ErrorReport( FAILING, "_ResolveNodeLinks", 
-				  "failed to put parameter time in global symtab" );
-	    }     
+	    SpeciesRef = symtab->Lookup( symtab, speciesRefId );
+	    /* if( ( SpeciesRef = symtab->AddSpeciesRefSymbol( symtab, speciesRefId, stoichiometry, constant ) ) == NULL ) { */
+	    /*   return ErrorReport( FAILING, "_ResolveNodeLinks",  */
+	    /* 			  "failed to put parameter time in global symtab" ); */
+	    /* }      */
 	  }
 	}
         speciesNode = (SPECIES*)GetValueFromHashTable( species, strlen( species ), table );
