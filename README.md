@@ -7,8 +7,8 @@ reb2sac is a tool for abstraction-based ODE, Monte Carlo, and Markov analysis.
 ## Installing reb2sac
 ### Dependencies
 Before compiling reb2sac, make sure you have the necessary dependencies:
-1. [gsl](https://www.gnu.org/software/gsl/)
-2. [libsbml](https://sourceforge.net/projects/sbml/files/libsbml/5.15.0/experimental/binaries/)
+1. [gsl](ftp://ftp.gnu.org/gnu/gsl/gsl-latest.tar.gz)
+2. [libsbml](https://sourceforge.net/projects/sbml/files/libsbml/5.15.2-experimental/binaries/)
 
 ### Compiling reb2sac
 If you want to compile reb2sac from source, simply run:
