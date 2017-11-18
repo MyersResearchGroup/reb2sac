@@ -680,6 +680,11 @@ static RET_VAL _InitializeSimulation( ODE_SIMULATION_RECORD *rec, int runNum ) {
         return ret;
     }
 
+    size = rec->speciesSize;
+    for( i = 0; i < size; i++ ) {
+        species = speciesArray[i];
+	SetRateInSpeciesNode( species, 0 );
+    }
     if (rec->rulesSize > 0) {
       ExecuteRateRules( rec );
     }
@@ -1643,8 +1648,11 @@ static RET_VAL EvaluateAlgebraicRules( ODE_SIMULATION_RECORD *rec ) {
       
       //ODE_print_state (iter, s, n);
       
-      if (status)   /* check if solver is stuck */
+      if (status) {  /* check if solver is stuck */
+	//ODE_print_state (iter, s, n);
+	//printf ("status = %s\n", gsl_strerror (status));
 	break;
+      }
       
       status = gsl_multiroot_test_residual (s->f, 1e-7);
   } while (status == GSL_CONTINUE && iter < 1000);
