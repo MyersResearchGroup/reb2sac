@@ -634,10 +634,6 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
 	    param = rec->time;
 	  }
 	} else {
-	  printf("Symbol = %s\n",GetCharArrayOfString( GetSymbolID(symbol) ));
-	  kineticLawString = ToStringKineticLaw( law );
-	  printf( "\tcreate kinetic law: %s%s", GetCharArrayOfString( kineticLawString ), NEW_LINE );
-	  FreeString( &kineticLawString );
 	  law = CloneKineticLaw( law );
 	  SimplifyInitialAssignment(law);
 	  if (law->valueType == KINETIC_LAW_VALUE_TYPE_REAL) {
