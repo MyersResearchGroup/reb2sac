@@ -46,6 +46,7 @@ typedef struct {
     BOOL fast;
     KINETIC_LAW *kineticLaw;
     double rate;
+    double originalRate;
     double rateUpdatedTime;
     KINETIC_LAW *waitingTime;
     double count;
@@ -87,6 +88,9 @@ LINKED_LIST *GetProductsInReactionNode( REACTION *reaction );
 
 double GetReactionRate(REACTION *reaction );
 RET_VAL SetReactionRate(REACTION *reaction, double rate );
+
+double GetOriginalReactionRate(REACTION *reaction );
+RET_VAL SetOriginalReactionRate(REACTION *reaction, double rate );
 
 double GetReactionRateUpdatedTime(REACTION *reaction );
 RET_VAL SetReactionRateUpdatedTime(REACTION *reaction, double time );

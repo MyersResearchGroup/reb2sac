@@ -211,6 +211,18 @@ RET_VAL SetReactionRate(REACTION *reaction, double rate ) {
     return ret;
 }
 
+RET_VAL SetOriginalReactionRate(REACTION *reaction, double originalRate ) {
+    RET_VAL ret = SUCCESS;
+    
+    START_FUNCTION("SetOriginalReactionRate");
+    if( reaction == NULL ) {
+        return ErrorReport( FAILING, "SetOriginalReactionRate", "input reaction node is NULL" );
+    }
+    reaction->originalRate = originalRate;
+    END_FUNCTION("SetOriginalReactionRate", SUCCESS );
+    return ret;
+}
+
 RET_VAL SetReactionRateUpdatedTime(REACTION *reaction, double time ) {
     RET_VAL ret = SUCCESS;
     
@@ -316,6 +328,16 @@ double GetReactionRate(REACTION *reaction ) {
     }
     END_FUNCTION("GetReactionRate", SUCCESS );
     return reaction->rate;
+}
+
+double GetOriginalReactionRate(REACTION *reaction ) {
+    START_FUNCTION("GetReactionOriginalRate");
+    if( reaction == NULL ) {
+        END_FUNCTION("GetReactionOriginalRate", FAILING );
+        return 1.0 / 0.0;
+    }
+    END_FUNCTION("GetReactionOriginalRate", SUCCESS );
+    return reaction->originalRate;
 }
 
 double GetReactionRateUpdatedTime(REACTION *reaction ) {

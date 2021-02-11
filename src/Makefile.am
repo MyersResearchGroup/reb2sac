@@ -17,7 +17,7 @@ noinst_HEADERS = \
 				default_reb2sac_properties.h	default_simulation_run_termination_decider.h	default_ts_species_level_updater.h dependency_graph.h dll_scope.h	dot_back_end_processor.h \
 				ode_simulation.h embedded_runge_kutta_fehlberg_method.h	embedded_runge_kutta_prince_dormand_method.h	emc_leaked_stationary_analyzer.h emc_simulation.h	emc_stationary_analyzer.h \
 				euler_method.h \
-				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	gillespie_monte_carlo.h monte_carlo.h\
+				flat_phage_lambda2_simulation_run_termination_decider.h	flat_phage_lambda_simulation_run_termination_decider.h	front_end_processor.h 	weighted_ssa.h gillespie_monte_carlo.h monte_carlo.h\
 				gnuplot_dat_simulation_printer.h hash_table.h	hse2_back_end_processor.h \
 				hse_back_end_processor_common.h	hse_back_end_processor_def.h hse_back_end_processor.h	hse_back_end_processor_util.h \
 				hse_logical_statement_handler.h	hse_transformation_checker.h implicit_gear1_method.h	implicit_gear2_method.h \
@@ -56,7 +56,7 @@ reb2sac_SOURCES = absolute_activation_inhibition_generation_method.c \
 	enzyme_kinetic_rapid_equilibrium_method.c euler_method.c \
 	final_state_generation_method.c \
 	flat_phage_lambda2_simulation_run_termination_decider.c flat_phage_lambda_simulation_run_termination_decider.c \
-	front_end_processor.c gillespie_monte_carlo.c monte_carlo.c\
+	front_end_processor.c gillespie_monte_carlo.c weighted_ssa.c monte_carlo.c\
 	gnuplot_dat_simulation_printer.c hash_table.c hse2_back_end_processor.c hse_back_end_processor.c \
 	hse_back_end_processor_util.c hse_logical_statement_handler.c hse_transformation_checker.c \
 	implicit_gear1_method.c implicit_gear2_method.c implicit_runge_kutta_4_method.c \
