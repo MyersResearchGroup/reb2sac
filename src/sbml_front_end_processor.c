@@ -2300,6 +2300,150 @@ static KINETIC_LAW *_TransformFunctionKineticLaw( FRONT_END_PROCESSOR *frontend,
 	  FREE( children );
 	  END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
 	  return law;
+        case AST_DISTRIB_FUNCTION_BERNOULLI:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_BERNOULLI, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_BINOMIAL:
+          if( num != 2 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_BINOMIAL, children[0], children[1] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_CAUCHY:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CAUCHY, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_CHISQUARE:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_CHISQ, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_EXPONENTIAL:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_EXPRAND, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_GAMMA:
+          if( num != 2 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_GAMMA, children[0], children[1] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_LAPLACE:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_LAPLACE, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_LOGNORMAL:
+          if( num != 2 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_LOGNORMAL, children[0], children[1] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_POISSON:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_POISSON, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_RAYLEIGH:
+          if( num != 1 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateUnaryOpKineticLaw( KINETIC_LAW_UNARY_OP_RAYLEIGH, children[0] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_NORMAL:
+          if( num != 2 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_NORMAL, children[0], children[1] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
+        case AST_DISTRIB_FUNCTION_UNIFORM:
+          if( num != 2 ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          if( ( law = CreateOpKineticLaw( KINETIC_LAW_OP_UNIFORM, children[0], children[1] ) ) == NULL ) {
+            END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
+            return NULL;
+          }
+          FREE( children );
+          END_FUNCTION("_TransformFunctionKineticLaw", SUCCESS );
+          return law;
         case AST_FUNCTION_DELAY:                    
 	  if( num != 2 ) {
 	    END_FUNCTION("_TransformFunctionKineticLaw", FAILING );
