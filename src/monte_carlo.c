@@ -37,6 +37,9 @@ static RET_VAL _CleanRecord( MONTE_CARLO_RECORD *rec );
 static RET_VAL _CalculateTotalPropensities( MONTE_CARLO_RECORD *rec );
 static RET_VAL _CalculatePropensities( MONTE_CARLO_RECORD *rec );
 static RET_VAL _CalculatePropensity( MONTE_CARLO_RECORD *rec, REACTION *reaction );
+static RET_VAL _CalculateTotalPredilections(GILLESPIE_MONTE_CARLO_RECORD* rec);
+static RET_VAL _CalculatePredilections(GILLESPIE_MONTE_CARLO_RECORD* rec);
+static RET_VAL _CalculatePredilection(GILLESPIE_MONTE_CARLO_RECORD* rec, REACTION* reaction);
 static RET_VAL _FindNextReactionTime( MONTE_CARLO_RECORD *rec );
 static RET_VAL _FindNextReaction( MONTE_CARLO_RECORD *rec );
 static RET_VAL _Update( MONTE_CARLO_RECORD *rec );
@@ -997,7 +1000,12 @@ static BOOL _IsTerminationConditionMet( MONTE_CARLO_RECORD *rec ) {
     return FALSE;
 }
 
-
+static RET_VAL _CalculateTotalPredilections(GILLESPIE_MONTE_CARLO_RECORD* rec) {
+    // rec->originalTotalPropensities = rec->totalPropensities
+    rec->originalTotalPropensities = rec->totalPropensities;
+    // _CalculateTotalPropensities( rec )
+    _CalculateTotalPropensities(rec);
+}
 
 static RET_VAL _CalculateTotalPropensities( MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;
@@ -1015,6 +1023,40 @@ static RET_VAL _CalculateTotalPropensities( MONTE_CARLO_RECORD *rec ) {
     rec->totalPropensities = total;
     TRACE_1( "the total propensity is %f", total );
     return ret;
+}
+
+static RET_VAL _CalculatePredilections(GILLESPIE_MONTE_CARLO_RECORD* rec) {
+    // loop through all reactions (see _CalculatePropensities)
+    RET_VAL ret = SUCCESS;
+    int i = 0;
+    int size = 0;
+    double time = rec->time;
+    double updatedTime = 0.0;
+    REACTION* reaction = NULL;
+    REACTION** reactionArray = rec->reactionArray;
+
+    size = rec->reactionsSize;
+    for (i = 0; i < size; i++) {
+        reaction = reactionArray[i];
+        updatedTime = GetReactionRateUpdatedTime(reaction);
+        if (IS_REAL_EQUAL(updatedTime, time)) {
+            if (IS_FAILED((ret = _CalculatePredilection(rec, reaction)))) {
+                return ret;
+            }
+        }
+    }
+    return ret;
+}
+
+static RET_VAL _CalculatePredilection(GILLESPIE_MONTE_CARLO_RECORD* rec, REACTION* reaction) {
+    // alpha = GetAlpha( reaction ) - stub this one
+    int alpha = 1;
+    // propensity = GetReactionRate( reaction )
+    propensity = GetReactionRate(reaction);
+    // SetOriginalReactionRate( reaction, propensity )
+    SetOriginalReactionRate(reaction, propensity);
+    // SetReactionRate( reaction, alpha * propensity )
+    SetReactionRate(reaction, alpha * propensity);
 }
 
 static RET_VAL _CalculatePropensities( MONTE_CARLO_RECORD *rec ) {
@@ -1233,8 +1275,6 @@ static RET_VAL _Update( MONTE_CARLO_RECORD *rec ) {
 
     return ret;
 }
-
-
 
 static RET_VAL _Print( MONTE_CARLO_RECORD *rec ) {
     RET_VAL ret = SUCCESS;

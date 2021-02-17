@@ -69,6 +69,7 @@ typedef struct {
     KINETIC_LAW_EVALUATER *evaluator;
     KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
     double totalPropensities;
+    double originalTotalPropensities;
     UINT32 seed;
     UINT32 runs; 
     char *outDir; 
