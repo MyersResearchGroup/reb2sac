@@ -26,7 +26,6 @@
 
 static BOOL _IsModelConditionSatisfied(IR* ir);
 
-
 static RET_VAL _InitializeRecord(WEIGHTED_MONTE_CARLO_RECORD* rec, BACK_END_PROCESSOR* backend, IR* ir);
 static RET_VAL _InitializeSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec, int runNum);
 static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec);
@@ -62,7 +61,7 @@ static void SetEventAssignmentsNextValuesTime(EVENT* event, WEIGHTED_MONTE_CARLO
 static RET_VAL EvaluateAlgebraicRules(WEIGHTED_MONTE_CARLO_RECORD* rec);
 static RET_VAL ExecuteFastReactions(WEIGHTED_MONTE_CARLO_RECORD* rec);
 
-DLLSCOPE RET_VAL STDCALL DoMonteCarloAnalysis(BACK_END_PROCESSOR* backend, IR* ir) {
+DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backend, IR* ir) {
     RET_VAL ret = SUCCESS;
     UINT i = 0;
     UINT runs = 1;
@@ -109,7 +108,7 @@ DLLSCOPE RET_VAL STDCALL DoMonteCarloAnalysis(BACK_END_PROCESSOR* backend, IR* i
     return ret;
 }
 
-DLLSCOPE RET_VAL STDCALL CloseMonteCarloAnalyzer(BACK_END_PROCESSOR* backend) {
+DLLSCOPE RET_VAL STDCALL CloseWeightedMonteCarloAnalyzer(BACK_END_PROCESSOR* backend) {
     RET_VAL ret = SUCCESS;
     WEIGHTED_MONTE_CARLO_RECORD* rec = (WEIGHTED_MONTE_CARLO_RECORD*)(backend->_internal1);
 
@@ -122,7 +121,6 @@ DLLSCOPE RET_VAL STDCALL CloseMonteCarloAnalyzer(BACK_END_PROCESSOR* backend) {
     END_FUNCTION("CloseMonteCarloAnalyzer", SUCCESS);
     return ret;
 }
-
 
 static BOOL _IsModelConditionSatisfied(IR* ir) {
     REACTION* reaction = NULL;
@@ -137,7 +135,6 @@ static BOOL _IsModelConditionSatisfied(IR* ir) {
     }
     return TRUE;
 }
-
 
 static RET_VAL _InitializeRecord(WEIGHTED_MONTE_CARLO_RECORD* rec, BACK_END_PROCESSOR* backend, IR* ir) {
     RET_VAL ret = SUCCESS;
@@ -1213,7 +1210,6 @@ static RET_VAL _CalculatePropensity(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION* 
 #endif
     return ret;
 }
-
 
 static RET_VAL _FindNextReactionTime(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     RET_VAL ret = SUCCESS;
