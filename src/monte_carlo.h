@@ -25,8 +25,8 @@
 BEGIN_C_NAMESPACE
 
 
-DLLSCOPE RET_VAL STDCALL DoMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir );
-DLLSCOPE RET_VAL STDCALL CloseMonteCarloAnalyzer( BACK_END_PROCESSOR *backend );
+DLLSCOPE RET_VAL STDCALL DoMonteCarloAnalysis(BACK_END_PROCESSOR* backend, IR* ir);
+DLLSCOPE RET_VAL STDCALL CloseMonteCarloAnalyzer(BACK_END_PROCESSOR* backend);
 
 #if 0
 #define USE_BIOSPICE_TSD_FORMAT 1
@@ -34,28 +34,28 @@ DLLSCOPE RET_VAL STDCALL CloseMonteCarloAnalyzer( BACK_END_PROCESSOR *backend );
 #endif
 
 typedef struct {
-    char *encoding;
-    REACTION **reactionArray;
+    char* encoding;
+    REACTION** reactionArray;
     UINT32 reactionsSize;
-    SPECIES **speciesArray;
+    SPECIES** speciesArray;
     UINT32 speciesSize;
-    RULE **ruleArray;
+    RULE** ruleArray;
     UINT32 rulesSize;
     UINT32 algebraicRulesSize;
     UINT32 numberFastSpecies;
     UINT32 numberFastReactions;
-    double *fastCons;
-    COMPARTMENT **compartmentArray;
+    double* fastCons;
+    COMPARTMENT** compartmentArray;
     UINT32 compartmentsSize;
-    REB2SAC_SYMBOL **symbolArray;
+    REB2SAC_SYMBOL** symbolArray;
     UINT32 symbolsSize;
-    CONSTRAINT **constraintArray;
+    CONSTRAINT** constraintArray;
     UINT32 constraintsSize;
-    EVENT **eventArray;
+    EVENT** eventArray;
     UINT32 eventsSize;
-    REACTION *nextReaction;    
-    SIMULATION_PRINTER *printer;
-    SIMULATION_RUN_TERMINATION_DECIDER *decider;
+    REACTION* nextReaction;
+    SIMULATION_PRINTER* printer;
+    SIMULATION_RUN_TERMINATION_DECIDER* decider;
     double time;
     double t;
     UINT32 currentStep;
@@ -66,13 +66,12 @@ typedef struct {
     double outputStartTime;
     double timeLimit;
     double timeStep;
-    KINETIC_LAW_EVALUATER *evaluator;
-    KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
+    KINETIC_LAW_EVALUATER* evaluator;
+    KINETIC_LAW_FIND_NEXT_TIME* findNextTime;
     double totalPropensities;
-    double originalTotalPropensities;
     UINT32 seed;
-    UINT32 runs; 
-    char *outDir; 
+    UINT32 runs;
+    char* outDir;
     int startIndex;
 } MONTE_CARLO_RECORD;
 

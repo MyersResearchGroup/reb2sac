@@ -26,6 +26,7 @@
 #include "hse2_back_end_processor.h"
 #include "xhtml_back_end_processor.h"
 #include "monte_carlo.h"
+#include "weighted_ssa.h"
 #include "euler_method.h"
 #include "nary_level_back_end_process.h"
 #include "ode_simulation.h"
@@ -39,7 +40,7 @@ static RET_VAL _AddPostProcessingMethods( COMPILER_RECORD_T *record, char *metho
 static char *__MONTE_CARLO_POST_PROCESSING_METHODS[] = {
     "kinetic-law-constants-simplifier",
     "reversible-to-irreversible-transformer",
-    NULL    
+    NULL
 };
 
 static char *__ODE_POST_PROCESSING_METHODS[] = {
@@ -333,7 +334,20 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
             }
         break;
         
-        
+        case 'w':
+            if (strcmp(backend->encoding, "wSSA") == 0) {
+                if (IS_FAILED((ret = _AddPostProcessingMethods(record, __MONTE_CARLO_POST_PROCESSING_METHODS)))) {
+                    return ret;
+                }
+                backend->Process = DoWeightedMonteCarloAnalysis;
+                backend->Close = CloseWeightedMonteCarloAnalyzer;
+
+            else {
+                fprintf(stderr, "target backend->encoding type %s is invalid", backend->encoding);
+                return ErrorReport(FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding);
+            }
+        break;
+
         case 'x':
             if( strcmp( backend->encoding, "xhtml" ) == 0 ) {
                 backend->Process = ProcessXHTMLBackend;

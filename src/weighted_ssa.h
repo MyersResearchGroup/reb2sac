@@ -17,16 +17,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#if !defined(HAVE_GILLESPIE_MONTE_CARLO)
-#define HAVE_GILLESPIE_MONTE_CARLO
+#if !defined(HAVE_MONTE_CARLO)
+#define HAVE_MONTE_CARLO
 
 #include "simulation_method.h"
 
 BEGIN_C_NAMESPACE
 
 
-DLLSCOPE RET_VAL STDCALL DoGillespieMonteCarloAnalysis( BACK_END_PROCESSOR *backend, IR *ir );
-DLLSCOPE RET_VAL STDCALL CloseGillespieMonteCarloAnalyzer( BACK_END_PROCESSOR *backend );
+DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backend, IR* ir);
+DLLSCOPE RET_VAL STDCALL CloseWeightedMonteCarloAnalyzer(BACK_END_PROCESSOR* backend);
 
 #if 0
 #define USE_BIOSPICE_TSD_FORMAT 1
@@ -34,40 +34,47 @@ DLLSCOPE RET_VAL STDCALL CloseGillespieMonteCarloAnalyzer( BACK_END_PROCESSOR *b
 #endif
 
 typedef struct {
-    REACTION **reactionArray;
+    char* encoding;
+    REACTION** reactionArray;
     UINT32 reactionsSize;
-    SPECIES **speciesArray;
+    SPECIES** speciesArray;
     UINT32 speciesSize;
-    RULE **ruleArray;
+    RULE** ruleArray;
     UINT32 rulesSize;
-    COMPARTMENT **compartmentArray;
+    UINT32 algebraicRulesSize;
+    UINT32 numberFastSpecies;
+    UINT32 numberFastReactions;
+    double* fastCons;
+    COMPARTMENT** compartmentArray;
     UINT32 compartmentsSize;
-    REB2SAC_SYMBOL **symbolArray;
+    REB2SAC_SYMBOL** symbolArray;
     UINT32 symbolsSize;
-    CONSTRAINT **constraintArray;
+    CONSTRAINT** constraintArray;
     UINT32 constraintsSize;
-    EVENT **eventArray;
+    EVENT** eventArray;
     UINT32 eventsSize;
-    REACTION *nextReaction;    
-    SIMULATION_PRINTER *printer;
-    SIMULATION_RUN_TERMINATION_DECIDER *decider;
+    REACTION* nextReaction;
+    SIMULATION_PRINTER* printer;
+    SIMULATION_RUN_TERMINATION_DECIDER* decider;
     double time;
     double t;
-    double printInterval;
     UINT32 currentStep;
     UINT32 numberSteps;
-    double nextPrintTime;    
+    double minPrintInterval;
+    double nextPrintTime;
+    double initialTime;
+    double outputStartTime;
     double timeLimit;
     double timeStep;
-    KINETIC_LAW_EVALUATER *evaluator;
-    KINETIC_LAW_FIND_NEXT_TIME *findNextTime;
+    KINETIC_LAW_EVALUATER* evaluator;
+    KINETIC_LAW_FIND_NEXT_TIME* findNextTime;
     double totalPropensities;
     double originalTotalPropensities;
     UINT32 seed;
-    UINT32 runs; 
-    char *outDir; 
+    UINT32 runs;
+    char* outDir;
     int startIndex;
-} GILLESPIE_MONTE_CARLO_RECORD;
+} MONTE_CARLO_RECORD;
 
 
 
