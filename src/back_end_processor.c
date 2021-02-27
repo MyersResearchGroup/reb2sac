@@ -341,7 +341,7 @@ RET_VAL InitBackendProcessor( COMPILER_RECORD_T *record, BACK_END_PROCESSOR *bac
                 }
                 backend->Process = DoWeightedMonteCarloAnalysis;
                 backend->Close = CloseWeightedMonteCarloAnalyzer;
-
+            }
             else {
                 fprintf(stderr, "target backend->encoding type %s is invalid", backend->encoding);
                 return ErrorReport(FAILING, "InitBackendProcessor", "target backend->encoding type %s is invalid", backend->encoding);

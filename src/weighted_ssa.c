@@ -21,7 +21,7 @@
 #include <float.h>
 #include "gsl/gsl_vector.h"
 #include "gsl/gsl_multiroots.h"
-#include "monte_carlo.h"
+#include "weighted_ssa.h"
 
 
 static BOOL _IsModelConditionSatisfied(IR* ir);
@@ -1073,6 +1073,7 @@ static RET_VAL _CalculatePredilections(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION* reaction) {
     // alpha = GetAlpha( reaction ) - stub this one
     int alpha = 1;
+    double propensity = 0.0;
     // propensity = GetReactionRate( reaction )
     propensity = GetReactionRate(reaction);
     // SetOriginalReactionRate( reaction, propensity )
@@ -1579,7 +1580,7 @@ static void ExecuteAssignments(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     }
 }
 
-int algebraicRules(const gsl_vector* x, void* params, gsl_vector* f) {
+int wSSA_algebraicRules(const gsl_vector* x, void* params, gsl_vector* f) {
     UINT32 i = 0;
     UINT32 j = 0;
     double amount = 0.0;
@@ -1625,7 +1626,7 @@ int algebraicRules(const gsl_vector* x, void* params, gsl_vector* f) {
     return GSL_SUCCESS;
 }
 
-int print_state(size_t iter, gsl_multiroot_fsolver* s, int n) {
+int _wSSA_print_state(size_t iter, gsl_multiroot_fsolver* s, int n) {
     UINT32 i = 0;
 
     printf("x = [ ");
@@ -1652,7 +1653,7 @@ static RET_VAL EvaluateAlgebraicRules(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 
     const size_t n = rec->algebraicRulesSize;
 
-    gsl_multiroot_function f = { &algebraicRules, n, rec };
+    gsl_multiroot_function f = { &wSSA_algebraicRules, n, rec };
     gsl_vector* x = gsl_vector_alloc(n);
 
     j = 0;
@@ -1706,7 +1707,7 @@ static RET_VAL EvaluateAlgebraicRules(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     return 0;
 }
 
-int MonteCarlofastReactions(const gsl_vector* x, void* params, gsl_vector* f) {
+int wSSAfastReactions(const gsl_vector* x, void* params, gsl_vector* f) {
     RET_VAL ret = SUCCESS;
     UINT32 i = 0;
     UINT32 j;
@@ -1983,7 +1984,7 @@ static RET_VAL ExecuteFastReactions(WEIGHTED_MONTE_CARLO_RECORD* rec) {
         }
     }
 
-    gsl_multiroot_function f = { &MonteCarlofastReactions, n, rec };
+    gsl_multiroot_function f = { &wSSAfastReactions, n, rec };
 
     gsl_vector* x = gsl_vector_alloc(n);
 

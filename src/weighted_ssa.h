@@ -17,8 +17,8 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#if !defined(HAVE_MONTE_CARLO)
-#define HAVE_MONTE_CARLO
+#if !defined(HAVE_WEIGHTED_MONTE_CARLO)
+#define HAVE_WEIGHTED_MONTE_CARLO
 
 #include "simulation_method.h"
 
@@ -74,7 +74,7 @@ typedef struct {
     UINT32 runs;
     char* outDir;
     int startIndex;
-} MONTE_CARLO_RECORD;
+} WEIGHTED_MONTE_CARLO_RECORD;
 
 
 
