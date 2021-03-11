@@ -69,14 +69,14 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     static WEIGHTED_MONTE_CARLO_RECORD rec;
     UINT timeout = 0;
 
-    START_FUNCTION("DoMonteCarloAnalysis");
+    START_FUNCTION("DoWeightedMonteCarloAnalysis");
 
     if (!_IsModelConditionSatisfied(ir)) {
-        return ErrorReport(FAILING, "DoMonteCarloAnalysis", " method cannot be applied to the model");
+        return ErrorReport(FAILING, "DoWeightedMonteCarloAnalysis", " method cannot be applied to the model");
     }
 
     if (IS_FAILED((ret = _InitializeRecord(&rec, backend, ir)))) {
-        return ErrorReport(ret, "DoMonteCarloAnalysis", "initialization of the record failed");
+        return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "initialization of the record failed");
     }
 
 
@@ -88,23 +88,23 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         do {
             SeedRandomNumberGenerators(rec.seed);
             if (IS_FAILED((ret = _InitializeSimulation(&rec, i)))) {
-                return ErrorReport(ret, "DoMonteCarloAnalysis", "initialization of the %i-th simulation failed", i);
+                return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "initialization of the %i-th simulation failed", i);
             }
             timeout++;
         } while ((ret == CHANGE) && (timeout <= (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize)));
         if (timeout > (rec.speciesSize + rec.compartmentsSize + rec.symbolsSize + 1)) {
-            return ErrorReport(ret, "DoMonteCarloAnalysis", "Cycle detected in initial and rule assignments");
+            return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "Cycle detected in initial and rule assignments");
         }
         if (IS_FAILED((ret = _RunSimulation(&rec)))) {
-            return ErrorReport(ret, "DoMonteCarloAnalysis", "%i-th simulation failed at time %f", i, rec.time);
+            return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "%i-th simulation failed at time %f", i, rec.time);
         }
         if (IS_FAILED((ret = _CleanSimulation(&rec)))) {
-            return ErrorReport(ret, "DoMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i);
+            return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i);
         }
         printf("Run = %d\n", i);
         fflush(stdout);
     }
-    END_FUNCTION("DoMonteCarloAnalysis", SUCCESS);
+    END_FUNCTION("DoWeightedMonteCarloAnalysis", SUCCESS);
     return ret;
 }
 
@@ -112,13 +112,13 @@ DLLSCOPE RET_VAL STDCALL CloseWeightedMonteCarloAnalyzer(BACK_END_PROCESSOR* bac
     RET_VAL ret = SUCCESS;
     WEIGHTED_MONTE_CARLO_RECORD* rec = (WEIGHTED_MONTE_CARLO_RECORD*)(backend->_internal1);
 
-    START_FUNCTION("CloseMonteCarloAnalyzer");
+    START_FUNCTION("CloseWeightedMonteCarloAnalyzer");
 
     if (IS_FAILED((ret = _CleanRecord(rec)))) {
-        return ErrorReport(ret, "CloseMonteCarloAnalyzer", "cleaning of the record failed");
+        return ErrorReport(ret, "CloseWeightedMonteCarloAnalyzer", "cleaning of the record failed");
     }
 
-    END_FUNCTION("CloseMonteCarloAnalyzer", SUCCESS);
+    END_FUNCTION("CloseWeightedMonteCarloAnalyzer", SUCCESS);
     return ret;
 }
 
@@ -559,7 +559,6 @@ static RET_VAL _InitializeSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec, int runNu
     BOOL change = FALSE;
     char filename[512];
     FILE* file = NULL;
-    STRING* kineticLawString = NULL;
 
     sprintf(filenameStem, "%s%crun-%i", rec->outDir, FILE_SEPARATOR, (runNum + rec->startIndex - 1));
     if (IS_FAILED((ret = printer->PrintStart(printer, filenameStem)))) {
@@ -748,19 +747,18 @@ static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec) {
         if ((nextEventTime != -1) && (nextEventTime < maxTime) /*&& (nextEventTime >= rec->time)*/) {
             maxTime = nextEventTime;
         }
-
         if (IS_FAILED((ret = _CalculatePropensities(rec)))) {
             return ret;
         }
         if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
             return ret;
         }
-        if (IS_FAILED((ret = _CalculatePredilections(rec)))) {
-            return ret;
-        }
-        if (IS_FAILED((ret = _CalculateTotalPredilections(rec)))) {
-            return ret;
-        }
+        /* if (IS_FAILED((ret = _CalculatePredilections(rec)))) { */
+        /*     return ret; */
+        /* } */
+        /* if (IS_FAILED((ret = _CalculateTotalPredilections(rec)))) { */
+        /*     return ret; */
+        /* } */
         if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
             TRACE_1("the total propensity is 0 at iteration %i", i);
             rec->t = maxTime - rec->time; //timeLimit - rec->time;
@@ -905,7 +903,7 @@ static RET_VAL _PrintStatistics(WEIGHTED_MONTE_CARLO_RECORD* rec, FILE* file) {
     for (i = 0; i < symbolsSize; i++) {
         symbol = symbolArray[i];
         if (IsRealValueSymbol(symbol)) {
-            fprintf(file, "%s = %f" NEW_LINE, *GetSymbolID(symbol), GetRealValueInSymbol(symbol));
+          fprintf(file, "%s = %f" NEW_LINE, GetCharArrayOfString(GetSymbolID(symbol)), GetRealValueInSymbol(symbol));
         }
     }
     fprintf(file, NEW_LINE);
@@ -1023,10 +1021,12 @@ static BOOL _IsTerminationConditionMet(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 }
 
 static RET_VAL _CalculateTotalPredilections(WEIGHTED_MONTE_CARLO_RECORD* rec) {
+    RET_VAL ret = SUCCESS;
     // rec->originalTotalPropensities = rec->totalPropensities
     rec->originalTotalPropensities = rec->totalPropensities;
     // _CalculateTotalPropensities( rec )
     _CalculateTotalPropensities(rec);
+    return ret;
 }
 
 static RET_VAL _CalculateTotalPropensities(WEIGHTED_MONTE_CARLO_RECORD* rec) {
@@ -1071,6 +1071,7 @@ static RET_VAL _CalculatePredilections(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 }
 
 static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION* reaction) {
+    RET_VAL ret = SUCCESS;
     // alpha = GetAlpha( reaction ) - stub this one
     int alpha = 1;
     double propensity = 0.0;
@@ -1080,6 +1081,7 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
     SetOriginalReactionRate(reaction, propensity);
     // SetReactionRate( reaction, alpha * propensity )
     SetReactionRate(reaction, alpha * propensity);
+    return ret;
 }
 
 static RET_VAL _CalculatePropensities(WEIGHTED_MONTE_CARLO_RECORD* rec) {
@@ -1219,7 +1221,7 @@ static RET_VAL _FindNextReactionTime(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     double t = 0.0;
 
     //if (strcmp(rec->encoding,"gillespie")==0) {
-    if (rec->encoding[0] == 'g') {
+    if (rec->encoding[0] == 'g' || rec->encoding[0] == 'w') {
         random = GetNextUnitUniformRandomNumber();
         t = log(1.0 / random) / rec->totalPropensities;
         rec->time += t;
@@ -1523,7 +1525,7 @@ static void fireEvent(EVENT* event, WEIGHTED_MONTE_CARLO_RECORD* rec) {
     double amount = 0.0;
     UINT j;
     BYTE varType;
-    /* STRING *eventId; */
+    /* STRING eventId; */
 
     /*  eventId = GetEventId( event );
         printf("Firing event %s\n",GetCharArrayOfString( eventId )); */
@@ -1626,7 +1628,7 @@ int wSSA_algebraicRules(const gsl_vector* x, void* params, gsl_vector* f) {
     return GSL_SUCCESS;
 }
 
-int _wSSA_print_state(size_t iter, gsl_multiroot_fsolver* s, int n) {
+void _wSSA_print_state(size_t iter, gsl_multiroot_fsolver* s, int n) {
     UINT32 i = 0;
 
     printf("x = [ ");
