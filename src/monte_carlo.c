@@ -1583,7 +1583,7 @@ int algebraicRules(const gsl_vector* x, void* params, gsl_vector* f) {
     return GSL_SUCCESS;
 }
 
-int print_state(size_t iter, gsl_multiroot_fsolver* s, int n) {
+void print_state(size_t iter, gsl_multiroot_fsolver* s, int n) {
     UINT32 i = 0;
 
     printf("x = [ ");
