@@ -41,6 +41,7 @@ static RET_VAL _CalculatePredilections(WEIGHTED_MONTE_CARLO_RECORD* rec);
 static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION* reaction);
 static RET_VAL _FindNextReactionTime(WEIGHTED_MONTE_CARLO_RECORD* rec);
 static RET_VAL _FindNextReaction(WEIGHTED_MONTE_CARLO_RECORD* rec);
+static RET_VAL _UpdateWeight(WEIGHTED_MONTE_CARLO_RECORD* rec);
 static RET_VAL _Update(WEIGHTED_MONTE_CARLO_RECORD* rec);
 static RET_VAL _Print(WEIGHTED_MONTE_CARLO_RECORD* rec);
 static RET_VAL _PrintStatistics(WEIGHTED_MONTE_CARLO_RECORD* rec, FILE* file);
@@ -68,6 +69,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     char* namePrefix = NULL;
     static WEIGHTED_MONTE_CARLO_RECORD rec;
     UINT timeout = 0;
+    rec->weightSum = 0;
 
     START_FUNCTION("DoMonteCarloAnalysis");
 
@@ -723,6 +725,7 @@ static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     SIMULATION_RUN_TERMINATION_DECIDER* decider = NULL;
     int nextEvent = 0;
     double nextEventTime = 0;
+    rec->weight = 1.0;
 
     printer = rec->printer;
     decider = rec->decider;
@@ -797,6 +800,9 @@ static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec) {
                 maxTime = rec->time;
                 if (rec->time < timeLimit) {
                     if (IS_FAILED((ret = _FindNextReaction(rec)))) {
+                        return ret;
+                    }
+                    if (IS_FAILED((ret = _UpdateWeight(rec)))) {
                         return ret;
                     }
                     reaction = rec->nextReaction;
@@ -1286,6 +1292,18 @@ static RET_VAL _FindNextReaction(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 
     rec->nextReaction = reactionArray[i];
     TRACE_1("next reaction is %s", GetCharArrayOfString(GetReactionNodeName(rec->nextReaction)));
+    return ret;
+}
+
+static RET_VAL _UpdateWeight(WEIGHTED_MONTE_CARLO_RECORD* rec) {
+    RET_VAL ret = SUCCESS;
+    double nextReactionPropensity = GetOriginalReactionRate(rec->nextReaction);
+    double nextReactionPredilection = GetReactionRate(rec->nextReaction);
+    
+    double propensityRatio = nextReactionPropensity / rec->originalTotalPropensities;
+    double predilectionRatio = nextReactionPredilection / rec->totalPropensities;
+
+    rec->weight = rec->weight * (propensityRatio / predilectionRatio);
     return ret;
 }
 

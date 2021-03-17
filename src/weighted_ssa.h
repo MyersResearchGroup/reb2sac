@@ -74,6 +74,8 @@ typedef struct {
     UINT32 runs;
     char* outDir;
     int startIndex;
+    double weightSum;
+    double weight;
 } WEIGHTED_MONTE_CARLO_RECORD;
 
 
