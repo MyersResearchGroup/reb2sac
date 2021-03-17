@@ -69,7 +69,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     char* namePrefix = NULL;
     static WEIGHTED_MONTE_CARLO_RECORD rec;
     UINT timeout = 0;
-    rec->weightSum = 0;
+    rec.weightSum = 0;
 
     START_FUNCTION("DoWeightedMonteCarloAnalysis");
 
@@ -106,6 +106,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         printf("Run = %d\n", i);
         fflush(stdout);
     }
+    printf("q/n=%g\n", rec.weightSum / runs);
     END_FUNCTION("DoWeightedMonteCarloAnalysis", SUCCESS);
     return ret;
 }
@@ -756,12 +757,12 @@ static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec) {
         if (IS_FAILED((ret = _CalculateTotalPropensities(rec)))) {
             return ret;
         }
-        /* if (IS_FAILED((ret = _CalculatePredilections(rec)))) { */
-        /*     return ret; */
-        /* } */
-        /* if (IS_FAILED((ret = _CalculateTotalPredilections(rec)))) { */
-        /*     return ret; */
-        /* } */
+        if (IS_FAILED((ret = _CalculatePredilections(rec)))) {
+            return ret;
+        }
+        if (IS_FAILED((ret = _CalculateTotalPredilections(rec)))) {
+            return ret;
+        }
         if (IS_REAL_EQUAL(rec->totalPropensities, 0.0)) {
             TRACE_1("the total propensity is 0 at iteration %i", i);
             rec->t = maxTime - rec->time; //timeLimit - rec->time;
@@ -818,6 +819,8 @@ static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     }
     if (rec->time >= timeLimit) {
         rec->time = timeLimit;
+    } else {
+      rec->weightSum += rec->weight;
     }
     nextEventTime = fireEvents(rec, rec->time);
     if (IS_FAILED((ret = printer->PrintValues(printer, rec->time)))) {
@@ -1079,8 +1082,13 @@ static RET_VAL _CalculatePredilections(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION* reaction) {
     RET_VAL ret = SUCCESS;
     // alpha = GetAlpha( reaction ) - stub this one
-    int alpha = 1;
+    double alpha = 1.2;
     double propensity = 0.0;
+    //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
+    //            GetReactionRate(reaction));
+    if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0")) {
+      alpha = 1/alpha;
+    }
     // propensity = GetReactionRate( reaction )
     propensity = GetReactionRate(reaction);
     // SetOriginalReactionRate( reaction, propensity )
