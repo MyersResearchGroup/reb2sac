@@ -103,7 +103,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         if (IS_FAILED((ret = _CleanSimulation(&rec)))) {
             return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i);
         }
-        // printf("Run = %d\n", i);
+        printf("Run = %d\n", i);
         printf("q/n = %g\n", rec.weightSum / i);
         fflush(stdout);
     }
@@ -1383,7 +1383,7 @@ static RET_VAL _Print(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     else {
         if ((nextPrintTime < time) && (nextPrintTime < rec->timeLimit)) {
             if (nextPrintTime > rec->initialTime) {
-                printf("Time = %g\n", nextPrintTime);
+                // printf("Time = %g\n", nextPrintTime);
                 fflush(stdout);
             }
             if (IS_FAILED((ret = printer->PrintValues(printer, time)))) {
