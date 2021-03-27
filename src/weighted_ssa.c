@@ -1082,12 +1082,39 @@ static RET_VAL _CalculatePredilections(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION* reaction) {
     RET_VAL ret = SUCCESS;
     // alpha = GetAlpha( reaction ) - stub this one
-    double alpha = 1.2;
+    double alpha = 1.0;
     double propensity = 0.0;
     //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
     //            GetReactionRate(reaction));
     if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0")) {
-      alpha = 1/alpha;
+      alpha = 1/1.2;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1")) {
+        alpha = 1.2;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3P")) {
+        alpha = 0.5;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6P")) {
+        alpha = 2.0;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1M")) {
+        alpha = 0.47866;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R2M")) {
+        alpha = 0.4415;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3M")) {
+        alpha = 0.01025;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R4M")) {
+        alpha = 1.53989;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R5M")) {
+        alpha = 0.06135;
+    }
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6M")) {
+        alpha = 14.65988;
     }
     // propensity = GetReactionRate( reaction )
     propensity = GetReactionRate(reaction);
