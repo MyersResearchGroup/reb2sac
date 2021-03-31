@@ -1088,11 +1088,11 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
     //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
     //            GetReactionRate(reaction));
     if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0") == 0) {
-      alpha = 1/1.2;
+      alpha = 1.2;
       //printf("R0");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1") == 0) {
-        alpha = 1.2;
+        alpha = 1/1.2;
         //printf("R1");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3P") == 0) {
