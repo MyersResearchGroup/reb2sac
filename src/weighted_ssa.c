@@ -1085,46 +1085,45 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
     // alpha = GetAlpha( reaction ) - stub this one
     double alpha = 1.0;
     double propensity = 0.0;
-    printf(GetCharArrayOfString(GetReactionNodeName(reaction)));
     //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
     //            GetReactionRate(reaction));
-    if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0")) {
+    if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0") == 0) {
       alpha = 1/1.2;
       //printf("R0");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1") == 0) {
         alpha = 1.2;
         //printf("R1");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3P")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3P") == 0) {
         alpha = 0.5;
         //printf("R3P");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6P")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6P") == 0) {
         alpha = 2.0;
         //printf("R6P");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1M")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1M") == 0) {
         alpha = 0.47866;
         //printf("R1M");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R2M")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R2M") == 0) {
         alpha = 0.4415;
         //printf("R2M");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3M")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3M") == 0) {
         alpha = 0.01025;
         //printf("R3M");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R4M")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R4M") == 0) {
         alpha = 1.53989;
         //printf("R4M");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R5M")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R5M") == 0) {
         alpha = 0.06135;
         //printf("R5M");
     }
-    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6M")) {
+    else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6M") == 0) {
         alpha = 14.65988;
         //printf("R6M");
     }
