@@ -1370,7 +1370,7 @@ static RET_VAL _Print(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     if (rec->minPrintInterval == -1.0) {
         while ((nextPrintTime < time) && (nextPrintTime < rec->timeLimit)) {
             if (nextPrintTime > 0) {
-                printf("Time = %g\n", nextPrintTime);
+                //printf("Time = %g\n", nextPrintTime);
                 fflush(stdout);
             }
             if (IS_FAILED((ret = printer->PrintValues(printer, nextPrintTime)))) {
@@ -1383,7 +1383,7 @@ static RET_VAL _Print(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     else {
         if ((nextPrintTime < time) && (nextPrintTime < rec->timeLimit)) {
             if (nextPrintTime > rec->initialTime) {
-                // printf("Time = %g\n", nextPrintTime);
+                //printf("Time = %g\n", nextPrintTime);
                 fflush(stdout);
             }
             if (IS_FAILED((ret = printer->PrintValues(printer, time)))) {
