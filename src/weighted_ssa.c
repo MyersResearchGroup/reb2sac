@@ -1085,47 +1085,48 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
     // alpha = GetAlpha( reaction ) - stub this one
     double alpha = 1.0;
     double propensity = 0.0;
+    printf(GetReactionNodeName(reaction));
     //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
     //            GetReactionRate(reaction));
     if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0")) {
       alpha = 1/1.2;
-      printf("R0");
+      //printf("R0");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1")) {
         alpha = 1.2;
-        printf("R1");
+        //printf("R1");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3P")) {
         alpha = 0.5;
-        printf("R3P");
+        //printf("R3P");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6P")) {
         alpha = 2.0;
-        printf("R6P");
+        //printf("R6P");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1M")) {
         alpha = 0.47866;
-        printf("R1M");
+        //printf("R1M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R2M")) {
         alpha = 0.4415;
-        printf("R2M");
+        //printf("R2M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3M")) {
         alpha = 0.01025;
-        printf("R3M");
+        //printf("R3M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R4M")) {
         alpha = 1.53989;
-        printf("R4M");
+        //printf("R4M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R5M")) {
         alpha = 0.06135;
-        printf("R5M");
+        //printf("R5M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6M")) {
         alpha = 14.65988;
-        printf("R6M");
+        //printf("R6M");
     }
     // propensity = GetReactionRate( reaction )
     propensity = GetReactionRate(reaction);
