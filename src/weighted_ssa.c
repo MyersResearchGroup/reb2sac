@@ -106,9 +106,9 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         }
         printf("Run = %d\n", i);
         //printf("q/n = %.10f\n", rec.weightSum / i);
-        if (rec.weightSum > removeLater) {
-            printf("Error State Achieved\n");
-        }
+        //if (rec.weightSum > removeLater) {
+        //    printf("Error State Achieved\n");
+        //}
         removeLater = rec.weightSum;
         fflush(stdout);
     }
@@ -1037,9 +1037,7 @@ static BOOL _IsTerminationConditionMet(WEIGHTED_MONTE_CARLO_RECORD* rec) {
 
 static RET_VAL _CalculateTotalPredilections(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     RET_VAL ret = SUCCESS;
-    // rec->originalTotalPropensities = rec->totalPropensities
     rec->originalTotalPropensities = rec->totalPropensities;
-    // _CalculateTotalPropensities( rec )
     _CalculateTotalPropensities(rec);
     return ret;
 }
@@ -1109,27 +1107,27 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
         //printf("R6P");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R1M") == 0) {
-        alpha = 0.47866;
+      alpha = 1.0; //0.47866;
         //printf("R1M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R2M") == 0) {
-        alpha = 0.4415;
+      alpha = 1.0; //0.4415;
         //printf("R2M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3M") == 0) {
-        alpha = 0.01025;
+      alpha = 0.5; //0.01025;
         //printf("R3M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R4M") == 0) {
-        alpha = 1.53989;
+      alpha = 1.0; //1.53989;
         //printf("R4M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R5M") == 0) {
-        alpha = 0.06135;
+      alpha = 1.0; //0.06135;
         //printf("R5M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6M") == 0) {
-        alpha = 14.65988;
+      alpha = 2; //14.65988;
         //printf("R6M");
     }
     // propensity = GetReactionRate( reaction )
@@ -1277,44 +1275,13 @@ static RET_VAL _FindNextReactionTime(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     double average = 0.0;
     double t = 0.0;
 
-    //if (strcmp(rec->encoding,"gillespie")==0) {
-    if (rec->encoding[0] == 'g' || rec->encoding[0] == 'w') {
-        random = GetNextUnitUniformRandomNumber();
-        t = log(1.0 / random) / rec->totalPropensities;
-        rec->time += t;
-        rec->t = t;
-        if (rec->time > rec->timeLimit) {
-            rec->t -= rec->time - rec->timeLimit;
-            rec->time = rec->timeLimit;
-        }
-        //} else if (strcmp(rec->encoding,"bunker")==0) {
-    }
-    else if (rec->encoding[0] == 'b') {
-        random = GetNextUnitUniformRandomNumber();
-        /* in bunker's method, just use mean value for time */
-        t = 1.0 / rec->totalPropensities;
-        rec->time += t;
-        rec->t = t;
-        if (rec->time > rec->timeLimit) {
-            rec->t -= rec->time - rec->timeLimit;
-            rec->time = rec->timeLimit;
-        }
-        //} else if (strcmp(rec->encoding,"nmc")==0) {
-    }
-    else if (rec->encoding[0] == 'n') {
-        average = 1.0 / rec->totalPropensities;
-        t = GetNextNormalRandomNumber(average, sqrt(average));
-        rec->time += t;
-        rec->t = t;
-        if (rec->time > rec->timeLimit) {
-            rec->t -= rec->time - rec->timeLimit;
-            rec->time = rec->timeLimit;
-        }
-        //} else if (strcmp(rec->encoding,"emc-sim")==0) {
-    }
-    else if (rec->encoding[0] == 'e') {
-        rec->time += 1;
-        rec->t = 1;
+    random = GetNextUnitUniformRandomNumber();
+    t = log(1.0 / random) / rec->originalTotalPropensities;
+    rec->time += t;
+    rec->t = t;
+    if (rec->time > rec->timeLimit) {
+      rec->t -= rec->time - rec->timeLimit;
+      rec->time = rec->timeLimit;
     }
 
     TRACE_1("time to next reaction is %f", t);
