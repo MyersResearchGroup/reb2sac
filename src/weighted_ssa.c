@@ -69,8 +69,9 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     char* namePrefix = NULL;
     static WEIGHTED_MONTE_CARLO_RECORD rec;
     UINT timeout = 0;
-    rec.weightSum = 0;
-    double removeLater = 0.0;
+    rec.weightSum = 0.0;
+    rec.squareWeightSum = 0.0;
+    //double removeLater = 0.0;
 
     START_FUNCTION("DoWeightedMonteCarloAnalysis");
 
@@ -109,10 +110,11 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         //if (rec.weightSum > removeLater) {
         //    printf("Error State Achieved\n");
         //}
-        removeLater = rec.weightSum;
+        //removeLater = rec.weightSum;
         fflush(stdout);
     }
-    printf("q/n=%g\n", rec.weightSum / runs);
+    printf("first moment=%g\n", rec.weightSum / runs);
+    printf("second moment=%g\n", rec.squareWeightSum / runs);
     END_FUNCTION("DoWeightedMonteCarloAnalysis", SUCCESS);
     return ret;
 }
@@ -827,6 +829,7 @@ static RET_VAL _RunSimulation(WEIGHTED_MONTE_CARLO_RECORD* rec) {
         rec->time = timeLimit;
     } else {
       rec->weightSum += rec->weight;
+      rec->squareWeightSum += (rec->weight) * (rec->weight);
     }
     nextEventTime = fireEvents(rec, rec->time);
     if (IS_FAILED((ret = printer->PrintValues(printer, rec->time)))) {
