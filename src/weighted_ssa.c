@@ -72,6 +72,8 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     rec.weightSum = 0.0;
     rec.squareWeightSum = 0.0;
     //double removeLater = 0.0;
+    double zstar = 1.64485;
+    stddev = 0.0;
 
     START_FUNCTION("DoWeightedMonteCarloAnalysis");
 
@@ -113,8 +115,9 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         //removeLater = rec.weightSum;
         fflush(stdout);
     }
-    printf("first moment=%g\n", rec.weightSum / runs);
-    printf("second moment=%g\n", rec.squareWeightSum / runs);
+    stddev = sqrt(rec.squareWeightSum - rec.weightSum * rec.weightSum);
+    printf("90% Confidence Interval: [%g,%g]\n", rec.weightSum / runs - zstar*stddev, rec.weightSum / runs + zstar * stddev);
+    //printf("second moment=%g\n", rec.squareWeightSum / runs);
     END_FUNCTION("DoWeightedMonteCarloAnalysis", SUCCESS);
     return ret;
 }
