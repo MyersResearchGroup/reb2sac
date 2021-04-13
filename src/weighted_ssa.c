@@ -73,7 +73,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     rec.squareWeightSum = 0.0;
     //double removeLater = 0.0;
     double zstar = 1.64485;
-    stddev = 0.0;
+    double stddev = 0.0;
 
     START_FUNCTION("DoWeightedMonteCarloAnalysis");
 
