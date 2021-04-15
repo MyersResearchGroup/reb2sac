@@ -1654,6 +1654,11 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
             return ret;
         }
     }
+    // source = Reaction_getKineticLaw( reaction );
+    // list = KineticLaw_getListOfParameters( source );
+    // walk that list, looking at the SBO term for each for probabilistic parameter, value of that is your weight
+    //TODO: Look for the weight in the set of global (or local) parameters
+    // SetReactionWeight( reactionNode, weight);
                                      
     END_FUNCTION("_CreateReactionNode", SUCCESS );
     return ret;   

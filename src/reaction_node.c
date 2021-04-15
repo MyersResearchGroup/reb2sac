@@ -42,6 +42,7 @@ RET_VAL InitReactionNode( REACTION *reaction, char *name ) {
     reaction->GetType = _GetType;
     reaction->ReleaseResource = _ReleaseResource;
     reaction->count = 0;
+    reaction->weight = 1.0;
     reaction->compartment = NULL;
     
     END_FUNCTION("InitReactionNode", SUCCESS );

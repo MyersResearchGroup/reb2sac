@@ -47,6 +47,7 @@ typedef struct {
     KINETIC_LAW *kineticLaw;
     double rate;
     double originalRate;
+    double weight;
     double rateUpdatedTime;
     KINETIC_LAW *waitingTime;
     double count;
@@ -91,6 +92,9 @@ RET_VAL SetReactionRate(REACTION *reaction, double rate );
 
 double GetOriginalReactionRate(REACTION *reaction );
 RET_VAL SetOriginalReactionRate(REACTION *reaction, double rate );
+
+//double GetReactionWeight(REACTION *reaction );
+//RET_VAL SetReactionWeight(REACTION *reaction, double weight );
 
 double GetReactionRateUpdatedTime(REACTION *reaction );
 RET_VAL SetReactionRateUpdatedTime(REACTION *reaction, double time );

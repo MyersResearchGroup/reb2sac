@@ -116,6 +116,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
         fflush(stdout);
     }
     stddev = sqrt(rec.squareWeightSum / runs - rec.weightSum / runs * rec.weightSum / runs);
+    printf("Mean = %g\n", rec.weightSum / runs);
     printf("90 Percent Confidence Interval: [%g,%g]\n", rec.weightSum / runs - zstar*stddev, rec.weightSum / runs + zstar * stddev);
     //printf("second moment=%g\n", rec.squareWeightSum / runs);
     END_FUNCTION("DoWeightedMonteCarloAnalysis", SUCCESS);
@@ -1096,6 +1097,7 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
     double propensity = 0.0;
     //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
     //            GetReactionRate(reaction));
+    // alpha = GetReactionWeight(reaction);
     if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0") == 0) {
       alpha = 1.2;
       //printf("R0");
@@ -1121,7 +1123,7 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
         //printf("R2M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R3M") == 0) {
-      alpha = 0.5; //0.01025;
+      alpha = 0.01; //0.01025;
         //printf("R3M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R4M") == 0) {
@@ -1133,7 +1135,7 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
         //printf("R5M");
     }
     else if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)), "R6M") == 0) {
-      alpha = 2; //14.65988;
+      alpha = 10.0; //14.65988;
         //printf("R6M");
     }
     // propensity = GetReactionRate( reaction )
