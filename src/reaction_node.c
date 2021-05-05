@@ -331,6 +331,27 @@ double GetReactionRate(REACTION *reaction ) {
     return reaction->rate;
 }
 
+double GetReactionWeight(REACTION* reaction) {
+    START_FUNCTION("GetReactionWeight");
+    if (reaction == NULL) {
+        END_FUNCTION("GetReactionWeight", FAILING);
+        return 1.0 / 0.0;
+    }
+    END_FUNCTION("GetReactionWeight", SUCCESS);
+    return reaction->weight
+}
+
+RET_VAL SetReactionWeight(REACTION* reaction, double weight) {
+    RET_VAL ret = SUCCESS;
+    START_FUNCTION("SetReactionWeight");
+    if (reaction == NULL) {
+        return ErrorReport(FAILING, "SetReactionWeight", "input reaction node is NULL");
+    }
+    reaction->weight = weight;
+    END_FUNCTION("SetReactionWeight", SUCCESS);
+    return ret
+}
+
 double GetOriginalReactionRate(REACTION *reaction ) {
     START_FUNCTION("GetReactionOriginalRate");
     if( reaction == NULL ) {
