@@ -338,7 +338,7 @@ double GetReactionWeight(REACTION* reaction) {
         return 1.0 / 0.0;
     }
     END_FUNCTION("GetReactionWeight", SUCCESS);
-    return reaction->weight
+    return reaction->weight;
 }
 
 RET_VAL SetReactionWeight(REACTION* reaction, double weight) {
@@ -349,7 +349,7 @@ RET_VAL SetReactionWeight(REACTION* reaction, double weight) {
     }
     reaction->weight = weight;
     END_FUNCTION("SetReactionWeight", SUCCESS);
-    return ret
+    return ret;
 }
 
 double GetOriginalReactionRate(REACTION *reaction ) {
