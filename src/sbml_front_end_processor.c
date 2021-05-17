@@ -1587,6 +1587,7 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
     REACTION *reactionNode = NULL; 
     REACTION_LAW *reactionLaw = NULL; 
     REACTION_LAW_MANAGER *manager = NULL;
+    float weight = 0.0;
 
     START_FUNCTION("_CreateReactionNode");
             
@@ -1655,8 +1656,17 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
         }
     }
     source = Reaction_getKineticLaw( reaction );
-    list = KineticLaw_getListOfParameters( source );
-    //weight = 
+    list = KineticLaw_getListOfLocalParameters( source );
+    num = KineticLaw_getNumLocalParameters( source );
+
+
+    for (i = 0;i < num;i++) {
+        localParamRef = (LocalParameter_t *)(ListOf_get(list, i);
+        int sboTerm = SBase_getSBOTerm((SBase_t*)localParamRef);
+        if sboTerm == 539 {
+            weight = LocalParameter_getValue(localParamRef);
+        }
+    }
     // walk that list, looking at the SBO term for each for probabilistic parameter, value of that is your weight
     //TODO: Look for the weight in the set of global (or local) parameters
     SetReactionWeight( reactionNode, weight);
