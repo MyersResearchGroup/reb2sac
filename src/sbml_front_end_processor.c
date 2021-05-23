@@ -1668,7 +1668,7 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
     for (i = 0;i < num;i++) {
         localParamRef = (LocalParameter_t*)(ListOf_get(list, i));
         int sboTerm = SBase_getSBOTerm((SBase_t*)localParamRef);
-        if sboTerm == 539 {
+        if (sboTerm == 539) {
             weight = LocalParameter_getValue(localParamRef);
         }
     };
