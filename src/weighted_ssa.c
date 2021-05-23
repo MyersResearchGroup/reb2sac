@@ -1098,6 +1098,7 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
     //            printf("(%s, %f)" NEW_LINE, GetCharArrayOfString(GetReactionNodeName(reaction)),
     //            GetReactionRate(reaction));
     // alpha = GetReactionWeight(reaction);
+    /*
     if (strcmp(GetCharArrayOfString(GetReactionNodeName(reaction)),"R0") == 0) {
       alpha = 1.2;
       //printf("R0");
@@ -1138,6 +1139,7 @@ static RET_VAL _CalculatePredilection(WEIGHTED_MONTE_CARLO_RECORD* rec, REACTION
       alpha = 10.0; //14.65988;
         //printf("R6M");
     }
+    */
     // propensity = GetReactionRate( reaction )
     propensity = GetReactionRate(reaction);
     // SetOriginalReactionRate( reaction, propensity )
