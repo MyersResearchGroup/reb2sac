@@ -1587,7 +1587,7 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
     REACTION *reactionNode = NULL; 
     REACTION_LAW *reactionLaw = NULL; 
     REACTION_LAW_MANAGER *manager = NULL;
-    float weight = 0.0;
+    float weight = 1.0;
     UINT i = 0;
     UINT num = 0;
     ListOf_t* list = NULL;
@@ -1666,10 +1666,12 @@ static RET_VAL _CreateReactionNode( FRONT_END_PROCESSOR *frontend, IR *ir, Model
 
 
     for (i = 0;i < num;i++) {
+        printf("i = %d",i);
         localParamRef = (LocalParameter_t*)(ListOf_get(list, i));
         int sboTerm = SBase_getSBOTerm((SBase_t*)localParamRef);
         if (sboTerm == 539) {
             weight = LocalParameter_getValue(localParamRef);
+            printf("weight = %g", weight);
         }
     };
     // walk that list, looking at the SBO term for each for probabilistic parameter, value of that is your weight
