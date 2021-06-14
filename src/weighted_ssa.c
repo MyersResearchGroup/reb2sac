@@ -108,7 +108,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
             return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i);
         }
         //printf("Run = %d\n", i);
-        printf("%d\n", rec.weightSum / i);
+        printf("%.10f\n", rec.weightSum / i);
         //printf("q/n = %.10f\n", rec.weightSum / i);
         //if (rec.weightSum > removeLater) {
         //    printf("Error State Achieved\n");
