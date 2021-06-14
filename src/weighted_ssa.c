@@ -71,7 +71,7 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
     UINT timeout = 0;
     rec.weightSum = 0.0;
     rec.squareWeightSum = 0.0;
-    //double removeLater = 0.0;
+    double removeLater = 0.0;
     double zstar = 1.64485;
     double stddev = 0.0;
 
@@ -108,11 +108,11 @@ DLLSCOPE RET_VAL STDCALL DoWeightedMonteCarloAnalysis(BACK_END_PROCESSOR* backen
             return ErrorReport(ret, "DoWeightedMonteCarloAnalysis", "cleaning of the %i-th simulation failed", i);
         }
         printf("Run = %d\n", i);
-        //printf("q/n = %.10f\n", rec.weightSum / i);
-        //if (rec.weightSum > removeLater) {
-        //    printf("Error State Achieved\n");
-        //}
-        //removeLater = rec.weightSum;
+        printf("q/n = %.10f\n", rec.weightSum / i);
+        if (rec.weightSum > removeLater) {
+            printf("Error State Achieved\n");
+        }
+        removeLater = rec.weightSum;
         fflush(stdout);
     }
     stddev = sqrt(rec.squareWeightSum / runs - rec.weightSum / runs * rec.weightSum / runs);
