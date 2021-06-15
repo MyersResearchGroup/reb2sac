@@ -1288,7 +1288,9 @@ static RET_VAL _FindNextReactionTime(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     double t = 0.0;
 
     random = GetNextUnitUniformRandomNumber();
-    t = log(1.0 / random) / rec->originalTotalPropensities;
+    //time dependence change
+    //t = log(1.0 / random) / rec->originalTotalPropensities; //for original wSSA
+    t = log(1.0 / random) / rec->totalPropensities; //for time dependent wSSA
     rec->time += t;
     rec->t = t;
     if (rec->time > rec->timeLimit) {
@@ -1334,8 +1336,9 @@ static RET_VAL _UpdateWeight(WEIGHTED_MONTE_CARLO_RECORD* rec) {
     
     double propensityRatio = nextReactionPropensity / rec->originalTotalPropensities;
     double predilectionRatio = nextReactionPredilection / rec->totalPropensities;
-
-    rec->weight = rec->weight * (propensityRatio / predilectionRatio);
+    //time dependence change
+    //rec->weight = rec->weight * (propensityRatio / predilectionRatio); //for original wSSA
+    rec->weight = rec->weight * (nextReactionPropensity / nextReactionPredilection) * exp((rec->totalPropensities - rec->originalTotalPropensities) * rec->t); //for time dependent
     return ret;
 }
 
