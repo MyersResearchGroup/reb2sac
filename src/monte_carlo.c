@@ -680,7 +680,7 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
     if (rec->numberFastSpecies > 0) {
       ExecuteFastReactions( rec );
     }
-
+    /*
     sprintf( filename, "%s%cstatistics.txt", rec->outDir, FILE_SEPARATOR );
     if( ( file = fopen( filename, "w" ) ) == NULL ) {
     	return ErrorReport( FAILING, "_InitializeSimulation", "could not create a statistics file" );
@@ -689,7 +689,7 @@ static RET_VAL _InitializeSimulation( MONTE_CARLO_RECORD *rec, int runNum ) {
     	return ret;
     }
     fclose( file );
-
+    */
     if (change)
       return CHANGE;
     return ret;
